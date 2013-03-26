@@ -1,0 +1,22 @@
+
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>xiami</title>
+</head>
+<body>
+<script src='assets/kissy/seed.js'></script>
+<script>
+	KISSY.config('packages',{
+		xiami: {
+			base:'../src/'
+		}
+	});
+	KISSY.use('xiami/main',function(S,Main){
+		document.body.innerHTML=Main;
+	});
+</script>
+</body>
+</html>
+
