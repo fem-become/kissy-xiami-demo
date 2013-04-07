@@ -1,5 +1,5 @@
-KISSY.add(function(){
-	return 'ok';
+KISSY.add(function(S,M1){
+	M1.init();
 },{
-	requires:['./main.css']
+	requires:['xiami/transition/mod1']
 });
