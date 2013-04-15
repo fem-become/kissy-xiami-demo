@@ -1,5 +1,8 @@
-KISSY.add(function(S,M1){
-	M1.init();
-},{
-	requires:['xiami/transition/mod1']
+
+KISSY.add(function(S,Home) {
+  
+  Home.init();
+
+}, {
+  requires:['xiami/transition/home']
 });

@@ -7,9 +7,9 @@ KISSY.add( function (S, Node) {
     return {
 
         forward: function (currentMod, nextMod, cfg) {
-        	
-        	  cfg = cfg ||{};
-        	 	cfg.forwardFromMod=currentMod;
+            
+              cfg = cfg ||{};
+                cfg.forwardFromMod=currentMod;
 
             KISSY.use(nextMod + ',' + currentMod, function (S, next, current) {
 
@@ -42,7 +42,7 @@ KISSY.add( function (S, Node) {
                     duration:duration,
                     useTransition:true,
                     complete:function(){
-                    	preEl.hide();
+                        preEl.hide();
                     }
                 });
 
@@ -52,9 +52,9 @@ KISSY.add( function (S, Node) {
 
 
         backward: function (currentMod, nextMod,cfg) {
-        	
-        		cfg = cfg ||{};
-        	 	cfg.backwardFromMod=currentMod;
+            
+                cfg = cfg ||{};
+                cfg.backwardFromMod=currentMod;
 
             KISSY.use(nextMod + ',' + currentMod, function (S, next, current) {
 
@@ -85,14 +85,14 @@ KISSY.add( function (S, Node) {
                     duration:duration,
                     useTransition:true,
                     complete:function(){
-                    	preEl.hide();
+                        preEl.hide();
                     }
                 });
 
             });
 
         }
-    }
+    };
 
 }, {
     requires: ['node']
