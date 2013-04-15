@@ -1,23 +1,34 @@
-KISSY.add(function (S, Node, Transition,Event) {
+KISSY.add(function (S, Node, Transition,Event,header) {
     var $ = Node.all;
     var el;
+
+var myName=this.getName();
+
+var body=$('#body');
 
     return {
 
         init: function () {
             if (!el) {
-                el = $('<div class="mod-page"><div class="mod-page-inner"></div></div>').appendTo('body');
+                el = $('<div class="mod-page"></div>').appendTo(body);
 
 
-                el.one('.mod-page-inner').html('mod2');
+                el.html('<div>mod2,please scroll<div style="height:1000px"></div><button>back</button><div style="height:100px"></div></div>');
 
-                el.on(Event.Gesture.tap, function () {
-                    Transition.backward('xiami/transition/mod2', 'xiami/transition/mod1');
+                el.one('button').on(Event.Gesture.tap, function () {
+                    Transition.backward(myName, 'xiami/transition/mod1');
                 });
-                S.log('mod2 is new');
+                S.log(myName+' is new');
             } else {
-                S.log('mod2 is coming again');
+                S.log(myName+' is coming again');
             }
+            
+            
+            var headerEl=header.getHeader(myName);
+						
+						if(!headerEl.contents().length){
+							headerEl.append(myName);
+						}
         },
 
         getEl: function () {
@@ -27,5 +38,5 @@ KISSY.add(function (S, Node, Transition,Event) {
     };
 
 }, {
-    requires: ['node', './index','event']
+    requires: ['node', './index','event','../header']
 });

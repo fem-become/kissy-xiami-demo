@@ -7,18 +7,26 @@ KISSY.add( function (S, Node) {
     return {
 
         forward: function (currentMod, nextMod, cfg) {
+        	
+        	  cfg = cfg ||{};
+        	 	cfg.forwardFromMod=currentMod;
 
             KISSY.use(nextMod + ',' + currentMod, function (S, next, current) {
 
                 next.init(cfg);
 
                 var el = next.getEl();
+                
+                var preEl=current.getEl();
+                
 
                 var width = $(window).width();
 
                 el.css({
                     left: width
                 });
+                
+                el.show();
 
                 el.animate({
                     left: 0
@@ -28,11 +36,14 @@ KISSY.add( function (S, Node) {
                 });
 
 
-                current.getEl().animate({
+                preEl.animate({
                     left: -width
                 },{
                     duration:duration,
-                    useTransition:true
+                    useTransition:true,
+                    complete:function(){
+                    	preEl.hide();
+                    }
                 });
 
             });
@@ -40,19 +51,25 @@ KISSY.add( function (S, Node) {
         },
 
 
-        backward: function (currentMod, nextMod) {
+        backward: function (currentMod, nextMod,cfg) {
+        	
+        		cfg = cfg ||{};
+        	 	cfg.backwardFromMod=currentMod;
 
             KISSY.use(nextMod + ',' + currentMod, function (S, next, current) {
 
-                next.init();
+                next.init(cfg);
 
                 var el = next.getEl();
+                var preEl=current.getEl();
 
                 var width = $(window).width();
 
                 el.css({
                     left: -width
                 });
+                
+                el.show();
 
                 el.animate({
                     left: 0
@@ -66,7 +83,10 @@ KISSY.add( function (S, Node) {
                     left: width
                 },{
                     duration:duration,
-                    useTransition:true
+                    useTransition:true,
+                    complete:function(){
+                    	preEl.hide();
+                    }
                 });
 
             });
