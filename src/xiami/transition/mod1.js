@@ -4,10 +4,9 @@ KISSY.add(function (S, Node, Transition,Event) {
 
     return {
 
-        init: function () {
+        init: function (cfg) {
             if (!el) {
                 el = $('<div class="mod-page"><div class="mod-page-inner"></div></div>').appendTo('body');
-
 
                 el.one('.mod-page-inner').html('mod1');
 
