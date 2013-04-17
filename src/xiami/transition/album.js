@@ -12,7 +12,9 @@ KISSY.add(function(S, Node, Transition, Event, header) {
         el = $('<div class="mod-page"></div>').appendTo(body);
         el.html('<button id="J_Play">play music</button><button id="J_AlbumBack">back to list</button><div id="J_AlbumId"></div>');
         el.one('#J_Play').on(Event.Gesture.tap, function() {
-          Transition.forward(myName, 'xiami/transition/player');
+          Transition.forward(myName, 'xiami/transition/player',{
+            id:config.id
+          });
         });
         el.one('#J_AlbumBack').on(Event.Gesture.tap, function() {
           Transition.backward(myName, 'xiami/transition/albums');
@@ -24,7 +26,7 @@ KISSY.add(function(S, Node, Transition, Event, header) {
 
       el.one("#J_AlbumId").html('album id:' + config.id);
 
-      var headerEl=header.getHeader(myName);
+      var headerEl = header.getHeader(myName);
       if (!headerEl.contents().length) {
         headerEl.append(myName);
       }
