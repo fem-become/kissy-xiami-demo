@@ -1,0 +1,77 @@
+.music-handle{
+    width: 100px;
+	margin: 0 auto;
+}
+.music-pause,.music-play{
+	height:52px;
+	width:52px;
+	background: url(http://img03.taobaocdn.com/tps/i3/T1jW85XsljXXcLNDLI-400-500.png) -14px -29px; 
+	display: inline-block;
+	border-radius: 25px;
+	text-indent: -9999px;
+	margin: auto;
+}
+/**/
+.music-play{
+	background-position:-73px -29px;
+}
+
+.music-progress{
+	width: 210px;
+	margin:0 auto;
+}
+
+.bar-content{			
+	height: 8px;
+	width: 210px;
+	border-radius: 5px;
+	background: #ddd;
+	position:relative;
+	float:left;
+
+}
+.progress-bar{
+	height: 8px;
+	border-radius: 5px;
+	background: #f60;
+	display: inline-block;
+	position: absolute;
+	top:-16px;
+	left:0;
+
+}
+.music-time{
+	width: 210px;
+	margin: 10px auto 0;
+}
+.music-time .now,.music-time .total{
+	font-size:12px;
+	font-style:normal;
+}
+.music-time .total{
+	float: right;
+}
+
+
+.drag{
+	width: 10px;
+	height: 20px;
+	display: inline-block;
+	background: #999;
+	border-radius: 5px;
+	position: absolute;
+	top:-5px;
+
+}
+.bar-background{
+	height: 14px;
+	width: 226px;
+	margin: 0 auto;
+	padding-top: 6px;
+}
+.music-info-temp{
+	
+	width: 226px;
+	margin: 0 auto;
+	padding-top: 20px;
+}

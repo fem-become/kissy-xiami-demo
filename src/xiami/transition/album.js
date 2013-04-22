@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 KISSY.add(function(S, Node, Transition, Event, header) {
 
   var $ = Node.all;
@@ -103,3 +104,4 @@ KISSY.add(function(S, Node, Transition, Event, header) {
 }, {
   requires: ["node", "./index", "event", "../header"]
 });
+
