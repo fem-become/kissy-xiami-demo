@@ -11,9 +11,12 @@ KISSY.add(function (S, Node, Transition, Event, header) {
 
       if (!el) {
         el = $('<div class="mod-page"></div>').appendTo(body);
-        el.html('<button>go to list</button>');
-        el.one('button').on(Event.Gesture.tap, function () {
+        el.html('<button class="to-list">go to list</button><button class="to-discover">go to discover</button>');
+        el.one('.to-list').on(Event.Gesture.tap, function () {
             Transition.forward(myName, 'xiami/transition/albums');
+        });
+        el.one('.to-discover').on(Event.Gesture.tap, function () {
+            Transition.forward(myName, 'xiami/transition/discover');
         });
 
         S.log(myName+' is new');
