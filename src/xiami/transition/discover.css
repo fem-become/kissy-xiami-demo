@@ -1,12 +1,77 @@
+/**
+ * media queries
+ */
+@media screen and (max-width: 600px) {
+  .display-area {
+    height: 280px;
+  }
+
+  .center {
+    width: 312px;
+  }
+
+  .panel {
+    height: 215px;
+  }
+
+  .opt-area {
+    height: 215px;
+  }
+
+  .radar {
+    left: 116px;
+    top: 67.5px;
+  }
+
+  .battery-container {
+    left: 61px;
+    top: 52.5px;
+  }
+
+  .battery-anode {
+    left: 246px;
+    top: 87.5px;
+  }
+}
+@media screen and (min-width: 601px) {
+  .display-area {
+    height: 500px;
+  }
+
+  .center {
+    width: 600px;
+  }
+
+  .panel {
+    height: 420px;
+  }
+
+  .opt-area {
+    height: 420px;
+  }
+
+  .radar {
+    left: 260px;
+    top: 170px;
+  }
+
+  .battery-container {
+    left: 205px;
+    top: 155px;
+  }
+
+  .battery-anode {
+    left: 390px;
+    top: 190px;
+  }
+}
 .center {
   margin: 0 auto;
-  width: 312px;
 }
 
 .display-area {
   border-top: 5px solid #2192fb;
   background: #c5dcfd;
-  height: 280px;
   -webkit-box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.37);
   -moz-box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.37);
   box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.37);
@@ -56,8 +121,7 @@
   -moz-box-shadow: 0 0 8px rgba(0, 0, 0, 0.66) inset;
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.66) inset;
   z-index: 0;
-  height: 215px;
-  width: 312px;
+  width: 100%;
 }
 
 .radar {
@@ -65,8 +129,6 @@
   z-index: 2;
   width: 80px;
   height: 80px;
-  left: 116px;
-  top: 67.5px;
 }
 .radar.active {
   background: url("../../../web/assets/img/radarbg.png") no-repeat;
@@ -249,18 +311,23 @@
 /*** 歌曲列表区 ***/
 .songs-area {
   position: relative;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  border-width: 0 6px 0 6px;
+  border-color: #565656;
+  border-style: solid;
   height: 8px;
   -webkit-border-radius: 4px;
   -moz-border-radius: 4px;
   border-radius: 4px;
   background: #565656;
-  margin-top: 10px;
+  margin-top: 13px;
 }
 
 .songs-list {
   position: absolute;
-  width: 300px;
-  left: 6px;
+  width: 100%;
   top: 5px;
   height: 200px;
   -webkit-box-shadow: 0 0 9px rgba(0, 0, 0, 0.75);
@@ -312,6 +379,7 @@
 /*** 音乐雷达说明 ***/
 .radar-illustration {
   text-align: center;
+  margin-top: 10px;
 }
 
 /*** 电池 ****/
@@ -323,8 +391,6 @@
   -webkit-border-radius: 10px;
   -moz-border-radius: 10px;
   border-radius: 10px;
-  left: 61px;
-  top: 52.5px;
   background: #cad0d3;
   -webkit-box-shadow: 0 0 8px rgba(0, 0, 0, 0.66) inset;
   -moz-box-shadow: 0 0 8px rgba(0, 0, 0, 0.66) inset;
@@ -336,8 +402,6 @@
   position: absolute;
   width: 15px;
   height: 30px;
-  left: 246px;
-  top: 87.5px;
   border-width: 5px 5px 5px 0;
   background: #cad0d3;
   border-color: #fff;

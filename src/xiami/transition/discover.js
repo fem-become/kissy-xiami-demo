@@ -1,8 +1,10 @@
-KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, ScrollbarPlugin, IO, XTemplate) {
+KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, ScrollbarPlugin, IO, XTemplate, suspender) {
 
     var $ = Node.all,
         timer = null,
         scrollview = null,
+        draggable = null,
+        myName = this.getName(),
         el;
 
     var HTML = ['<div class="display-area">',
@@ -112,7 +114,7 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
             if (!headerEl.contents().length) {
                 headerEl.html('<h1>发现音乐</h1><a href="#" class="list-icon icon">列表</a><a href="#" class="search-icon icon">搜索</a>');
             }
-
+            suspender.setCurrentMod(myName);
         },
 
         getEl: function () {
@@ -335,15 +337,16 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
                 msg = S.one('#message');
 
 
-                msg.attr('class','');
+            msg.attr('class','');
 
-                radar.removeClass('detecting');
-                clearTimeout(timer);
+            radar.removeClass('detecting');
+            clearTimeout(timer);
 
-                self._updateMsgPosition();
-                 
-                msg.one('.result-msg').text('发现'+songs.length+'首好歌');      
-                msg.show();                                      
+            self._updateMsgPosition();
+             
+            msg.one('.result-msg').text('发现'+songs.length+'首好歌');      
+            msg.show();
+            dragable.set('disabled',false);                                      
 
 
         },
@@ -355,11 +358,11 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
                 handler = S.one('.radar-handler'),
                 msg = S.one('#message');
 
-            var dragable = new DD.Draggable({
-                    node: '.radar',
-                    handlers: ['.radar-handler'],
-                    move: true
-                });
+            draggable = new DD.Draggable({
+                node: '.radar',
+                handlers: ['.radar-handler'],
+                move: true
+            });
             
             var deg = 5,
                 startRotate = function(){
@@ -373,19 +376,20 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
                 };
                 
 
-            dragable.on('dragstart',function(e){
+            draggable.on('dragstart',function(e){
                 msg.hide();
                 radar.removeClass('active');
             });
 
 
-            dragable.on('dragend',function(e){
+            draggable.on('dragend',function(e){
                 var pos = radar.offset(),
                     posL = pos.left - S.one('.J_RadarPanel').offset().left,
                     posT = pos.top - S.one('.J_RadarPanel').offset().top,
                     width = radar.width(),
                     height = radar.height();
                 radar.addClass('active').addClass('detecting');
+                draggable.set('disabled',true);
                 startRotate();    
                 self._recommendSongsByRadar({x:posL + width/2,y:posT + height/2});            
             });
@@ -433,9 +437,10 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
             //播放
             Event.delegate('.J_SongsList','click','.play-btn',function(e){
                 var target = S.one(e.target);
-                Transition.forward('xiami/transition/discover', 'xiami/transition/player',{
-                    id: target.parent('li').attr('data-id')
-                });
+                // Transition.forward('xiami/transition/discover', 'xiami/transition/player',{
+                //     id: target.parent('li').attr('data-id')
+                // });
+                suspender.playOne(target.parent('li').attr('data-id'));
             });
 
             //摇一摇
@@ -466,5 +471,6 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
     };
 
 }, {
-    requires: ['node','event','./index','event','../header','dd','scrollview/drag','scrollview/plugin/scrollbar','ajax', 'xtemplate']
+    requires: ['node','event','./index','event','../header','dd',
+    'scrollview/drag','scrollview/plugin/scrollbar','ajax', 'xtemplate','../suspender']
 });

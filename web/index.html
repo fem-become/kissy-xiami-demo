@@ -47,12 +47,21 @@
 	</div>
 	<div id='body'>
 	</div>
+	<div id="suspender">
+		<div class="s-inner">
+			<s class="s-play-icon"></s>
+		</div>
+	</div>
 <script src='assets/kissy/seed.js'></script>
+<!-- <script src="http://jsconsole.com/remote.js?CF95F0C6-1C0F-41D8-982B-22EE923D6E2B"></script> -->
 <script>
 	KISSY.config('packages',{
 		xiami: {
 			tag:Math.random(),
 			base:'../src/'
+		},
+		gallery: {
+			base: 'http://a.tbcdn.cn/s/kissy/'
 		}
 	});
 	KISSY.use('xiami/main');
