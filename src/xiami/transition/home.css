@@ -1,0 +1,291 @@
+div,h2,ul,li,p{
+    padding: 0;
+    margin: 0;
+}
+.clearfix{
+    clear: both;
+}
+
+.hidden{
+    display: none;
+}
+
+.dark-gray{
+    background-color: #D7DDE1;
+}
+.home{
+    width:100%;
+    max-width: 960px;
+    margin: 0 auto;
+    overflow: hidden;
+}
+
+.home .icon{
+    border-radius: 20px;
+    -moz-box-shadow: 2px 2px 10px #909090;
+    -webkit-box-shadow: 2px 2px 10px #909090;
+}
+.home .big-icon{
+    border-radius: 25px;
+    -moz-box-shadow: 2px 2px 10px #909090;
+    -webkit-box-shadow: 2px 2px 10px #909090;
+}
+
+/*promotion start*/
+.home .promotion_slider{
+    width:100%;
+    overflow: hidden;
+    margin: 0 auto;
+}
+
+.home .promotion_slider .tab-nav li{
+    display: inline-block;
+    width:25%;
+    height: 8px;
+    background-color: #219EFC;
+    float: left;
+}
+.home .promotion_slider .tab-nav li.selected{
+    background-color: #90D5FE;
+}
+.home .promotion_slider .tab-content{
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+}
+.home .promotion_slider .tab-pannel{
+    height:128px;
+    float: left;
+}
+.home .promotion_slider .tab-pannel img{
+    max-width: 100%;
+    width: 100%;
+    height:128px;
+}
+/*promotion end*/
+
+
+.home .blocks{
+    background-color: #F4F4F4;
+    padding:10px 0 0 0;
+}
+.home .blocks .block-title{
+    border-bottom: 2px solid #21A3FC;
+    height: 50px;
+    line-height: 50px;
+    margin: 0 15px 0 15px;
+}
+
+.home .blocks .block-title h2{
+    float: left;
+    font-size:26px;
+    color: #788596;
+    height: 50px;
+    line-height: 50px;
+}
+.home .blocks .block-title a{
+    float: right;
+    display: inline-block;
+    margin-top: 5px;
+    width:40px;
+    height: 40px;
+    text-indent: -9999px;
+    background: url(http://img03.taobaocdn.com/tps/i3/T1TFitXylaXXbe.mPe-40-40.png);
+}
+
+
+/*推荐专辑 start*/
+.home .hot-albums .block-title{
+    border-bottom-color: #21A3FC;
+}
+
+.home .albums-items,
+.home .style-items
+{
+    overflow: auto;
+    clear: both;
+    background:url(http://img04.taobaocdn.com/tps/i4/T1Q8ilXBhcXXa79JPl-7-247.png) repeat-x left 170px;
+}
+
+.home .albums-items li{
+    width: 126px;
+    height: 126px;
+    list-style: none;
+    float: left;
+    position: relative;
+    margin: 20px 15px 20px 15px;
+    border: 2px solid #fff;
+    -moz-box-shadow: 2px 2px 10px #909090;
+    -webkit-box-shadow: 2px 2px 10px #909090;
+}
+
+.home .albums-items li img{
+    width:100%;
+}
+
+.home .albums-items li .info{
+    width: 100%;
+    height: 35px;
+    line-height: 35px;
+    position: absolute;
+    bottom: 0;
+    font-weight: bolder;
+    color: #3162C3;
+    background-color: rgba(255,255,255,0.5);
+}
+
+.home .albums-items li .info span{
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding-left: 5px;
+    display: block;
+}
+/*推荐专辑 end*/
+
+.home .hot-styles .block-title{
+    border-bottom-color: #FF627C;
+}
+
+.home .hot-styles .style-items{
+    padding: 0 5px 15px 15px;
+    background-position: 0 130px;
+}
+
+.home .hot-styles .style-items li{
+    float: left;
+    list-style: none;
+    display: block;
+    width:61px;
+    height: 61px;
+    text-align: center;
+    line-height: 61px;
+    font-size: 20px;
+    color: #535353;
+    font-weight: bold;
+    border: 2px solid #fff;
+    margin: 15px 10px 0 0;
+    letter-spacing: -1px;
+    -moz-box-shadow: 2px 2px 10px #909090;
+    -webkit-box-shadow: 2px 2px 10px #909090;
+}
+
+/*collect start*/
+.home .collect .block-title{
+    border-bottom-color: #21A3FC;
+}
+.home .collect_item{
+    height: 140px;
+    padding: 10px 15px 10px 15px;
+}
+.collect_item .cover{
+    padding: 0;
+    margin: 0;
+    width:126px;
+    height: 126px;
+    float: left;
+    border: 2px solid #fff;
+    -moz-box-shadow: 2px 2px 10px #909090;
+    -webkit-box-shadow: 2px 2px 10px #909090;
+}
+.collect_item .cover img{
+    width:100%;
+}
+.collect_main{
+    padding-left: 20px;
+    float: left;
+    width:130px;
+}
+.collect_main .collect_title a{
+    text-decoration: none;
+    font-size:20px;
+    color:#3162C3;
+    display: block;
+    width:135px;
+    overflow: hidden;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+}
+.collect_main .num{
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+.collect_main .brief{
+    font-size:12px;
+    line-height: 18px;
+    height: 36px;
+    overflow: hidden;
+    color:#B0B0B0;
+}
+.collect_main .play{
+    float: left;
+    display: inline-block;
+    width:50px;
+    height: 50px;
+    text-indent: -9999px;
+    background: url(http://img02.taobaocdn.com/tps/i2/T1P9irXzBcXXaCG0rh-50-50.png);
+}
+.collect_main .add-list{
+    float: left;
+    display: inline-block;
+    margin-top: 5px;
+    margin-left: 10px;
+    width:40px;
+    height:40px;
+    text-indent: -9999px;
+    background: url(http://img04.taobaocdn.com/tps/i4/T1xg9sXAxbXXbe.mPe-40-40.png);
+}
+/*right*/
+.collect .right{
+    background:#D7DDE1;
+}
+.collect .right .cover{
+    float: right;
+}
+.collect .right .collect_main{
+    float: right;
+    text-align: right;
+    margin-right: 20px;
+    padding-left: 0;
+}
+.collect .right .collect_main .play,
+.collect .right .collect_main .add-list{
+    float: right;
+}
+.collect .right .collect_main .play{
+    margin-left: 10px;
+}
+/*collect end*/
+
+/*song start*/
+.home .song .block-title{
+    border-bottom-color: #FF627C;
+}
+.song-list{
+    padding: 0 15px 60px 15px;
+}
+
+.song-list li{
+    list-style: none;
+    height: 60px;
+    line-height: 60px;
+    border-bottom: 1px solid #FF627C;
+}
+.song-list .play,
+.song-list .add-list
+{
+    display: inline-block;
+    width:40px;
+    height: 40px;
+    margin-top:10px;
+    margin-left: 10px;
+    background: url(http://img04.taobaocdn.com/tps/i4/T1xg9sXAxbXXbe.mPe-40-40.png);
+    float: right;
+}
+.song-list .play{
+    background: url(http://img01.taobaocdn.com/tps/i1/T1WOWqXEJaXXbe.mPe-40-40.png);
+}
+.bottom-block{
+    height: 100px;
+    background: #D7DDE1;
+}
