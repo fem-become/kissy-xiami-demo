@@ -7,6 +7,16 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header) {
 
   var API_Song = 'http://test.fem.taobao.net:3000/song/hotlist';
 
+  S.config({
+        packages:[
+            {
+                name:"gallery",
+                path:'http://docs.kissyui.com/kissy-gallery/',
+                charset:"utf-8"
+            }
+        ]
+   });
+
   var TPL_promotion =
       '<div id="J_promotion_slider" class="promotion_slider">'+
           '<ul class="tab-nav clearfix">'+
