@@ -1,8 +1,7 @@
-
-KISSY.add(function(S,Discover, Home) {
+KISSY.add(function(S,Home) {
   
-  Discover.init();
+  Home.init();
 
 }, {
-  requires:['xiami/transition/discover','xiami/transition/home']
+  requires:['xiami/transition/home']
 });

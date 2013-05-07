@@ -334,6 +334,7 @@
   -moz-box-shadow: 0 0 9px rgba(0, 0, 0, 0.75);
   box-shadow: 0 0 9px rgba(0, 0, 0, 0.75);
   overflow: hidden;
+  margin-bottom: 80px;
 }
 
 .songs-list li {
