@@ -1,4 +1,3 @@
-
 KISSY.add(function(S,Home) {
   
   Home.init();

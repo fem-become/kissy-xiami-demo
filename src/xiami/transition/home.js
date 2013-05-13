@@ -1,4 +1,4 @@
-KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header) {
+KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, suspender) {
 
   var $ = Node.all;
   var el;
@@ -343,6 +343,7 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header) {
         if (!headerEl.contents().length) {
             headerEl.append(myName);
         }
+        suspender.setCurrentMod(myName);
     },
 
     getEl: function () {
@@ -419,6 +420,7 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header) {
       './index',
       'event',
       'gallery/slide/1.0/',
-      '../header'
+      '../header',
+      '../suspender'
       ]
 });
