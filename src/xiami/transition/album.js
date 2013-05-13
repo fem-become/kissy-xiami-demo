@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 KISSY.add(function(S, Node, Transition, Event, header) {
 
   var $ = Node.all;
@@ -43,15 +42,17 @@ KISSY.add(function(S, Node, Transition, Event, header) {
         dataType: 'jsonp',
         url: 'http://test.fem.taobao.net:3000/album/' + config.id,
         success: function(data){
-          var _html = _this.getTemplate(), _list_html = '';
+          var _html       = _this.getTemplate(), 
+              _list_html  = '',
+              list_songs  = data['songs'];
           //渲染主页面
           _html = _html.replace(new RegExp('\{\{album_id\}\}', 'gi'), data['id']);
           _html = _html.replace(new RegExp('\{\{title\}\}', 'gi'), data['title']);
           _html = _html.replace(new RegExp('\{\{desc\}\}', 'gi'), data['desc']);
           _html = _html.replace(new RegExp('\{\{img\}\}', 'gi'), data['img']);
+          _html = _html.replace(new RegExp('\{\{list_count\}\}', 'gi'), list_songs.length);
 
           _html += '<ul class="album-list">';
-          var list_songs = data['songs'];
           for( var i = 0; i < list_songs.length; i ++){
             var temp_list = _this.getListTemplate();
             temp_list = temp_list.replace(new RegExp('\{\{song_id\}\}', 'gi'), list_songs[i]['id']);
@@ -74,11 +75,16 @@ KISSY.add(function(S, Node, Transition, Event, header) {
     getTemplate: function(){
       var _html = [
         '<div class="album-title">',
-            '<img src="{{img}}">',
+            '<div class="album-img"><img src="{{img}}"></div>',
             '<div class="album-info album-inline">',
                 '<h3>{{title}}</h3>',
-                '<div class="albim-desc">{{desc}}</div>',
+                '<div class="album-desc">{{desc}}</div>',
+                '<div class="album-control">',
+                    '<button class="play inline">播放</button>',
+                    '<button class="list inline">加入收藏</button>',
+                '</div>',
             '</div>',
+            '<div class="album-list-count">{{list_count}}首歌曲</div>',
         '</div>'
       ].join('');
       return _html;
@@ -86,15 +92,13 @@ KISSY.add(function(S, Node, Transition, Event, header) {
 
     getListTemplate: function(){
       var _html = [
-        '<ul class="album-list">',
             '<li>',
                 '<h3>{{title}}</h3>',
                 '<div class="album-btn-group">',
-                    '<button class="J_album_play" data-id="{{song_id}}">播放</button>',
-                    '<button class="J_album_add_list" data-id="{{song_id}}">加入播放列表</button>',
+                    '<button class="J_album_play play inline" data-id="{{song_id}}">播放</button>',
+                    '<button class="J_album_add_list list inline" data-id="{{song_id}}">加入播放列表</button>',
                 '</div>',
-            '</li>',
-        '</ul>'
+            '</li>'
       ].join('');
       return _html;
     }
