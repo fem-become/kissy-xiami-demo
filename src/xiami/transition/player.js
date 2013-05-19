@@ -49,6 +49,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain) {
 	S.mix(re, {
 
 		init: function(config) {
+			S.log("playing music: " + config.id);
 			musicInfo = {
 				id: config.id
 			};
@@ -66,9 +67,11 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain) {
 				headerEl.append(myName);
 			}
 		},
+
 		getEl: function() {
 			return el;
 		},
+
 		/**
 		 * 渲染
 		 * @return {Object} this
@@ -80,11 +83,19 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain) {
 			progress = null;
 			this.getMusicInfo(musicInfo.id, function() {
 				//接口暂时有问题
-				//self.createAudio(musicInfo.location);
-				self.createAudio(TEST_URL);
+				console.log(musicInfo.location);
+				self.createAudio(musicInfo.location);
+				// self.createAudio(TEST_URL);
 				$('#J_MusicTittle').html(musicInfo.title);
 				$('#J_MusicImg').html(musicInfo.title);
 				$('#J_MusicLrc').html(musicInfo.lrc);
+				
+					self.play(function() {
+						isPlaying = true;
+						isStarted = true;
+						self.updateProgress();
+						$('#J_HandleMusic').replaceClass(STOP_CLASS, PLAY_CLASS);
+					});
 			});
 
 			return this;

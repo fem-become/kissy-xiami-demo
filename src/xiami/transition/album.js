@@ -66,7 +66,10 @@ KISSY.add(function(S, Node, Transition, Event, header) {
           // 点击播放
           el.all('.J_album_play').on(Event.Gesture.tap, function() {
               var pid = $(this).attr('data-id');
-              Transition.forward(myName, 'xiami/transition/player');
+              console.log(pid);
+              Transition.forward(myName, 'xiami/transition/player', {
+                id: pid
+              });
           });
         }
       });

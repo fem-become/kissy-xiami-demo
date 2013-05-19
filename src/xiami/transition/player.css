@@ -1,6 +1,7 @@
 .music-handle{
     width: 100px;
 	margin: 0 auto;
+	text-align: center;
 }
 .music-pause,.music-play{
 	height:52px;
@@ -36,7 +37,8 @@
 	background: #f60;
 	display: inline-block;
 	position: absolute;
-	top:-16px;
+	/*top:-16px;*/
+	top: 0; /*modified by yunqian, mac chrome 下 0 是正常的。*/
 	left:0;
 
 }
