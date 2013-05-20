@@ -378,6 +378,10 @@
 }
 
 /*** 音乐雷达说明 ***/
+.illustration-area {
+  margin-bottom: 150px;
+}
+
 .radar-illustration {
   text-align: center;
   margin-top: 10px;
@@ -419,7 +423,7 @@
 }
 
 .battery-energy {
-  width: 10px;
+  width: 0;
   height: 100px;
   background: #90d5fe;
   -webkit-box-shadow: 3px 0 1px rgba(0, 0, 0, 0.17);

@@ -21,7 +21,7 @@ div,h2,ul,li,p{
     width:100%;
     /*max-width: 960px;*/
     margin: 0 auto;
-    overflow: hidden;
+    /*overflow: hidden;*/
     position: absolute;
 }
 

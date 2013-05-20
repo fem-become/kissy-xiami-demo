@@ -1,6 +1,6 @@
 KISSY.add(function(S,Home) {
   
-  Home.init();
+	Home.init();
 
 }, {
   requires:['xiami/transition/home']
