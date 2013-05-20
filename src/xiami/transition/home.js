@@ -12,6 +12,28 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
     localStorage.setItem('MUSIC_LIST', test.toString());
   }
 
+  (function() {
+    // Init Cat Event.
+    $("#cat li").on(Event.Gesture.tap, function(e) {
+      switch (e.currentTarget.className) {
+        case "s1":
+          // Transition.forward(myName, "xiami/transition/home");
+          break;
+        case "s2":
+          break;
+        case "s3":
+          break;
+        case "s4":
+          break;
+        case "s5":
+          $("#page").removeClass("cat-show");
+          $("#cat").hide();
+          Transition.forward(myName, "xiami/transition/discover");
+          break;
+      }
+    });
+  })();
+
   var TPL_promotion =
       '<div id="J_promotion_slider" class="promotion_slider">'+
           '<ul class="tab-nav clearfix">'+

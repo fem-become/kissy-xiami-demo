@@ -6,7 +6,7 @@
 
 .header-page {
   position: relative;
-  height: 86px;
+  height: 46px;
   background: #f4f4f4;
 }
 .go-cat, .go-back {
@@ -14,7 +14,7 @@
   left: 0;
   top: 0;
   width: 70px;
-  height: 86px;
+  height: 46px;
 }
 .go-cat {
   display: none;
@@ -31,13 +31,13 @@
   right: 0;
   top: 0;
   width: 70px;
-  height: 86px;
+  height: 46px;
   background: url(http://img01.taobaocdn.com/tps/i1/T1fHONXptXXXXRoSTe-37-38.png) no-repeat 50% 50% #ededed;
 }
 .header-page .title {
   text-align: center;
-  font-size: 40px;
-  line-height: 86px;
+  font-size: 30px;
+  line-height: 46px;
   text-shadow: 3px 3px 3px #fff;
 }
 
