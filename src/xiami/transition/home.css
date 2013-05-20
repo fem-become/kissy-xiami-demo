@@ -3,7 +3,7 @@ div,h2,ul,li,p{
     margin: 0;
 }
 body {
-    /*overflow: hidden;*/
+    overflow-x: hidden;
 }
 .clearfix{
     clear: both;
@@ -20,12 +20,21 @@ body {
     position: relative;
     zoom: 1;
 }
+#page {
+    -webkit-transition: 300ms;
+    transition: 300ms;
+    /*-webkit-transform: translate3d(0px, 0, 0);*/
+}
+.cat-show {
+    -webkit-transform: translate3d(250px, 0, 0);
+}
 .home, .mod-page {
     width:100%;
     /*max-width: 960px;*/
     margin: 0 auto;
     /*overflow: hidden;*/
     position: absolute;
+    background-color: #D7DDE1;
 }
 .mod-page {
     border-top: 8px solid #219ffb;

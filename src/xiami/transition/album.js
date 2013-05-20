@@ -10,7 +10,7 @@ KISSY.add(function(S, Node, Transition, Event, header) {
     init: function(config) {
       var _this = this;
       if (!el) {
-        el = $('<div class="mod-page">loading...</div>').appendTo(body);
+        el = $('<div class="mod-page"><img src="http://img04.taobaocdn.com/tps/i4/T1dMOMXqBbXXcsSYfr-42-42.crdownload" /></div>').appendTo(body);
         //el.html('<button id="J_Play">play music</button><button id="J_AlbumBack">back to list</button><div id="J_AlbumId"></div>');
         //el.html(this.getTemplate());
         _this.fetchData(config);

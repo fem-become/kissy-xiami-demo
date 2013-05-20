@@ -8,9 +8,13 @@ KISSY.add( function (S, Node) {
     return {
 
         forward: function (currentMod, nextMod, cfg) {
+
+            console.log(currentMod, nextMod);
+
+            var self = this;
             
-              cfg = cfg ||{};
-              cfg.forwardFromMod=currentMod;
+            cfg = cfg ||{};
+            cfg.forwardFromMod=currentMod;
 
             cache.push([currentMod, nextMod, cfg]);
 
@@ -46,16 +50,20 @@ KISSY.add( function (S, Node) {
                     useTransition:true,
                     complete:function(){
                         preEl.hide();
+                        $("#header").removeClass("header-is-home");
                     }
                 });
             });
         },
 
         backward: function () {// currentMod, nextMod,cfg) {
+
+            var self = this;
             
             var item = cache.pop();
             var currentMod = item[1];
             var nextMod = item[0];
+            console.log(currentMod, nextMod);
             var lastItem = cache[cache.length - 1];
 
             var cfg = lastItem ? lastItem[2] : {};
@@ -93,6 +101,9 @@ KISSY.add( function (S, Node) {
                     useTransition:true,
                     complete:function(){
                         preEl.hide();
+                        if (nextMod.indexOf("home") > -1) {
+                            $("#header").addClass("header-is-home");
+                        }
                     }
                 });
 
