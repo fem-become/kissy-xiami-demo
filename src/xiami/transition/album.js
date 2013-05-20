@@ -66,11 +66,18 @@ KISSY.add(function(S, Node, Transition, Event, header) {
           // 点击播放
           el.all('.J_album_play').on(Event.Gesture.tap, function() {
               var pid = $(this).attr('data-id');
-              console.log(pid);
+              
               Transition.forward(myName, 'xiami/transition/player', {
                 id: pid
               });
           });
+
+          // 点击加入播放列表
+          el.all('.J_album_add_list').on(Event.Gesture.tap, function(){
+              
+          });
+
+
         }
       });
     },
@@ -83,8 +90,8 @@ KISSY.add(function(S, Node, Transition, Event, header) {
                 '<h3>{{title}}</h3>',
                 '<div class="album-desc">{{desc}}</div>',
                 '<div class="album-control">',
-                    '<button class="play inline">播放</button>',
-                    '<button class="list inline">加入收藏</button>',
+                    '<button class="play inline">&nbsp;</button>',
+                    '<button class="list inline">&nbsp;</button>',
                 '</div>',
             '</div>',
             '<div class="album-list-count">{{list_count}}首歌曲</div>',
@@ -98,8 +105,8 @@ KISSY.add(function(S, Node, Transition, Event, header) {
             '<li>',
                 '<h3>{{title}}</h3>',
                 '<div class="album-btn-group">',
-                    '<button class="J_album_play play inline" data-id="{{song_id}}">播放</button>',
-                    '<button class="J_album_add_list list inline" data-id="{{song_id}}">加入播放列表</button>',
+                    '<button class="J_album_play play inline" data-id="{{song_id}}">&nbsp;</button>',
+                    '<button class="J_album_add_list list inline" data-id="{{song_id}}">&nbsp;</button>',
                 '</div>',
             '</li>'
       ].join('');
