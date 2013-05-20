@@ -7,6 +7,11 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
 
   var API_Song = 'http://test.fem.taobao.net:3000/song/hotlist';
 
+  if (!localStorage.getItem("MUSIC_LIST")) {
+    var test = [12345, 11024, 11020, 11026, 12024];
+    localStorage.setItem('MUSIC_LIST', test.toString());
+  }
+
   var TPL_promotion =
       '<div id="J_promotion_slider" class="promotion_slider">'+
           '<ul class="tab-nav clearfix">'+

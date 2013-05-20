@@ -1,4 +1,4 @@
-KISSY.add(function(S,Node, Transition) {
+KISSY.add(function(S,Node, Transition, Event) {
 
   var $             = S.all;
   var header        = $('#header');
@@ -7,7 +7,7 @@ KISSY.add(function(S,Node, Transition) {
 
   var TPL = '<div class="header-page">'+
     '<div class="go-cat"></div>' +
-    '<div class="go-back"></div>' +
+    '<a href="javascript:;" class="go-back"></a>' +
     '<div class="do-search"></div>' +
     '<div class="title">午后音乐</div>' +
     '</div>';
@@ -24,7 +24,7 @@ KISSY.add(function(S,Node, Transition) {
         currentHeader = headerMap[mod];
       } else {
         currentHeader = headerMap[mod] = $(TPL).appendTo(header);
-        currentHeader.all("div.go-back").on("click", function() {
+        currentHeader.all("a.go-back").on(Event.Gesture.tap, function() {
           Transition.backward();
         });
       }
@@ -35,5 +35,5 @@ KISSY.add(function(S,Node, Transition) {
   };
   
 },{
-  requires:['node', "./transition/index"]
+  requires:['node', "./transition/index", "event"]
 });

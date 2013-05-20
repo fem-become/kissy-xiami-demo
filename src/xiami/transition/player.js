@@ -5,8 +5,6 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain) {
 	var myName = this.getName();
 	var body = $("#body");
 
-
-
 	// player内部变量
 	var re = {};
 	var BASE_URL = 'http://test.fem.taobao.net:3000/song/';
@@ -17,8 +15,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain) {
 	var musicInfo = {};
 	var isPlaying = false;
 	var isStarted = false;
-	
-	
+
 	var elTabContent = [];
 
 

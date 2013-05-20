@@ -6,6 +6,8 @@
     padding: 20px;
     font-size: 12px;
     background-color: #f4f4f4;
+    width: 280px;
+    overflow: hidden;
 }
     .album-title .album-img{
         position: absolute;        
@@ -78,6 +80,8 @@ ul.album-list{
     list-style: none;
     margin: 0;
     padding: 0;
+    width: 320px;
+    overflow: hidden;
 }
 
 ul.album-list li{
