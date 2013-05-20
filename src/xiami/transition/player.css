@@ -1,7 +1,6 @@
 .music-handle{
     width: 100px;
 	margin: 0 auto;
-	text-align: center;
 }
 .music-pause,.music-play{
 	height:52px;
@@ -37,8 +36,7 @@
 	background: #f60;
 	display: inline-block;
 	position: absolute;
-	/*top:-16px;*/
-	top: 0; /*modified by yunqian, mac chrome 下 0 是正常的。*/
+	top:-16px;
 	left:0;
 
 }
@@ -77,3 +75,236 @@
 	margin: 0 auto;
 	padding-top: 20px;
 }
+
+
+
+
+/**new */
+
+		.pl-play-info{
+			position:fixed;
+			bottom:0;
+			left: 0;
+			height: 27%;
+			max-height: 220px;
+			min-height: 145px;
+			background: #D7ddd1;
+			width: 100%;
+			min-width: 260px;
+			z-index: 100;
+		}
+		.pl-play-time{
+			padding: 5px;
+			background: #f4f4f4;
+		}
+		.pl-play-time:after {
+			content:'\0020';
+			display:block;
+			height:0;
+			clear:both;
+		}
+
+		.pl-play-time .pl-current{
+			font-size:20px;
+			color: #769cbf;
+			font-style: normal;
+		}
+		.pl-play-time .pl-total{
+			font-size:20px;
+			color: #a7afb5;
+			font-style: normal;
+			float:right;
+		}
+		
+		.pl-tab-icon{
+			text-align: center;
+			background: #f4f4f4;
+		}
+		.pl-tab-icon li{
+			display: inline-block;
+			width: 16px;
+			height: 16px;
+			background: #bdbdbd;
+			border-radius: 8px;
+			margin: 0 3px;
+			cursor: pointer;
+		}
+		.pl-tab-icon .pl-hover{
+			background: #2196fb;
+		}
+		.pl-play-bar{
+			height: 8px;
+			background:#728899;
+			position:relative;
+		}
+		.pl-play-bar .pl-progress{
+			height: 8px;
+			background: #90c9fd;
+			width: 100px;
+		}
+		.pl-play-bar .pl-bar-icon{
+			height: 8px;
+			width: 8px;
+			background: #eee;
+			position: absolute;
+			left:100px;
+			top:0;
+		}
+
+		@font-face{
+			font-family: fzzhjw;
+			src: url(FZZHJW.TTF);
+		}
+				.pl-music-list{
+					list-style: none;
+					width: 100%;
+				}
+				.pl-music-list li{
+					height: 80px;
+					line-height: 80px;
+					background-color:#d7dde1;
+					background-size:50% 50%;
+					position: relative;
+				}
+				.pl-music-list li em{
+					font-style: normal;
+					display: none;
+					color: #fff;
+					margin-left: 5px;
+				}
+
+				.pl-music-list .odd{
+					background: transparent;
+				}
+				.pl-music-list li .tt{
+					color: #3162c3;
+					font-weight: 500;
+					
+				}
+				.pl-music-list li i{
+					width: 73px;
+					height: 80px;
+					display: inline-block;
+					float:right;
+					background: url(http://img02.taobaocdn.com/tps/i2/T1mDylXq4eXXbU_s64-200-600.png) -5px -479px #ced4d8;
+
+				}
+				.pl-music-list li .bar{
+					display: none;
+				}
+				.pl-music-list li .pl-name{
+					z-index: 3;
+					position: absolute;
+					font-size: 20px;
+					font-weight: 500;
+					font-family: "fzzhjw";
+					margin-left: 15px;
+				}
+
+				.pl-music-list .odd i{
+					background-color:#ebebeb;
+				}
+
+				.pl-music-list .is-playing{
+					background: #728899;
+				}
+				
+				.pl-music-list .is-playing em{
+					display: inline-block;
+				}
+				.pl-music-list .is-playing i{
+					background-color: #697f90;
+					background-position:-64px -532px ;
+				}
+				.pl-music-list .is-playing .bar{
+					position: absolute;
+					left: 0;
+					top:0;
+					height: 80px;
+					width: 200px;
+					display: inline-block;
+					z-index: 2;
+					background: #90c9fd;
+				}
+
+			/**/
+			.pl-player-handle{
+				text-align: center;				
+			}
+			.pl-player-handle .pl-last,.pl-player-handle .pl-next,.pl-player-handle .pl-switch{
+				margin: 10px;
+				height: 50px;
+				width: 50px;
+				display: inline-block;
+				background: #fff;
+				border-radius: 30px;
+				vertical-align: middle;
+				border:solid 1px #fefefe;
+				box-shadow: 1px 2px 2px #aaa;
+				cursor: pointer;
+			}
+			.pl-player-handle .pl-switch{
+				height: 60px;
+				width: 60px;
+			}
+			.pl-player-handle .pl-last em,.pl-player-handle .pl-next em,.pl-player-handle .pl-switch em{
+				display: inline-block;
+				height: 33px;
+				width: 21px;
+				margin: 9px 0 0 -5px;
+				background:url(http://img03.taobaocdn.com/tps/i3/T1l9ikXutdXXcsSpY4-200-200.png) -47px -148px;
+				text-indent: -9999px;
+			}
+			.pl-player-handle .pl-next em{
+				background-position: -123px -148px;
+				margin: 9px 0 0 4px;
+			}
+			.pl-player-handle .pl-switch em{
+				background:url(http://img04.taobaocdn.com/tps/i4/T13WykXEtfXXb4zcj4-200-500.png);
+				width: 27px;
+				height: 33px;
+				margin: 15px 0 0 2px;
+			}
+			.pl-player-handle .pl-play em{
+				background-position: -63px -365px;
+			}
+			.pl-player-handle .pl-pause em{
+				background-position:-123px -366px;
+			}
+
+		.pl-tab-content{
+			width: 100%;
+			background: #f4f4f4;
+			
+		}
+		.pl-player-tab{
+			width: 100%;
+			position: relative;
+			/*list
+				left:-100%;
+			*/
+		}
+		.pl-img-tab{
+			width: 100%;
+			left: 0;
+			position: absolute;
+			top:0;
+		}
+		.pl-img-tab .pl-img-content{
+			margin:100px auto;
+			width: 64%;
+			max-width: 320px;
+			border:solid 1px #bdbdbd;
+			box-shadow: 3px 3px 3px #dedede;
+		}
+		.pl-img-tab .pl-img{
+			width: 94%;
+			margin:3%;
+			height:auto;
+		}
+		.pl-list-tab{
+			width: 100%;
+			left: 100%;
+			position: absolute;
+			top:0;
+		}
