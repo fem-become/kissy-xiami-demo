@@ -1,11 +1,13 @@
-KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, ScrollbarPlugin, IO, XTemplate, suspender) {
+KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, ScrollbarPlugin, IO, XTemplate, suspender, Shake) {
 
     var $ = Node.all,
         timer = null,
         scrollview = null,
         draggable = null,
         myName = this.getName(),
-        el;
+        el,
+        mode = 'radar',
+        shaking = 0;
 
     var HTML = ['<div class="display-area">',
                     '<div class="radar-area center">',
@@ -142,16 +144,23 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
             }
 
             function draw(){
+                cxt.shadowColor = '#8999b4';
+                cxt.shadowBlur = 0;
+                cxt.shadowOffsetX = 0;
+                cxt.shadowOffsetY = -2;
                 cxt.beginPath();
                 cxt.moveTo(PADDING, height/2);
                 cxt.lineTo(width-PADDING, height/2);
                 cxt.stroke();
 
+                cxt.shadowOffsetX = 2;
+                cxt.shadowOffsetY = 0;
                 cxt.beginPath();
                 cxt.moveTo(width/2, PADDING);
                 cxt.lineTo(width/2, height-PADDING);
                 cxt.stroke();
 
+                cxt.shadowOffsetX = cxt.shadowOffsetY = 0;
                 cxt.font = "14px Times New Roman";
                 cxt.fillText('忧伤',PADDING,height/2 - LINE_WIDTH);
                 cxt.textAlign = 'right';
@@ -229,15 +238,33 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
         },
 
         /**
+         * 更新能量柱的宽度
+         * @param  {[type]} e [description]
+         * @return {[type]}   [description]
+         */
+        _updateEnergy: function(e){
+            var energy = S.one('.battery-energy'),
+                anode = S.one('.battery-anode'),
+                count = e.count,
+                time = e.time,
+                speed = time/count,//[200,600]->[100,0]
+                ratio = speed < 200 ? 1 : (speed > 300? 0 : (1.5 - speed / 400));
+            // console.log('ratio:'+ratio+' count:'+count+' time:'+time);
+            shaking = 1;
+            energy.css('width', ratio * 100 + '%');
+            ratio > 0.92 ? anode.css('background', '#90d5fe') : anode.css('background', '#cad0d3');
+        },
+
+        /**
          * 摇一摇推荐音乐
          * @return {[type]} [description]
          */
-        _recommendSongsByShake: function(){
-            var energy = S.one('.battery-energy'),
+        _recommendSongsByShake: function(e){
+            var self = this,
+                energy = S.one('.battery-energy'),
                 anode = S.one('.battery-anode');
-            //能量全满
-            energy.css('width','100%');
-            anode.css('background', '#90d5fe');
+            
+            self._updateEnergy(e);
 
             //推荐歌曲
             new IO({
@@ -252,7 +279,9 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
                         scrollview.show().sync();   
 
                         energy.css('width','0');
-                        anode.css('background', '#cad0d3');                     
+                        anode.css('background', '#cad0d3');  
+
+                        shaking = 0;                   
                     }
                 }
             });
@@ -406,8 +435,7 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
                 plugins: [new ScrollbarPlugin({})]
             }).render().hide();
 
-            var mode = 'radar',
-                shakePanel = S.one('.J_ShakePanel'),
+            var shakePanel = S.one('.J_ShakePanel'),
                 radarPanel = S.one('.J_RadarPanel'),
                 shakeIllus = S.one('.J_ShakeIllus'),
                 radarIllus = S.one('.J_RadarIllus'),
@@ -431,13 +459,31 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
                     mode = 'radar';
                 };
 
+            var shake = new Shake();
+
             //切换两种发现音乐的方式
             Event.on('.display-area','swipe',function(e){
                 if(mode === 'radar' && e.direction === 'left'){
                     switchToShake();
+                    shake.start();
                 }else if(mode === 'shake' && e.direction === 'right'){                    
                     switchToRadar();
+                    shake.stop();
                 }
+            });
+
+            //摇一摇模式
+            shake.on('shakestart',function(e){
+                shaking = shaking ^ 1;
+            });
+
+            shake.on('shaking',function(e){
+                if(shaking === 1)
+                    self._updateEnergy(e);
+            });
+            shake.on('shakeend',function(e){
+                if(shaking === 1)
+                    self._recommendSongsByShake.call(self, e);
             });
 
             //播放
@@ -453,13 +499,6 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
             Event.delegate('.J_SongsList','click','.addtolist-btn',function(e){
                 var target = S.one(e.target);
                 suspender.addToList(target.parent('li').attr('data-id'));
-            });
-
-            //摇一摇
-            Event.on(window, 'shake', function(e){
-                if(mode === 'shake'){
-                    self._recommendSongsByShake();
-                }
             });
 
             //trigger点击也能切换两种发现音乐的方式
@@ -484,5 +523,5 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
 
 }, {
     requires: ['node','event','./index','event','../header','dd',
-    'scrollview/drag','scrollview/plugin/scrollbar','ajax', 'xtemplate','../suspender']
+    'scrollview/drag','scrollview/plugin/scrollbar','ajax', 'xtemplate','../suspender','./shake']
 });
