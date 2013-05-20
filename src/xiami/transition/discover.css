@@ -378,6 +378,10 @@
 }
 
 /*** 音乐雷达说明 ***/
+.illustration-area {
+  margin-bottom: 150px;
+}
+
 .radar-illustration {
   text-align: center;
   margin-top: 10px;
