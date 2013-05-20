@@ -1,0 +1,33 @@
+
+.header-page {
+  position: relative;
+  height: 86px;
+  background: #f4f4f4;
+}
+.go-cat, .go-back {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 70px;
+  height: 86px;
+}
+.go-cat {
+  background: url(http://img01.taobaocdn.com/tps/i1/T1S5eLXAJdXXaQ44Lf-39-33.png) no-repeat 50% 50% #ededed;
+}
+.go-back {
+  background: url(http://img03.taobaocdn.com/tps/i3/T1L.unXq0hXXX2h7Pa-19-32.png) no-repeat 50% 50% #ededed;
+}
+.do-search {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 70px;
+  height: 86px;
+  background: url(http://img01.taobaocdn.com/tps/i1/T1fHONXptXXXXRoSTe-37-38.png) no-repeat 50% 50% #ededed;
+}
+.header-page .title {
+  text-align: center;
+  font-size: 40px;
+  line-height: 86px;
+  text-shadow: 3px 3px 3px #fff;
+}
