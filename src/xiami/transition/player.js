@@ -107,9 +107,12 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain) {
 
 
 			var headerEl = header.getHeader(myName);
-			if (!headerEl.contents().length) {
-				headerEl.append(myName);
+			if (headerEl) {
+        // headerEl.all("div.go-back").unbind().on("click", function() {
+        //   Transition.backward(myName, "xiami/transition/home");
+        // });
 			}
+
 		},
 		getEl: function() {
 			return el;

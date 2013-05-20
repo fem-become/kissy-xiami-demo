@@ -1,15 +1,18 @@
 KISSY.add( function (S, Node) {
 
     var $ = Node.all;
-
     var duration=0.3;
+
+    var cache = [];
 
     return {
 
         forward: function (currentMod, nextMod, cfg) {
             
               cfg = cfg ||{};
-                cfg.forwardFromMod=currentMod;
+              cfg.forwardFromMod=currentMod;
+
+            cache.push([currentMod, nextMod, cfg]);
 
             KISSY.use(nextMod + ',' + currentMod, function (S, next, current) {
 
@@ -45,15 +48,19 @@ KISSY.add( function (S, Node) {
                         preEl.hide();
                     }
                 });
-
             });
-
         },
 
-
-        backward: function (currentMod, nextMod,cfg) {
+        backward: function () {// currentMod, nextMod,cfg) {
             
-                cfg = cfg ||{};
+            var item = cache.pop();
+            var currentMod = item[1];
+            var nextMod = item[0];
+            var lastItem = cache[cache.length - 1];
+
+            var cfg = lastItem ? lastItem[2] : {};
+
+                // cfg = cfg ||{};
                 cfg.backwardFromMod=currentMod;
 
             KISSY.use(nextMod + ',' + currentMod, function (S, next, current) {
