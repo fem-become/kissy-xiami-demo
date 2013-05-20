@@ -70,7 +70,7 @@
 }
 
 .display-area {
-  border-top: 5px solid #2192fb;
+  /*border-top: 5px solid #2192fb;*/
   background: #c5dcfd;
   -webkit-box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.37);
   -moz-box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.37);

@@ -20,10 +20,13 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
           // Transition.forward(myName, "xiami/transition/home");
           break;
         case "s2":
+          alert("// TODO");
           break;
         case "s3":
+          alert("// TODO");
           break;
         case "s4":
+          alert("// TODO");
           break;
         case "s5":
           $("#page").removeClass("cat-show");
