@@ -35,6 +35,44 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
           break;
       }
     });
+
+    // Swipe Event.
+    // $("body").on("swipe", function(e) {
+    //   if (e.direction != "right") return;
+    //   // console.log(e.distance, e.duration);
+    // });
+
+    return;
+
+    var x = 0;
+    var pEl = $("#page");
+    pEl.on("mousedown", function(e) {
+      x = e.pageX;
+      pEl.on("mousemove", function(e) {
+        var diff = e.pageX - x;
+        if (diff < 0) return;
+        if (diff > 260) return;
+        $("#cat").show();
+        pEl.css("-webkit-transition", "0ms");
+        pEl.css("transition", "0ms");
+        pEl.css("-webkit-transform", "translate3d("+diff+"px, 0, 0)");
+      });
+    });
+    pEl.on("mouseup", function() {
+      pEl.detach("mousemove");
+      pEl.css("-webkit-transition", "300ms");
+      pEl.css("transition", "300ms");
+      if (x > 200) {
+        pEl.css("-webkit-transform", "translate3d(260px, 0, 0)");
+      } else {
+        pEl.css("-webkit-transform", "translate3d(0, 0, 0)");
+        setTimeout(function() {
+          $("#cat").hide();
+        }, 400);
+      }
+      x = 0;
+    });
+    
   })();
 
   var TPL_promotion =
