@@ -13,11 +13,16 @@ div,h2,ul,li,p{
 .dark-gray{
     background-color: #D7DDE1;
 }
-.home{
+#body {
+    position: relative;
+    zoom: 1;
+}
+.home, .mod-page {
     width:100%;
-    max-width: 960px;
+    /*max-width: 960px;*/
     margin: 0 auto;
     overflow: hidden;
+    position: absolute;
 }
 
 .home .icon{
