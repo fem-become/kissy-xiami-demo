@@ -5,6 +5,8 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain) {
 	var myName = this.getName();
 	var body = $("#body");
 
+
+
 	// player内部变量
 	var re = {};
 	var BASE_URL = 'http://test.fem.taobao.net:3000/song/';
@@ -16,19 +18,42 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain) {
 	var isPlaying = false;
 	var isStarted = false;
 
+
+	/**
+
+S.getScript('http://lab.cubiq.org/iscroll/src/iscroll.js', function() {
+		var myScroll;
+
+		function loaded() {
+			myScroll = new iScroll('J_PlTabContent');
+		}
+
+		document.addEventListener('touchmove', function(e) {
+			e.preventDefault();
+		}, false);
+
+
+		document.addEventListener('DOMContentLoaded', function() {
+			setTimeout(loaded, 200);
+		}, false);
+	})
+
+
+ */
+
 	var elTabContent = [];
 
 
-	var LIST_TEMP_HTML = '<li class="J_MusicItem" id="J_MusicItem{id}" data-id="{id}">'+
-			'<p class="bar J_PlListBar" class="J_ItemBar"></p>'+
-			'<p class="pl-name">'+
-			'	<strong class="tt" title="{title}">'+
-			'		{title}'+
-			'	</strong>'+
-			'	<em>正在播放</em>'+
-			'</p>'+
-			//'<i class="J_TriggerMove"></i>'+
-		'</li>';
+	var LIST_TEMP_HTML = '<li class="J_MusicItem" id="J_MusicItem{id}" data-id="{id}">' +
+		'<p class="bar J_PlListBar" class="J_ItemBar"></p>' +
+		'<p class="pl-name">' +
+		'	<strong class="tt" title="{title}">' +
+		'		{title}' +
+		'	</strong>' +
+		'	<em>正在播放</em>' +
+		'</p>' +
+	//'<i class="J_TriggerMove"></i>'+
+	'</li>';
 	var HANDLE_TEMPLATE = '<div id="J_PlayInfo" class="pl-play-info">' +
 		'	<ul class="pl-tab-icon" id="J_TabHandle">' +
 		'		<li id="J_TabImg" data-index="0" class="J_PlayTabIcon pl-hover">' +
@@ -76,19 +101,21 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain) {
 		'	</div>' +
 		'</div>';
 
+	var numInit = 0;
 
 	//播放列表
-	var listArr = localStorage.getItem('MUSIC_LIST').split(',');
+	var test = [12345, 11024, 11020, 11026, 12024];
+	localStorage.setItem('MUSIC_LIST', test.toString());
+	var listArr = localStorage.getItem('MUSIC_LIST') && localStorage.getItem('MUSIC_LIST').split(',');
 	S.mix(re, {
 
 		init: function(config) {
-			if(!config || !config.id){
+			numInit = 0;
+			if (!config || !config.id) {
 				musicInfo.id = listArr[0];
-			}else{
+			} else {
 				musicInfo.id = config.id;
 			}
-			
-			
 			if (!el) {
 				el = $('<div class="mod-page"></div>').appendTo(body);
 				el.html(TAB_CONTENT_TEMP + HANDLE_TEMPLATE);
@@ -96,19 +123,16 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain) {
 			} else {
 				S.log(myName + ' is coming again');
 			}
-
-
 			this.render();
 			this.fillList();
 			this._bindEvent();
 
 
 			var headerEl = header.getHeader(myName);
-			if (headerEl) {
-        // headerEl.all("div.go-back").unbind().on("click", function() {
-        //   Transition.backward(myName, "xiami/transition/home");
-        // });
+			if (!headerEl.contents().length) {
+				headerEl.append(myName);
 			}
+
 
 		},
 		getEl: function() {
@@ -119,7 +143,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain) {
 		 * @return {Object} this
 		 */
 		_bindEvent: function() {
-			this._pointMusic();
+			//this._pointMusic();
 			this.playNext();
 			this.playPrev();
 			this._bindTabSwitch();
@@ -149,9 +173,11 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain) {
 						shopInfo = S.mix(shopInfo, data);
 						listA.push(S.substitute(LIST_TEMP_HTML, shopInfo));
 						if (key === listArr.length - 1) {
-							S.log(listA)
+							//S.log(listA);
+							//alert(listA)
 							$('#J_PlMusicList').html(listA.join(''));
 							re._changeColor();
+							re._pointMusic();
 						}
 					},
 					error: function() {
@@ -162,6 +188,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain) {
 			return this;
 		},
 		_bindTabSwitch: function() {
+			$('#J_PlListTab').css('left', $(window).width());
 			var self = this;
 			Event.delegate(document, 'click', '.J_PlayTabIcon', function(e) {
 				var elTarget = $(e.target);
@@ -183,6 +210,9 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain) {
 			//alert($('.J_MusicItem').length);
 			$('.J_MusicItem').each(function(v, index) {
 				//alert(index)
+				if (index === 0) {
+					return v.addClass('is-playing');
+				}
 				if (index % 2 === 1) {
 					v.addClass('odd');
 				}
@@ -197,7 +227,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain) {
 			var width = $(window).width();
 			var elTab = $('#J_PlayerTab');
 			var elTabArr = [$('#J_PlImgTab'), $('#J_PlListTab')];
-			var elTabIconArr = [$('#J_TabImg'),$('#J_TabList')];
+			var elTabIconArr = [$('#J_TabImg'), $('#J_TabList')];
 			var lenArr = [0, width];
 
 			elTabArr[index].show();
@@ -232,7 +262,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain) {
 				//alert(1)
 				//接口暂时有问题
 				//console.log(musicInfo)
-				self.createAudio(musicInfo.location,isSwitch);
+				self.createAudio(musicInfo.location, isSwitch);
 
 				//self.createAudio(TEST_URL, isSwitch);
 
@@ -248,23 +278,49 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain) {
 		 * @return {Object} player
 		 */
 		createAudio: function(src, isSwitch) {
+			var self = this;
+			// player = document.createElement('audio');
+			// player.src=src;
+			// document.body.appendChild(player);
+			// player.load();
+			// this._switchMusic();
 			player = new Audio();
 			player.src = src;
-			var self = this;
 			player.load();
+			
+
+			//alert('create')
 			//alert('creat');
 			//alert(1)
-			$(player).on('canplay', function() {
-				//alert(1);
-				self._changeProgress();
-				self._switchMusic();
-				//self._endMusic();
-				self._setProgress();
-				//self._dragProgress();
-				if (isSwitch) {
-					self.play();
-				}
-			});
+			self._switchMusic();
+			if (isSwitch) {
+				self.play();
+			}
+			if (self.isIOS() && !numInit) {
+				$('#J_TotalTime').html('4:02');
+			} else {
+				var initProg = S.later(function() {
+					//alert('ca');
+					//alert(player.duration)
+					if (re.getTotalTime()) {
+						re._changeProgress();
+						re._setProgress();
+						initProg.cancel();
+					}
+
+					//alert(player.duration);
+
+				}, 2000, true);
+			}
+			numInit++;
+
+
+
+			//self._endMusic();
+			//
+			//self._dragProgress();
+
+			//});
 			return player;
 		},
 		/**
@@ -328,8 +384,8 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain) {
 					//alert('success')
 					S.mix(musicInfo, data);
 					//musicInfo = data;
-					console.log('Music Info :');
-					console.log(musicInfo);
+					//console.log('Music Info :');
+					//console.log(musicInfo);
 					callback();
 				},
 				error: function() {
@@ -378,7 +434,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain) {
 				width: len
 			});
 			elDrag.css({
-				left: (len - 3)
+				left: (len > this.getWindowWidth() - 8) ? (this.getWindowWidth() - 8) : len
 			});
 			elNow.html(this.formatTime(nowTime));
 			elTotal.html(this.formatTime(totalTime));
@@ -438,6 +494,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain) {
 			elTarget.on('click', function() {
 				nextNode = $('.is-playing').next('.J_MusicItem');
 				nextNode && nextNode.fire(Event.Gesture.doubleTap);
+				$('#J_PlaySwitch').removeClass(STOP_CLASS).addClass(PLAY_CLASS);
 			});
 			return this;
 		},
@@ -451,6 +508,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain) {
 			elTarget.on('click', function() {
 				prevNode = $('.is-playing').prev('.J_MusicItem');
 				prevNode && prevNode.fire(Event.Gesture.doubleTap);
+				$('#J_PlaySwitch').removeClass(STOP_CLASS).addClass(PLAY_CLASS);
 			});
 			return this;
 		},
@@ -520,12 +578,15 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain) {
 		},
 		_pointMusic: function() {
 			var self = this;
+			//alert(21)
 			//alert(KISSY.Event.Gesture.doubleTap)
-			Event.delegate(document, Event.Gesture.doubleTap, '.J_MusicItem', function(e) {
+			//alert($('.J_MusicItem').length);
+			$('.J_MusicItem').on(Event.Gesture.doubleTap, function(e) {
+				//alert(1)
 				var elTarget = $(e.target);
 				//移动标签不用绑定事件
 				if (elTarget.hasClass('J_TriggerMove')) return;
-
+				
 				musicInfo.id = elTarget.attr('data-id');
 				elTarget.addClass('is-playing').siblings('.J_MusicItem').removeClass('is-playing');
 				//console.log(musicInfo.id);
@@ -534,8 +595,14 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain) {
 				self.render(true);
 				self._startPlay();
 				$('#J_PlaySwitch').replaceClass(STOP_CLASS, PLAY_CLASS);
-
 			});
+
+		},
+		isIOS: function() {
+			var device = navigator["userAgent"]["toLowerCase"]();
+			if (device["indexOf"]("iphone") > 0 || device["indexOf"]("ipod") > 0 || device["indexOf"]("ipad") > 0 || device["indexOf"]("symbianos") > 0 || device["indexOf"]("ios") > 0) {
+				return true;
+			}
 		}
 	});
 	return re;

@@ -140,14 +140,14 @@
 		.pl-play-bar .pl-progress{
 			height: 8px;
 			background: #90c9fd;
-			width: 100px;
+			width: 0;
 		}
 		.pl-play-bar .pl-bar-icon{
 			height: 8px;
 			width: 8px;
 			background: #eee;
 			position: absolute;
-			left:100px;
+			left:0;
 			top:0;
 		}
 
@@ -221,7 +221,7 @@
 					left: 0;
 					top:0;
 					height: 80px;
-					width: 200px;
+					width: 0;
 					display: inline-block;
 					z-index: 2;
 					background: #90c9fd;
@@ -291,7 +291,7 @@
 			top:0;
 		}
 		.pl-img-tab .pl-img-content{
-			margin:100px auto;
+			margin:10px auto;
 			width: 64%;
 			max-width: 320px;
 			border:solid 1px #bdbdbd;
