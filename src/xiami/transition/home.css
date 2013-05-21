@@ -41,11 +41,13 @@ body {
     border-top: 8px solid #219ffb;
 }
 
-/*.home .icon{*/
-    /*border-radius: 20px;*/
-    /*-moz-box-shadow: 2px 2px 10px #909090;*/
-    /*-webkit-box-shadow: 2px 2px 10px #909090;*/
-/*}*/
+.home .collect_main .add-list,
+.home .blocks .block-title a
+{
+    border-radius: 20px;
+    -moz-box-shadow: 2px 2px 10px #909090;
+    -webkit-box-shadow: 2px 2px 10px #909090;
+}
 .home .big-icon{
     border-radius: 25px;
     -moz-box-shadow: 2px 2px 10px #909090;
@@ -294,6 +296,7 @@ body {
     height: 60px;
     line-height: 60px;
     border-bottom: 1px solid #FF627C;
+    font-size: 16px;
 }
 
 .bottom-block{
