@@ -9,8 +9,6 @@ KISSY.add( function (S, Node) {
 
         forward: function (currentMod, nextMod, cfg) {
 
-            console.log(currentMod, nextMod);
-
             var self = this;
             
             cfg = cfg ||{};
@@ -63,7 +61,6 @@ KISSY.add( function (S, Node) {
             var item = cache.pop();
             var currentMod = item[1];
             var nextMod = item[0];
-            console.log(currentMod, nextMod);
             var lastItem = cache[cache.length - 1];
 
             var cfg = lastItem ? lastItem[2] : {};
