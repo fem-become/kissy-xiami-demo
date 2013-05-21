@@ -1,4 +1,4 @@
-KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, suspender) {
+KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, suspender, DD) {
 
     var $ = Node.all;
     var el;
@@ -454,14 +454,15 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
     };
 
 }, {
-    requires: [
-        'node',
-        'io',
-        'xtemplate',
-        './index',
-        'event',
-        'gallery/slide/1.0/',
-        '../header',
-        '../suspender'
-    ]
+  requires: [
+      'node',
+      'io',
+      'xtemplate',
+      './index',
+      'event',
+      'gallery/slide/1.0/',
+      '../header',
+      '../suspender',
+      "dd"
+      ]
 });

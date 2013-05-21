@@ -77,6 +77,15 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
                         _this.getAlbumDescPopup(data);
                     });
 
+                    // 整张专辑加入播放列表
+                    el.all('.J_album_add_list_all').on(Event.Gesture.tap, function(e){
+                        var songs = [];
+                        for(var i = 0; i < list_songs.length; i++){
+                            songs.push(list_songs[i]['id']);
+                        }
+                        suspender.addToList(songs);
+                    });
+
                     header.setTitle( data['title']);   
              
                 }
@@ -92,7 +101,7 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
                         '<div class="album-desc J_album_desc">{{desc}}</div>',
                         '<div class="album-control">',
                             '<button class="play inline">&nbsp;</button>',
-                            '<button class="list inline">&nbsp;</button>',
+                            '<button class="list inline J_album_add_list_all">&nbsp;</button>',
                         '</div>',
                     '</div>',
                     '<div class="album-list-count">{{list_count}}首歌曲</div>',
@@ -117,7 +126,7 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
         getAlbumDescPopup: function(data){
             var _html = [
                 '<dl class="desc-container">',
-                    '<dt>',
+                    '<dt class="desc-header">',
                         '<h4 class="title">{{title}}</h4>',
                         '<h4 class="article">{{author}}</h4>',
                     '</dt>',
@@ -155,8 +164,8 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
                     _titleHeight    = pop.get('el').all('dt').height();
                     _contentHeight  = pop.get('el').height();
                 
-                    if(_descHeight > _contentHeight - 50 - _titleHeight );
-                    pop.get('el').all('.desc').css('height', (_contentHeight - _titleHeight - 50) + 'px');
+                    if(_descHeight > _contentHeight - 80 - _titleHeight );
+                    pop.get('el').all('.desc').css('height', (_contentHeight - _titleHeight - 80) + 'px');
 
                     window.scrollview = new ScrollView({
                         srcNode: pop.get('el').all('.desc'),
