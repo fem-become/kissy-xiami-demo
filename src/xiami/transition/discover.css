@@ -6,6 +6,10 @@
     height: 280px;
   }
 
+  .radar-area {
+    height: 240px;
+  }
+
   .center {
     width: 312px;
   }
@@ -36,6 +40,10 @@
 @media screen and (min-width: 601px) {
   .display-area {
     height: 500px;
+  }
+
+  .radar-area {
+    height: 445px;
   }
 
   .center {
@@ -70,19 +78,10 @@
 }
 
 .display-area {
-  /*border-top: 5px solid #2192fb;*/
   background: #c5dcfd;
-  -webkit-box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.37);
-  -moz-box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.37);
-  box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.37);
-  margin-top: 4px;
 }
 
 /*** 雷达操作区 ***/
-.radar-area {
-  margin-top: 7px;
-}
-
 .switch-way {
   text-align: center;
   margin: 0 0 5px;
