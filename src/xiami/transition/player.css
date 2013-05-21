@@ -122,15 +122,18 @@
 		}
 		.pl-tab-icon li{
 			display: inline-block;
-			width: 16px;
-			height: 16px;
+			width: 10px;
+			height: 10px;
 			background: #bdbdbd;
-			border-radius: 8px;
+			border-radius: 5px;
 			margin: 0 3px;
 			cursor: pointer;
 		}
 		.pl-tab-icon .pl-hover{
 			background: #2196fb;
+			-webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.54);
+			-moz-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.54);
+			box-shadow: 0 1px 1px rgba(0, 0, 0, 0.54);
 		}
 		.pl-play-bar{
 			height: 8px;
@@ -294,8 +297,9 @@
 			margin:10px auto;
 			width: 64%;
 			max-width: 320px;
-			border:solid 1px #bdbdbd;
-			box-shadow: 3px 3px 3px #dedede;
+			-webkit-box-shadow: 0 2px 8px rgba(0,0,0,0.51);
+			box-shadow: 0 2px 8px rgba(0,0,0,0.51);
+			background: #fff;
 		}
 		.pl-img-tab .pl-img{
 			width: 94%;
