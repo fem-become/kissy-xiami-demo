@@ -14,7 +14,8 @@ KISSY.add(function(S, Node, Transition, Event, header, Overlay, ScrollView, Scro
             header.setTitle(''); 
             
             if(config.id != pid){
-                el = $('<div class="mod-page"><img src="http://img04.taobaocdn.com/tps/i4/T1dMOMXqBbXXcsSYfr-42-42.crdownload" /></div>').appendTo(body);
+                el = $('<div class="mod-page"><div class="album-loading"></div></div>').appendTo(body);
+                header.setTitle("loading...");
                 _this.fetchData(config);
             }
             
