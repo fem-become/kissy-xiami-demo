@@ -1,7 +1,7 @@
 ﻿/*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 11 10:34
+build time: Apr 17 00:16
 */
 /**
  * insert program code dialog
@@ -24,7 +24,7 @@ KISSY.add('editor/plugin/code/dialog', function (S, Editor, Dialog4E, MenuButton
             ['Diff', 'diff'],
             ['Erlang', 'erlang'],
             ['Groovy', 'groovy'],
-            ['Html', 'html'],
+            ['HTML', 'html'],
             ['Java', 'java'],
             ['JavaFx', 'jfx'],
             ['Javascript', 'js'],
@@ -175,5 +175,5 @@ KISSY.add('editor/plugin/code/dialog', function (S, Editor, Dialog4E, MenuButton
 
     return CodeDialog;
 }, {
-    requires: ['editor', '../dialog/', 'menubutton']
+    requires: ['editor', '../dialog', 'menubutton']
 });

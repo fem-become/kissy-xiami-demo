@@ -1,13 +1,55 @@
 ﻿/*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 13 22:29
+build time: May 15 20:33
 */
 /**
+ * render aria and drop arrow for menubutton
+ * @author yiminghe@gmail.com
+ */
+KISSY.add("menubutton/base-render", function (S, Button, Extension) {
+
+    return Button.Render.extend([Extension.ContentRender], {
+        initializer: function () {
+            S.mix(this.get('elAttrs'), {
+                'aria-expanded': false,
+                'aria-haspopup': true
+            });
+        },
+
+        _onSetCollapsed: function (v) {
+            var self = this,
+                el = self.get("el"),
+                cls = self.getCssClassWithPrefix("menu-button-open");
+            el[v ? 'removeClass' : 'addClass'](cls).attr("aria-expanded", !v);
+        },
+
+        setAriaActiveDescendant: function (v) {
+            this.get("el").attr("aria-activedescendant",
+                (v && v.get("el")[0].id) || "");
+        }
+    }, {
+        ATTRS: {
+            contentTpl: {
+                value: Extension.ContentRender.ContentTpl +
+                    '<div class="{{prefixCls}}menu-button-dropdown">' +
+                    '<div class="{{prefixCls}}menu-button-dropdown-inner">' +
+                    '</div>'
+            },
+            collapsed: {
+                value: true,
+                sync: 0
+            }
+        }
+    });
+}, {
+    requires: ['button','component/extension']
+});/**
  * combination of menu and button ,similar to native select
  * @author yiminghe@gmail.com
  */
-KISSY.add("menubutton/base", function (S, Node, Button, MenuButtonRender, Menu, Component, undefined) {
+KISSY.add("menubutton/base", function (S, Node, Button, MenuButtonRender,
+                                       Menu, Extension,undefined) {
 
     var $ = Node.all,
         win = $(S.Env.host),
@@ -20,13 +62,12 @@ KISSY.add("menubutton/base", function (S, Node, Button, MenuButtonRender, Menu, 
             }
         };
     /**
-     * @class
      * A menu button component, consist of a button and a drop down popup menu.
      * xclass: 'menu-button'.
-     * @name MenuButton
-     * @extends Button
+     * @class KISSY.MenuButton
+     * @extends KISSY.Button
      */
-    var MenuButton = Button.extend([Component.DecorateChild],
+    var MenuButton = Button.extend([Extension.DecorateChild],
         /**
          * @lends MenuButton.prototype
          */
@@ -43,8 +84,10 @@ KISSY.add("menubutton/base", function (S, Node, Button, MenuButtonRender, Menu, 
 
             bindUI: function () {
                 var self = this;
-                self.on('afterHighlightedItemChange', onMenuAfterHighlightedItemChange, self);
-                win.on("resize", self.__repositionBuffer = S.buffer(reposition, 50), self);
+                self.on('afterHighlightedItemChange',
+                    onMenuAfterHighlightedItemChange, self);
+                win.on("resize",
+                    self.__repositionBuffer = S.buffer(reposition, 50), self);
                 self.on('click', onMenuItemClick, self);
             },
 
@@ -135,7 +178,7 @@ KISSY.add("menubutton/base", function (S, Node, Button, MenuButtonRender, Menu, 
             /**
              * Remove a existing menu item from drop down menu.
              * @param c {KISSY.Menu.Item} Existing menu item.
-             * @param [destroy] {Boolean} Whether destroy removed menu item.
+             * @param [destroy=true] {Boolean} Whether destroy removed menu item.
              */
             removeItem: function (c, destroy) {
                 /**
@@ -187,10 +230,10 @@ KISSY.add("menubutton/base", function (S, Node, Button, MenuButtonRender, Menu, 
             decorateChildrenInternal: function (UI, el) {
                 // 不能用 display:none , menu 的隐藏是靠 visibility
                 // eg: menu.show(); menu.hide();
-                el.css("visibility", "hidden").prependTo(el[0].ownerDocument.body);
+                el.prependTo(el[0].ownerDocument.body);
                 var self = this;
                 self.setInternal("menu",
-                    Component.DecorateChild.prototype.decorateChildrenInternal.call(self, UI, el, self.get('menu')));
+                    Extension.DecorateChild.prototype.decorateChildrenInternal.call(self, UI, el, self.get('menu')));
             },
 
             destructor: function () {
@@ -264,6 +307,7 @@ KISSY.add("menubutton/base", function (S, Node, Button, MenuButtonRender, Menu, 
                  * @type {Boolean}
                  */
                 collapsed: {
+                    sync:0,
                     view: 1
                 },
                 xrender: {
@@ -291,7 +335,7 @@ KISSY.add("menubutton/base", function (S, Node, Button, MenuButtonRender, Menu, 
         var m = self.get("menu");
         if (m && !m.isController) {
             if (init) {
-                m = Component.create(m, self);
+                m = self.createChild(m);
                 self.setInternal("menu", m);
             } else {
                 return null;
@@ -341,69 +385,8 @@ KISSY.add("menubutton/base", function (S, Node, Button, MenuButtonRender, Menu, 
 
     return MenuButton;
 }, {
-    requires: [ "node", "button", "./baseRender", "menu", "component/base"]
-});/**
- * render aria and drop arrow for menubutton
- * @author yiminghe@gmail.com
- */
-KISSY.add("menubutton/baseRender", function (S, Button) {
-
-    var CAPTION_TMPL = '<div class="{prefixCls}menu-button-caption"><' + '/div>',
-
-        DROP_TMPL =
-            // 背景
-            '<div class="{prefixCls}menu-button-dropdown">' +
-                // 箭头
-                '<div class=' +
-                '"{prefixCls}menu-button-dropdown-inner">' +
-                '<' + '/div>' +
-                '<' + '/div>',
-        COLLAPSE_CLS = "menu-button-open";
-
-    return Button.Render.extend({
-
-        createDom: function () {
-            var self = this,
-                el = self.get("el");
-            el.append(S.substitute(DROP_TMPL, {
-                    prefixCls: this.get('prefixCls')
-                }))
-                //带有 menu
-                .attr("aria-haspopup", true);
-        },
-
-        _onSetCollapsed: function (v) {
-            var self = this,
-                el = self.get("el"),
-                cls = self.getCssClassWithPrefix(COLLAPSE_CLS);
-            el[v ? 'removeClass' : 'addClass'](cls).attr("aria-expanded", !v);
-        },
-
-        setAriaActiveDescendant: function (v) {
-            this.get("el").attr("aria-activedescendant",
-                (v && v.get("el").attr("id")) || "");
-        }
-    }, {
-        ATTRS: {
-            contentEl: {
-                valueFn: function () {
-                    return S.all(S.substitute(CAPTION_TMPL, {
-                        prefixCls: this.get('prefixCls')
-                    }));
-                }
-            },
-            collapsed: {
-                value: true
-            }
-        },
-        HTML_PARSER: {
-            contentEl: function (el) {
-                return el.children("." + this.get('prefixCls') + "menu-button-caption");
-            }
-        }
-    });
-}, {
-    requires: ['button']
+    requires: [ "node", "button", "./base-render", "menu",
+        'component/extension']
 });/**
  * menubutton
  * @author yiminghe@gmail.com
@@ -415,7 +398,7 @@ KISSY.add("menubutton", function(S, MenuButton, MenuButtonRender, Select, Option
     return MenuButton;
 }, {
     requires:['menubutton/base',
-        'menubutton/baseRender',
+        'menubutton/base-render',
         'menubutton/select',
         'menubutton/option']
 });/**
@@ -425,17 +408,13 @@ KISSY.add("menubutton", function(S, MenuButton, MenuButtonRender, Select, Option
 KISSY.add("menubutton/option", function (S, Menu) {
     var MenuItem = Menu.Item;
     /**
-     * @name Option
-     * @class
      * Option for Select component.
      * xclass: 'option'.
-     * @member MenuButton
-     * @extends Menu.Item
+     * @class KISSY.MenuButton.Option
+     * @extends KISSY.Menu.Item
      */
     return MenuItem.extend({}, {
-        ATTRS: /**
-         * @lends MenuButton.Option.prototype
-         */
+        ATTRS:
         {
             /**
              * Whether this option can be selected.
@@ -598,9 +577,10 @@ KISSY.add("menubutton/select", function (S, Node, MenuButton, Menu, Option, unde
             /**
              * Remove specified item from current select.
              * If specified item is selectedItem, then set selectedItem to null.
-             *
+             * @param c {KISSY.MenuButton.Option} Existing menu item.
+             * @param [destroy=true] {Boolean} Whether destroy removed menu item.
              */
-            removeItem: function (c) {
+            removeItem: function (c,destroy) {
                 var self = this;
                 Select.superclass.removeItem.apply(self, arguments);
                 if (c.get("value") == self.get("value")) {

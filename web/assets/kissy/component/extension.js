@@ -1,7 +1,7 @@
 ﻿/*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Jan 31 22:55
+build time: May 15 20:33
 */
 /**
  * @ignore
@@ -457,107 +457,282 @@ KISSY.add('component/extension/align', function (S, DOM, Node) {
  *  2011-07-13 yiminghe@gmail.com note:
  *   - 增加智能对齐，以及大小调整选项
  **//**
- * @ignore
- * 里层包裹层定义， 适合mask以及shim
+ * common content box render
  * @author yiminghe@gmail.com
  */
-KISSY.add('component/extension/content-box-render', function (S, Node, DOM) {
+KISSY.add('component/extension/content-render', function (S) {
 
-    function ContentBoxRender() {
+    function ContentRender() {
+        S.mix(this.get('childrenElSelectors'), {
+            contentEl: '#ks-content{id}'
+        });
     }
 
-    ContentBoxRender.ATTRS = {
-        contentEl: {
-            // 不写 valueFn, 留待 createDom 处理
-        }
-    };
-
-    /*
-     ! contentEl 只能由组件动态生成
-     */
-    // for augment, no need constructor
-    ContentBoxRender.prototype = {
-        __createDom: function () {
-            var self = this,
-                contentEl,
-                el = self.get('el'),
-                contentCls = self.getCssClassWithState('contentbox'),
-                childNodes = el[0].childNodes,
-                css = self.getCssClassWithPrefix('contentbox') +
-                    (contentCls ? (' ' + contentCls) : contentCls),
-                c = childNodes.length && DOM._nodeListToFragment(childNodes);
-
-            // 产生新的 contentEl
-            contentEl = Node.all('<div class="' + css + '"></div>');
-
-            if (c) {
-                contentEl.append(c);
+    ContentRender.prototype = {
+        getChildrenContainerEl: function () {
+            return this.get('contentEl');
+        },
+        _onSetContent: function (v) {
+            var contentEl = this.get('contentEl');
+            contentEl.html(v);
+            // ie needs to set unselectable attribute recursively
+            if (S.UA.ie < 9 && !this.get('allowTextSelection')) {
+                contentEl.unselectable();
             }
-
-            el.append(contentEl);
-
-            self.setInternal('contentEl', contentEl);
         }
     };
 
-    return ContentBoxRender;
-}, {
-    requires: ['node', 'dom']
+    S.mix(ContentRender, {
+        ATTRS: {
+            contentTpl:{
+                value:'<div id="ks-content{{id}}" ' +
+                    'class="{{prefixCls}}content {{getCssClassWithState "content"}}">' +
+                    '{{{content}}}' +
+                    '</div>'
+            },
+            content: {
+                sync: 0
+            }
+        },
+        HTML_PARSER: {
+            content: function (el) {
+                return el.one('.' + this.get('prefixCls') + 'content').html();
+            },
+            contentEl: function (el) {
+                return el.one('.' + this.get('prefixCls') + 'content')
+            }
+        }
+    });
+
+    ContentRender.ContentTpl=ContentRender.ATTRS.contentTpl.value;
+
+    return ContentRender;
 });/**
  * @ignore
- * 里层包裹层定义， 适合mask以及shim
+ * decorate its children from one element
  * @author yiminghe@gmail.com
  */
-KISSY.add("component/extension/content-box", function () {
-
-    /**
-     * @class KISSY.Component.Extension.ContentBox
-     * ContentBox extension class. Represent inner element of component's root element.
-     */
-    function ContentBox() {
+KISSY.add("component/extension/decorate-child", function (S, DecorateChildren) {
+    
+    function DecorateChild() {
     }
 
-    ContentBox.ATTRS = {
-
-        /**
-         * content box's element of component.
-         * @type {KISSY.NodeList}
-         * @readonly
-         * @property contentEl
-         */
-        /**
-         * @ignore
-         */
-        contentEl: {
-            view: 1
+    S.augment(DecorateChild, DecorateChildren, {
+        decorateInternal: function (element) {
+            var self = this,
+                prefixCls = self.get('defaultChildCfg').prefixCls,
+                child = element.one("." + (prefixCls + self.get("decorateChildCls")));
+            // 可以装饰?
+            if (child) {
+                var ChildUI = self.findChildConstructorFromNode(prefixCls, child);
+                if (ChildUI) {
+                    // 可以直接装饰
+                    self.decorateChildrenInternal(ChildUI, child);
+                } else {
+                    // 装饰其子节点集合
+                    self.decorateChildren(child);
+                }
+            }
         }
-    };
+    });
 
-    return ContentBox;
+    return DecorateChild;
+}, {
+    requires: ['./decorate-children']
+});/**
+ * @ignore
+ * decorate function for children render from markup
+ * @author yiminghe@gmail.com
+ */
+KISSY.add("component/extension/decorate-children", function (S, Component) {
+
+    var Manager = Component.Manager;
+
+    function DecorateChildren() {
+
+    }
+
+    S.augment(DecorateChildren, {
+        /**
+         * Generate child component from root element.
+         * @protected
+         * @param {KISSY.NodeList} el Root element of current component.
+         */
+        decorateInternal: function (el) {
+            this.decorateChildren(el);
+        },
+
+        /**
+         * Get component's constructor from KISSY Node.
+         * @protected
+         * @param prefixCls
+         * @param {KISSY.NodeList} childNode Child component's root node.
+         */
+        findChildConstructorFromNode: function (prefixCls, childNode) {
+            var cls = childNode[0].className || "";
+            // 过滤掉特定前缀
+            if (cls) {
+                cls = cls.replace(new RegExp("\\b" + prefixCls, "ig"), "");
+                return Manager.getConstructorByXClass(cls);
+            }
+            return null;
+        },
+
+        // 生成一个子组件
+        decorateChildrenInternal: function (ChildUI, childNode, childConfig) {
+            var self = this;
+            // html_parser 值优先
+            childConfig = S.merge(self.get('defaultChildCfg'), childConfig, {
+                srcNode: childNode
+            });
+            delete childConfig.xclass;
+            return self.addChild(new ChildUI(childConfig));
+        },
+
+        /**
+         * decorate child element from parent component's root element.
+         * @private
+         * @param {KISSY.NodeList} el component's root element.
+         */
+        decorateChildren: function (el) {
+            var self = this,
+                defaultChildCfg = self.get('defaultChildCfg'),
+                prefixCls = defaultChildCfg.prefixCls,
+                defaultChildXClass = self.get('defaultChildCfg').xclass,
+                children = el.children();
+            children.each(function (c) {
+                var ChildUI = self.findChildConstructorFromNode(prefixCls, c) ||
+                    defaultChildXClass &&
+                        Manager.getConstructorByXClass(defaultChildXClass);
+                if (ChildUI) {
+                    self.decorateChildrenInternal(ChildUI, c);
+                }
+            });
+        }
+    });
+
+    return DecorateChildren;
+
+}, {
+    requires: ['component/base']
+});/**
+ * @ignore
+ * delegate events for children
+ * @author yiminghe@gmail.com
+ */
+KISSY.add("component/extension/delegate-children", function (S, Event) {
+
+    var UA = S.UA,
+        ie = S.Env.host.document.documentMode || UA.ie,
+        Features = S.Features,
+        Gesture = Event.Gesture,
+        isTouchSupported = Features.isTouchSupported();
+
+    function DelegateChildren() {
+    }
+
+    function handleChildMouseEvents(e) {
+        if (!this.get("disabled")) {
+            var control = this.getOwnerControl(e.target, e);
+            if (control && !control.get("disabled")) {
+                // Child control identified; forward the event.
+                switch (e.type) {
+                    case Gesture.start:
+                        control.handleMouseDown(e);
+                        break;
+                    case Gesture.end:
+                        control.handleMouseUp(e);
+                        break;
+                    case Gesture.tap:
+                        control.performActionInternal(e);
+                        break;
+                    case "mouseover":
+                        control.handleMouseOver(e);
+                        break;
+                    case "mouseout":
+                        control.handleMouseOut(e);
+                        break;
+                    case "contextmenu":
+                        control.handleContextMenu(e);
+                        break;
+                    case "dblclick":
+                        control.handleDblClick(e);
+                        break;
+                    default:
+                        S.error(e.type + " unhandled!");
+                }
+            }
+        }
+    }
+
+    S.augment(DelegateChildren, {
+
+        __bindUI: function () {
+            var self = this,
+                events;
+
+                events = Gesture.start + " " + Gesture.end + " " + Gesture.tap + " touchcancel ";
+
+                if (!isTouchSupported) {
+                    events += "mouseover mouseout contextmenu " +
+                        (ie && ie < 9 ? "dblclick " : "");
+                }
+
+                self.get("el").on(events, handleChildMouseEvents, self);
+        },
+
+        /**
+         * Get child component which contains current event target node.
+         * @protected
+         * @param {HTMLElement} target Current event target node.
+         * @return {KISSY.Component.Controller}
+         */
+        getOwnerControl: function (target) {
+            var self = this,
+                children = self.get("children"),
+                len = children.length,
+                elem = self.get("el")[0];
+            while (target && target !== elem) {
+                for (var i = 0; i < len; i++) {
+                    if (children[i].get("el")[0] === target) {
+                        return children[i];
+                    }
+                }
+                target = target.parentNode;
+            }
+            return null;
+        }
+    });
+
+    return DelegateChildren;
+}, {
+    requires: ['event']
 });/**
  * @ignore
  * uibase
  * @author yiminghe@gmail.com
  */
-KISSY.add("component/extension", function (S, Align, ContentBox, ContentBoxRender, Position, PositionRender, ShimRender) {
-    Position.Render = PositionRender;
-    ContentBox.Render = ContentBoxRender;
+KISSY.add("component/extension", function (S, Align, ContentRender, Position, PositionRender, ShimRender, DelegateChildren, DecorateChildren, DecorateChild) {
     return {
         Align: Align,
-        ContentBox: ContentBox,
         Position: Position,
-        Shim: {
-            Render: ShimRender
-        }
+        PositionRender: PositionRender,
+        ContentRender: ContentRender,
+        ShimRender: S.UA === 6 ? ShimRender : null,
+        'DelegateChildren': DelegateChildren,
+        'DecorateChild': DecorateChild,
+        'DecorateChildren': DecorateChildren
     };
 }, {
     requires: [
         "./extension/align",
-        "./extension/content-box",
-        "./extension/content-box-render",
+        "./extension/content-render",
         "./extension/position",
         "./extension/position-render",
-        "./extension/shim-render"
+        "./extension/shim-render",
+        "./extension/delegate-children",
+        "./extension/decorate-children",
+        "./extension/decorate-child"
     ]
 });/**
  * @ignore
@@ -567,20 +742,21 @@ KISSY.add("component/extension", function (S, Align, ContentBox, ContentBoxRende
 KISSY.add("component/extension/position-render", function () {
 
     function Position() {
+        var renderData = this.get('renderData');
+        this.get('elStyle')['z-index'] = renderData.zIndex;
+        this.get('elCls').push(renderData.prefixCls + 'ext-position ');
     }
 
     Position.ATTRS = {
         x: {},
         y: {},
-        zIndex: {}
+        zIndex: {
+            sync: 0
+        }
     };
 
     // for augment, no need constructor
     Position.prototype = {
-        __createDom: function () {
-            this.get("el").addClass(this.get('prefixCls') + "ext-position");
-        },
-
         '_onSetZIndex': function (x) {
             this.get("el").css("z-index", x);
         },
@@ -701,15 +877,6 @@ KISSY.add("component/extension/position", function (S) {
          */
         visible: {
             value: false
-        },
-
-        /**
-         * @ignore
-         * see {@link KISSY.Component.Extension.Box#cfg-visibleMode}.
-         * Defaults to: "visibility"
-         */
-        visibleMode: {
-            value: "visibility"
         }
     };
 
@@ -738,26 +905,25 @@ KISSY.add("component/extension/position", function (S) {
  * @author yiminghe@gmail.com
  */
 KISSY.add("component/extension/shim-render", function () {
+    var shimTpl = "<" + "iframe style='position: absolute;" +
+        "border: none;" +
+        // consider border
+        // bug fix: 2012-11-07
+        "width: expression(this.parentNode.clientWidth);" +
+        "top: 0;" +
+        "opacity: 0;" +
+        "filter: alpha(opacity=0);" +
+        "left: 0;" +
+        "z-index: -1;" +
+        "height: expression(this.parentNode.clientHeight);" + "'/>";
+
     // only for ie6!
-    function Shim() {
+    function ShimRender() {
     }
 
-    // for augment, no need constructor
-    Shim.prototype = {
-        __createDom: function () {
-            this.get("el").prepend("<" + "iframe style='position: absolute;" +
-                "border: none;" +
-                // consider border
-                // bug fix: 2012-11-07
-                "width: expression(this.parentNode.clientWidth);" +
-                "top: 0;" +
-                "opacity: 0;" +
-                "filter: alpha(opacity=0);" +
-                "left: 0;" +
-                "z-index: -1;" +
-                "height: expression(this.parentNode.clientHeight);" + "'/>");
-        }
+    ShimRender.prototype.__createDom = function () {
+        this.get('el').prepend(S.all(shimTpl));
     };
 
-    return Shim;
+    return ShimRender;
 });

@@ -1,7 +1,7 @@
 ﻿/*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 13 21:17
+build time: May 15 20:33
 */
 /**
  * @ignore
@@ -29,10 +29,10 @@ KISSY.add("combobox/base", function (S, Node, Component, ComboBoxRender, Menu, u
      */
     ComboBox = Component.Controller.extend({
 
-            // user's input text
+            // user's input text.
+            // for restore after press esc key
+            // if update input when press down or up key
             _savedInputValue: null,
-
-            _stopNotify: 0,
 
             /**
              * normalize returned data
@@ -100,7 +100,24 @@ KISSY.add("combobox/base", function (S, Node, Component, ComboBoxRender, Menu, u
              * @member KISSY.ComboBox
              */
             setValueInternal: function (value) {
-                this.get('input').val(value);
+                this.set('inputValue', value);
+            },
+
+            // buffer/bridge between check timer and change logic
+            '_onSetInputValue': function (v, e) {
+                // only trigger menu when timer cause change
+                if (e.causeByTimer) {
+                    var self = this,
+                        value;
+                    value = self['getValueInternal']();
+                    if (value === undefined) {
+                        self.set("collapsed", true);
+                        return;
+                    }
+                    self._savedInputValue = value;
+                    // S.log("value change: " + value);
+                    self.sendRequest(value);
+                }
             },
 
             /**
@@ -121,7 +138,9 @@ KISSY.add("combobox/base", function (S, Node, Component, ComboBoxRender, Menu, u
             handleFocus: function () {
                 var self = this,
                     placeholderEl;
-                setInvalid(self, false);
+                if (self.get('invalidEl')) {
+                    setInvalid(self, false);
+                }
                 if (placeholderEl = self.get("placeholderEl")) {
                     placeholderEl.hide();
                 }
@@ -130,19 +149,20 @@ KISSY.add("combobox/base", function (S, Node, Component, ComboBoxRender, Menu, u
             handleBlur: function () {
                 var self = this,
                     placeholderEl = self.get("placeholderEl"),
-                    input;
+                    input = self.get("input");
                 ComboBox.superclass.handleBlur.apply(self, arguments);
                 delayHide.call(self);
-                input = self.get("input");
-                self.validate(function (error, val) {
-                    if (error) {
-                        if (!self.get("focused") && val == input.val()) {
-                            setInvalid(self, error);
+                if (self.get('invalidEl')) {
+                    self.validate(function (error, val) {
+                        if (error) {
+                            if (!self.get("focused") && val == input.val()) {
+                                setInvalid(self, error);
+                            }
+                        } else {
+                            setInvalid(self, false);
                         }
-                    } else {
-                        setInvalid(self, false);
-                    }
-                });
+                    });
+                }
                 if (placeholderEl && !input.val()) {
                     placeholderEl.show();
                 }
@@ -162,7 +182,7 @@ KISSY.add("combobox/base", function (S, Node, Component, ComboBoxRender, Menu, u
                     input = self.get("input");
                     if (self.get('collapsed')) {
                         // fetch data
-                        input[0].focus();
+                        self.focus();
                         self.sendRequest('');
                     } else {
                         // switch from open to collapse
@@ -180,36 +200,20 @@ KISSY.add("combobox/base", function (S, Node, Component, ComboBoxRender, Menu, u
                     handledByMenu,
                     menu = getMenu(self);
 
-                if (!menu) {
-                    return undefined;
-                }
-
                 input = self.get("input");
                 updateInputOnDownUp = self.get("updateInputOnDownUp");
 
-                if (updateInputOnDownUp) {
-                    // combobox will change input value
-                    // but it does not need to reload data
-                    if (S.inArray(e.keyCode, [
-                        KeyCodes.UP,
-                        KeyCodes.DOWN,
-                        KeyCodes.ESC
-                    ])) {
-                        self._stopNotify = 1;
-                    } else {
-                        self._stopNotify = 0;
-                    }
-                }
-
-                if (menu.get("visible")) {
+                if (menu && menu.get("visible")) {
                     handledByMenu = menu['handleKeydown'](e);
 
                     // esc
                     if (e.keyCode == KeyCodes.ESC) {
                         self.set("collapsed", true);
                         if (updateInputOnDownUp) {
+                            // combobox will change input value
+                            // but it does not need to reload data
                             // restore original user's input text
-                            self['setValueInternal'](self._savedInputValue);
+                            self.setValueInternal(self._savedInputValue);
                         }
                         return true;
                     }
@@ -219,7 +223,7 @@ KISSY.add("combobox/base", function (S, Node, Component, ComboBoxRender, Menu, u
                     if (updateInputOnDownUp &&
                         S.inArray(e.keyCode, [KeyCodes.DOWN, KeyCodes.UP])) {
                         // update menu's active value to input just for show
-                        this.setValueInternal(highlightedItem.get("textContent"));
+                        self.setValueInternal(highlightedItem.get("textContent"));
                     }
 
                     // tab
@@ -237,32 +241,19 @@ KISSY.add("combobox/base", function (S, Node, Component, ComboBoxRender, Menu, u
                 } else if (e.keyCode == KeyCodes.DOWN || e.keyCode == KeyCodes.UP) {
                     // re-fetch, consider multiple input
                     // S.log("refetch : " + getValue(self));
-                    self.sendRequest(this.getValueInternal());
-                    return true;
+                    var v = self.getValueInternal();
+                    if (v !== undefined) {
+                        self.sendRequest(v);
+                        return true;
+                    }
                 }
                 return  undefined;
-            },
-
-            syncUI: function () {
-                var self = this,
-                    input ,
-                    inputValue;
-                if (self.get("placeholder")) {
-                    input = self.get("input");
-                    inputValue = self.get("inputValue");
-                    if (inputValue != undefined) {
-                        input.val(inputValue);
-                    }
-                    if (!input.val()) {
-                        self.get("placeholderEl").show();
-                    }
-                }
             },
 
             validate: function (callback) {
                 var self = this,
                     validator = self.get('validator'),
-                    val = self.get("input").val();
+                    val = self.getValueInternal();
 
                 if (validator) {
                     validator(val, function (error) {
@@ -324,6 +315,8 @@ KISSY.add("combobox/base", function (S, Node, Component, ComboBoxRender, Menu, u
                  * @ignore
                  */
                 inputValue: {
+                    value: '',
+                    sync: 0,
                     view: 1
                 },
 
@@ -427,7 +420,8 @@ KISSY.add("combobox/base", function (S, Node, Component, ComboBoxRender, Menu, u
                  * @ignore
                  */
                 collapsed: {
-                    view: 1
+                    view: 1,
+                    sync: 0
                 },
 
                 /**
@@ -498,6 +492,18 @@ KISSY.add("combobox/base", function (S, Node, Component, ComboBoxRender, Menu, u
                 autoHighlightFirst: {
                 },
 
+                /**
+                 * whether highlight item when item content is same with user input.
+                 * Defaults to: true
+                 * @cfg {Boolean} highlightMatchItem
+                 */
+                /**
+                 * @ignore
+                 */
+                highlightMatchItem: {
+                    value: true
+                },
+
                 xrender: {
                     value: ComboBoxRender
                 }
@@ -524,6 +530,11 @@ KISSY.add("combobox/base", function (S, Node, Component, ComboBoxRender, Menu, u
             el.on("focusout", delayHide, self);
             el.on("focusin", clearDismissTimer, self);
             contentEl.on("mouseover", onMenuMouseOver, self);
+            // cause valuechange
+            // if click menuitem while chinese input is open(xu -> '')
+            contentEl.on('mousedown', function () {
+                self.setValueInternal(self.getValueInternal());
+            });
         }
     }
 
@@ -533,22 +544,16 @@ KISSY.add("combobox/base", function (S, Node, Component, ComboBoxRender, Menu, u
             textContent;
         if (item.isMenuItem) {
             textContent = item.get('textContent');
-            // stop valuechange event
-            self._stopNotify = 1;
-            self['setValueInternal'](textContent);
+            self.setValueInternal(textContent);
             self._savedInputValue = textContent;
             self.set("collapsed", true);
-            // valuechange interval, hack
-            setTimeout(function () {
-                self._stopNotify = 0;
-            }, 50);
         }
     }
 
     function onMenuMouseOver() {
         var self = this;
         // trigger el focus
-        self.get("input")[0].focus();
+        self.focus();
         // prevent menu from hiding
         clearDismissTimer.call(self);
     }
@@ -571,7 +576,7 @@ KISSY.add("combobox/base", function (S, Node, Component, ComboBoxRender, Menu, u
         var m = self.get("menu");
         if (m && !m.isController) {
             if (init) {
-                m = Component.create(m, self);
+                m = self.createChild(m);
                 self.setInternal("menu", m);
             } else {
                 return null;
@@ -627,19 +632,11 @@ KISSY.add("combobox/base", function (S, Node, Component, ComboBoxRender, Menu, u
     }
 
     function onValueChange() {
-        var self = this,
-            value;
-        if (self._stopNotify) {
-            return;
-        }
-        value = self['getValueInternal']();
-        if (value === undefined) {
-            self.set("collapsed", true);
-            return;
-        }
-        self._savedInputValue = value;
-        // S.log("value change: " + value);
-        self.sendRequest(value);
+        this.set('inputValue', this.get('input').val(), {
+            data: {
+                causeByTimer: 1
+            }
+        });
     }
 
     function renderData(data) {
@@ -648,6 +645,7 @@ KISSY.add("combobox/base", function (S, Node, Component, ComboBoxRender, Menu, u
             children = [],
             val,
             matchVal,
+            highlightedItem,
             i,
             menu = getMenu(self, 1);
 
@@ -655,8 +653,8 @@ KISSY.add("combobox/base", function (S, Node, Component, ComboBoxRender, Menu, u
 
         menu.removeChildren(true);
 
-        if (menu.get('highlightedItem')) {
-            menu.get('highlightedItem').set('highlighted', false);
+        if (highlightedItem = menu.get('highlightedItem')) {
+            highlightedItem.set('highlighted', false);
         }
 
         if (data && data.length) {
@@ -667,11 +665,13 @@ KISSY.add("combobox/base", function (S, Node, Component, ComboBoxRender, Menu, u
 
             // make menu item (which textContent is same as input) active
             val = self['getValueInternal']();
-            for (i = 0; i < children.length; i++) {
-                if (children[i].get("textContent") == val) {
-                    children[i].set('highlighted', true);
-                    matchVal = true;
-                    break;
+            if (self.get('highlightMatchItem')) {
+                for (i = 0; i < children.length; i++) {
+                    if (children[i].get("textContent") == val) {
+                        children[i].set('highlighted', true);
+                        matchVal = true;
+                        break;
+                    }
                 }
             }
             // Whether or not the first row should be highlighted by default.
@@ -723,7 +723,13 @@ KISSY.add("combobox/base", function (S, Node, Component, ComboBoxRender, Menu, u
  *    1. tab 时肯定会把当前高亮项设置为 selectedItem
  *    2. 鼠标时不会把高亮项的 textContent 设到 input 上去
  *    1,2 都没问题，关键是键盘结合鼠标时怎么个处理？或者不考虑算了！
- **//**
+ **//*
+  Generated by kissy-tpl2mod.
+*/
+KISSY.add('combobox/combobox-tpl',function(){
+ return '<div id="ks-combobox-invalid-el{{id}}"      class="{{prefixCls}}combobox-invalid-el">     <div class="{{prefixCls}}combobox-invalid-inner"></div> </div>  {{#if hasTrigger}} <div id="ks-combobox-trigger{{id}}"      class="{{prefixCls}}combobox-trigger">     <div class="{{prefixCls}}combobox-trigger-inner">&#x25BC;</div> </div> {{/if}}  <div class="{{prefixCls}}combobox-input-wrap">      <input id="ks-combobox-input{{id}}"            aria-haspopup="true"            aria-autocomplete="list"            aria-haspopup="true"            role="autocomplete"            aria-expanded="false"      {{#if disabled}}     disabled     {{/if}}      autocomplete="off"     class="{{prefixCls}}combobox-input"      value="{{inputValue}}"     />       <label id="ks-combobox-placeholder{{id}}"            for="ks-combobox-input{{id}}"             style=\'display:{{#if inputValue}}none{{else}}block{{/if}};\'     class="{{prefixCls}}combobox-placeholder">     {{placeholder}}     </label> </div>';
+});
+/**
  * @ignore
  * Export ComboBox.
  * @author yiminghe@gmail.com
@@ -831,7 +837,6 @@ KISSY.add('combobox/cursor', function (S, DOM) {
         supportInputScrollLeft = !!(input.scrollLeft > 0);
         DOM.remove(input);
         findSupportInputScrollLeft = S.noop;
-        alert(supportInputScrollLeft);
     };
 
     // firefox not support, chrome support
@@ -1435,79 +1440,18 @@ KISSY.add("combobox/RemoteDataSource", function (S, IO) {
  * Render aria properties to input element.
  * @author yiminghe@gmail.com
  */
-KISSY.add("combobox/render", function (S, Component, undefined) {
-
-    var $ = S.all,
-        tpl = '<div class="{prefixCls}combobox-input-wrap">' +
-            '</div>',
-        triggerTpl = '<div class="{prefixCls}combobox-trigger">' +
-            '<div class="{prefixCls}combobox-trigger-inner">&#x25BC;</div>' +
-            '</div>',
-        inputTpl = '<input ' +
-            'aria-haspopup="true" ' +
-            'aria-autocomplete="list" ' +
-            'aria-haspopup="true" ' +
-            'role="autocomplete" ' +
-            'autocomplete="off" ' +
-            'class="{prefixCls}combobox-input" />';
+KISSY.add("combobox/render", function (S, Component, ComboboxTpl) {
 
     var ComboboxRender = Component.Render.extend({
 
-        createDom: function () {
-            var self = this,
-                wrap,
-                input = self.get("input"),
-                inputId,
-                prefixCls = self.get('prefixCls'),
-                el = self.get("el"),
-                trigger = self.get("trigger");
-
-            if (!self.get("srcNode")) {
-                el.append(S.substitute(tpl, {
-                    prefixCls: prefixCls
-                }));
-                wrap = el.one("." + prefixCls + "combobox-input-wrap");
-                input = input || S.all(S.substitute(inputTpl, {
-                    prefixCls: prefixCls
-                }));
-                wrap.append(input);
-                self.setInternal("input", input);
-            }
-
-            if (!trigger) {
-                self.setInternal("trigger", S.all(S.substitute(triggerTpl, {
-                    prefixCls: prefixCls
-                })));
-            }
-
-            self.get("trigger").unselectable(/**
-             @type {HTMLElement}
-             @ignore
-             */undefined);
-
-            var invalidEl = $("<div " +
-                "class='" + prefixCls + "combobox-invalid-el'>" +
-                "<div class='" + prefixCls + "combobox-invalid-inner'></div>" +
-                "</div>").insertBefore(input.parent(/**
-                 @type {HTMLElement}
-                 @ignore
-                 */undefined, undefined), /**
-                 @type {HTMLElement}
-                 @ignore
-                 */undefined);
-            self.setInternal("invalidEl", invalidEl);
-
-            var placeholder;
-
-            if (placeholder = self.get("placeholder")) {
-                if (!(inputId = input.attr("id"))) {
-                    input.attr("id", inputId = S.guid("ks-combobox-input"));
-                }
-                self.setInternal('placeholderEl', $('<label for="' +
-                    inputId + '" ' +
-                    'class="' + prefixCls + 'combobox-placeholder">' +
-                    placeholder + '</label>').appendTo(el));
-            }
+        initializer: function () {
+            var childrenElSelectors = this.get('childrenElSelectors');
+            S.mix(childrenElSelectors, {
+                input: '#ks-combobox-input{id}',
+                trigger: '#ks-combobox-trigger{id}',
+                invalidEl: '#ks-combobox-invalid-el{id}',
+                placeholderEl: '#ks-combobox-placeholder{id}'
+            });
         },
 
         getKeyEventTarget: function () {
@@ -1515,15 +1459,13 @@ KISSY.add("combobox/render", function (S, Component, undefined) {
         },
 
         _onSetCollapsed: function (v) {
-            this.get("input").attr("aria-expanded", v);
+            this.get("input").attr("aria-expanded", !v);
         },
 
-        '_onSetHasTrigger': function (t) {
-            var trigger = this.get("trigger");
-            if (t) {
-                this.get("el").prepend(trigger);
-            } else {
-                trigger.remove();
+        _onSetInputValue:function(v,e){
+            // no need
+            if(!e.causeByTimer){
+                this.get('input').val(v);
             }
         },
 
@@ -1535,14 +1477,24 @@ KISSY.add("combobox/render", function (S, Component, undefined) {
     }, {
         ATTRS: {
             collapsed: {
-                value: true
+                value: true,
+                sync: 0
             },
 
             hasTrigger: {
-                value: true
+                value: true,
+                sync: 0
+            },
+
+            inputValue:{
+                sync:0
             },
 
             input: {
+            },
+
+            disabled: {
+                sync: 0
             },
 
             trigger: {
@@ -1552,10 +1504,13 @@ KISSY.add("combobox/render", function (S, Component, undefined) {
             },
 
             placeholderEl: {
-
             },
 
             invalidEl: {
+            },
+
+            contentTpl: {
+                value: ComboboxTpl
             }
         },
         HTML_PARSER: {
@@ -1564,11 +1519,17 @@ KISSY.add("combobox/render", function (S, Component, undefined) {
             },
             trigger: function (el) {
                 return el.one("." + this.get('prefixCls') + "combobox-trigger");
+            },
+            invalidEl: function (el) {
+                return el.one("." + this.get('prefixCls') + "combobox-invalid-el");
+            },
+            placeholderEl: function (el) {
+                return el.one("." + this.get('prefixCls') + "combobox-placeholder");
             }
         }
     });
 
     return ComboboxRender;
 }, {
-    requires: ['component/base']
+    requires: ['component/base', './combobox-tpl']
 });

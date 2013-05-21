@@ -1,7 +1,7 @@
 ﻿/*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 13 22:29
+build time: May 15 20:32
 */
 /**
  * Menu DPL For KISSY.
@@ -66,6 +66,15 @@ build time: Mar 13 22:29
   left: -9999px;
   top: -9999px;
 }
+
+.ks-popupmenu-shown{
+    visibility: visible;
+}
+
+.ks-popupmenu-hidden{
+    visibility: hidden;
+}
+
 .ks-menu {
   outline: none;
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
@@ -156,4 +165,8 @@ build time: Mar 13 22:29
 }
 .ks-menuitem-checked .ks-menuitem-checkbox:last-child {
   *margin-left: 0;
+}
+
+.ks-menuitem-content {
+    display: inline;
 }

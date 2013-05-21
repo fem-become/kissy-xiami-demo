@@ -1,7 +1,7 @@
 ﻿/*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 8 22:18
+build time: Apr 17 00:22
 */
 /**
  * @ignore
@@ -335,7 +335,7 @@ KISSY.add("json/parser", function () {
                 }
             }
 
-            S.error("lex error at line " + self.lineNumber + ":\n" + self.showDebugInfo());
+
             return undefined;
         }
     };
@@ -638,7 +638,7 @@ KISSY.add("json/parser", function () {
             }
 
             if (!symbol) {
-                S.log("it is not a valid input: " + input, "error");
+
                 return false;
             }
 
@@ -653,8 +653,8 @@ KISSY.add("json/parser", function () {
                         expected.push(self.lexer.mapReverseSymbol(symbol));
                     });
                 }
-                error = "parse error at line " + lexer.lineNumber + ":\n" + lexer.showDebugInfo() + "\n" + "expect " + expected.join(", ");
-                S.error(error);
+                error = "Syntax error at line " + lexer.lineNumber + ":\n" + lexer.showDebugInfo() + "\n" + "expect " + expected.join(", ");
+
                 return false;
             }
 
@@ -681,13 +681,13 @@ KISSY.add("json/parser", function () {
                     reducedAction = production.action || production[2],
                     reducedRhs = production.rhs || production[1],
                     len = reducedRhs.length,
-                    i,
-                    ret,
+                    i = 0,
+                    ret = undefined,
                     $$ = valueStack[valueStack.length - len]; // default to $$ = $1
 
                 self.$$ = $$;
 
-                for (i = 0; i < len; i++) {
+                for (; i < len; i++) {
                     self["$" + (len - i)] = valueStack[valueStack.length - 1 - i];
                 }
 

@@ -1,7 +1,7 @@
 ﻿/*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 11 10:34
+build time: Apr 17 00:16
 */
 /**
  * color button.
@@ -25,7 +25,7 @@ KISSY.add("editor/plugin/color/btn", function (S, Editor, Button, Overlay4E, Dia
     ], html;
 
 
-    function initHtml() {
+    function initHTML() {
         html = "<div class='{prefixCls}editor-color-panel'>" +
             "<a class='{prefixCls}editor-color-remove' " +
             "href=\"javascript:void('清除');\">" +
@@ -58,7 +58,7 @@ KISSY.add("editor/plugin/color/btn", function (S, Editor, Button, Overlay4E, Dia
             "</div>";
     }
 
-    initHtml();
+    initHTML();
 
     var ColorButton = Button.extend({
 
@@ -109,7 +109,7 @@ KISSY.add("editor/plugin/color/btn", function (S, Editor, Button, Overlay4E, Dia
             others.on("click", function (ev) {
                 ev.halt();
                 colorWin.hide();
-                DialogLoader.useDialog(editor, "color/color-picker", self);
+                DialogLoader.useDialog(editor, "color", undefined, self);
             });
             self._prepare = self._show;
             self._show();
@@ -156,7 +156,7 @@ KISSY.add("editor/plugin/color/btn", function (S, Editor, Button, Overlay4E, Dia
                 value: true
             },
             mode: {
-                value: Editor.WYSIWYG_MODE
+                value: Editor.Mode.WYSIWYG_MODE
             }
         }
     });
@@ -174,7 +174,7 @@ KISSY.add("editor/plugin/color/btn", function (S, Editor, Button, Overlay4E, Dia
     ColorButton.init = function (editor, cfg) {
         var prefix = editor.get('prefixCls') + 'editor-toolbar-',
             cmdType = cfg.cmdType,
-            defaultColor=cfg.defaultColor,
+            defaultColor = cfg.defaultColor,
             tooltip = cfg.tooltip;
 
         var button = editor.addButton(cmdType, {
@@ -184,7 +184,7 @@ KISSY.add("editor/plugin/color/btn", function (S, Editor, Button, Overlay4E, Dia
                 icon: prefix + 'item ' + prefix + cmdType,
                 indicator: prefix + 'color-indicator'
             }),
-            mode: Editor.WYSIWYG_MODE,
+            mode: Editor.Mode.WYSIWYG_MODE,
             tooltip: "设置" + tooltip
         });
 
@@ -208,5 +208,5 @@ KISSY.add("editor/plugin/color/btn", function (S, Editor, Button, Overlay4E, Dia
     return ColorButton;
 
 }, {
-    requires: ['editor', '../button/', '../overlay/', '../dialog-loader/']
+    requires: ['editor', '../button', '../overlay', '../dialog-loader']
 });
