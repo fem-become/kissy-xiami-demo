@@ -472,9 +472,7 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
         });
         $('.add-list', '.J_songList').on(Event.Gesture.tap, function () {
             var song_id = $(this).attr('song-id');
-            Transition.forward(myName, 'xiami/transition/player',{
-                id:song_id
-            });
+            suspender.addToList(song_id);
         });
     }
 
