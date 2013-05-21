@@ -161,12 +161,12 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
                 cxt.stroke();
 
                 cxt.shadowOffsetX = cxt.shadowOffsetY = 0;
-                cxt.font = "14px Times New Roman";
-                cxt.fillText('忧伤',PADDING,height/2 - LINE_WIDTH);
+                cxt.font = "16px Times New Roman";
+                cxt.fillText('忧伤',PADDING,height/2 - LINE_WIDTH * 3);
                 cxt.textAlign = 'right';
-                cxt.fillText('快乐',width-PADDING, height/2 - LINE_WIDTH);
-                cxt.fillText('平静',width/2-LINE_WIDTH, PADDING + 12);
-                cxt.fillText('激动',width/2-LINE_WIDTH, height - PADDING);
+                cxt.fillText('快乐',width-PADDING, height/2 - LINE_WIDTH * 3);
+                cxt.fillText('平静',width/2-LINE_WIDTH*2, PADDING + 14);
+                cxt.fillText('激动',width/2-LINE_WIDTH*2, height - PADDING*2);
             }
 
             init();
@@ -440,24 +440,50 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
                 shakeIllus = S.one('.J_ShakeIllus'),
                 radarIllus = S.one('.J_RadarIllus'),
                 switcher = S.one('.J_Switch'),
+                panelWidth = radarPanel.width(),
+                panelHeight = radarPanel.height(),
                 switchToShake = function(){
                     shakePanel.show();
-                    radarPanel.hide();
                     shakeIllus.show();
                     radarIllus.hide();
+
+                    radarPanel.animate({
+                        'left': panelWidth
+                    }, 0.5, undefined, function(){
+                        shakePanel.css('top',0);
+                    });
+
+                    shakePanel.animate({
+                        'left': 0
+                    }, 0.5, undefined, function(){
+                        radarPanel.hide().css('top',0);
+                    });
+
                     switcher.all('li').item(1).addClass('active').siblings().removeClass('active');
                     S.one('.J_SongsList').one('ul').empty().end().hide();
                     mode = 'shake';
                 },
                 switchToRadar = function(){
-                    shakePanel.hide();
                     radarPanel.show();
+                    shakePanel.css('top',-panelHeight + 'px');
                     shakeIllus.hide();
                     radarIllus.show();
+                    shakePanel.animate({
+                        'left': panelWidth
+                    }, 0.5, undefined, function(){
+                        radarPanel.css('top',0);
+                    });
+
+                    radarPanel.animate({
+                        'left': 0
+                    }, 0.5, undefined, function(){
+                        shakePanel.hide().css('top',-panelHeight + 'px');
+                    });
                     switcher.all('li').item(0).addClass('active').siblings().removeClass('active');
                     S.one('.J_SongsList').one('ul').empty().end().hide();
                     mode = 'radar';
                 };
+            shakePanel.css({'top':-panelHeight + 'px','left': panelWidth});
 
             var shake = new Shake();
 
