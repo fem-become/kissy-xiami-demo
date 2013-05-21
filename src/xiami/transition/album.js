@@ -1,121 +1,176 @@
-KISSY.add(function(S, Node, Transition, Event, header) {
+KISSY.add(function(S, Node, Transition, Event, header, Overlay, ScrollView, ScrollbarPlugin) {
 
-  var $ = Node.all;
-  var el;
-  var myName = this.getName();
-  var body = $("#body");
+    var $ = Node.all,
+        el,
+        myName = this.getName(),
+        body = $("#body"),
+        headerEl = header.getHeader(myName),
+        pid = 0;
 
-  return {
+    return {
 
-    init: function(config) {
-      var _this = this;
-      if (!el) {
-        el = $('<div class="mod-page"><img src="http://img04.taobaocdn.com/tps/i4/T1dMOMXqBbXXcsSYfr-42-42.crdownload" /></div>').appendTo(body);
-        //el.html('<button id="J_Play">play music</button><button id="J_AlbumBack">back to list</button><div id="J_AlbumId"></div>');
-        //el.html(this.getTemplate());
-        _this.fetchData(config);
-        // el.one('#J_AlbumBack').on(Event.Gesture.tap, function() {
-        //   Transition.backward(myName, 'xiami/transition/albums');
-        // });
-        S.log(myName + ' is new');
-      } else {
-        S.log(myName + ' is coming again');
-      }
+        init: function(config) {
+            var _this = this;
+            header.setTitle(''); 
+            
+            if(config.id != pid){
+                el = $('<div class="mod-page"><img src="http://img04.taobaocdn.com/tps/i4/T1dMOMXqBbXXcsSYfr-42-42.crdownload" /></div>').appendTo(body);
+                _this.fetchData(config);
+            }
+            
+            if (!headerEl.contents().length) {
+                headerEl.append(myName);
+            }
+        },
 
-      //el.one("#J_AlbumId").html('album id123:' + config.id);
-      //获取列表
-      
+        getEl: function() {
+            return el;
+        },
 
-      var headerEl=header.getHeader(myName);
-      if (!headerEl.contents().length) {
-        headerEl.append(myName);
-      }
-    },
+        fetchData: function(config){
+            var _this = this;
+            pid = config.id;
+            S.IO({
+                dataType: 'jsonp',
+                url: 'http://test.fem.taobao.net:3000/album/' + config.id,
+                success: function(data){
+                    var _html       = _this.getTemplate(), 
+                        _list_html  = '',
+                        list_songs  = data['songs'];
+                    //渲染主页面
+                    _html = _html.replace(new RegExp('\{\{album_id\}\}', 'gi'), data['id']);
+                    _html = _html.replace(new RegExp('\{\{author\}\}', 'gi'), data['artist'].title);
+                    _html = _html.replace(new RegExp('\{\{desc\}\}', 'gi'), data['desc']);
+                    _html = _html.replace(new RegExp('\{\{img\}\}', 'gi'), data['img']);
+                    _html = _html.replace(new RegExp('\{\{list_count\}\}', 'gi'), list_songs.length);
 
-    getEl: function() {
-      return el;
-    },
+                    _html += '<ul class="album-list">';
+                    for( var i = 0; i < list_songs.length; i ++){
+                        var temp_list = _this.getListTemplate();
+                        temp_list = temp_list.replace(new RegExp('\{\{song_id\}\}', 'gi'), list_songs[i]['id']);
+                        temp_list = temp_list.replace(new RegExp('\{\{title\}\}', 'gi'), list_songs[i]['title']);
+                        temp_list = temp_list.replace(new RegExp('\{\{hot\}\}', 'gi'), list_songs[i]['hot']);
+                        _html += temp_list;
+                    }
+                    _html += '</ul>';
+                    el.html(_html);
 
-    fetchData: function(config){
-      var _this = this;
-      S.IO({
-        dataType: 'jsonp',
-        url: 'http://test.fem.taobao.net:3000/album/' + config.id,
-        success: function(data){
-          var _html       = _this.getTemplate(), 
-              _list_html  = '',
-              list_songs  = data['songs'];
-          //渲染主页面
-          _html = _html.replace(new RegExp('\{\{album_id\}\}', 'gi'), data['id']);
-          _html = _html.replace(new RegExp('\{\{title\}\}', 'gi'), data['title']);
-          _html = _html.replace(new RegExp('\{\{desc\}\}', 'gi'), data['desc']);
-          _html = _html.replace(new RegExp('\{\{img\}\}', 'gi'), data['img']);
-          _html = _html.replace(new RegExp('\{\{list_count\}\}', 'gi'), list_songs.length);
+                    // 点击播放
+                    el.all('.J_album_play').on(Event.Gesture.tap, function() {
+                        var pid = $(this).attr('data-id');
+                  
+                        Transition.forward(myName, 'xiami/transition/player', {
+                            id: pid
+                        });
+                    });
 
-          _html += '<ul class="album-list">';
-          for( var i = 0; i < list_songs.length; i ++){
-            var temp_list = _this.getListTemplate();
-            temp_list = temp_list.replace(new RegExp('\{\{song_id\}\}', 'gi'), list_songs[i]['id']);
-            temp_list = temp_list.replace(new RegExp('\{\{title\}\}', 'gi'), list_songs[i]['title']);
-            temp_list = temp_list.replace(new RegExp('\{\{hot\}\}', 'gi'), list_songs[i]['hot']);
-            _html += temp_list;
-          }
-          _html += '</ul>';
-          el.html(_html);
+                    // 点击加入播放列表
+                    el.all('.J_album_add_list').on(Event.Gesture.tap, function(){
+                  
+                    });
 
-          // 点击播放
-          el.all('.J_album_play').on(Event.Gesture.tap, function() {
-              var pid = $(this).attr('data-id');
-              
-              Transition.forward(myName, 'xiami/transition/player', {
-                id: pid
-              });
-          });
+                    // 点击简介 弹框显示全部内容
+                    el.all('.J_album_desc').on(Event.Gesture.tap, function(){
+                        _this.getAlbumDescPopup(data);
+                    });
 
-          // 点击加入播放列表
-          el.all('.J_album_add_list').on(Event.Gesture.tap, function(){
-              
-          });
+                    header.setTitle( data['title']);   
+             
+                }
+            });
+        },
+
+        getTemplate: function(){
+            var _html = [
+                '<div class="album-title">',
+                    '<div class="album-img"><img src="{{img}}"></div>',
+                    '<div class="album-info album-inline">',
+                        '<h3>{{author}}</h3>',
+                        '<div class="album-desc J_album_desc">{{desc}}</div>',
+                        '<div class="album-control">',
+                            '<button class="play inline">&nbsp;</button>',
+                            '<button class="list inline">&nbsp;</button>',
+                        '</div>',
+                    '</div>',
+                    '<div class="album-list-count">{{list_count}}首歌曲</div>',
+                '</div>'
+            ].join('');
+            return _html;
+        },
+
+        getListTemplate: function(){
+            var _html = [
+                '<li>',
+                    '<h3>{{title}}</h3>',
+                    '<div class="album-btn-group">',
+                        '<button class="J_album_play play inline" data-id="{{song_id}}">&nbsp;</button>',
+                        '<button class="J_album_add_list list inline" data-id="{{song_id}}">&nbsp;</button>',
+                    '</div>',
+                '</li>'
+            ].join('');
+            return _html;
+        },
+
+        getAlbumDescPopup: function(data){
+            var _html = [
+                '<dl class="desc-container">',
+                    '<dt>',
+                        '<h4 class="title">{{title}}</h4>',
+                        '<h4 class="article">{{author}}</h4>',
+                    '</dt>',
+                    '<dd class="desc">{{desc}}</dd>',
+                '</dl>',
+                '<i class="J_close album-close">×</i>'
+            ].join('');
+
+            _html = _html.replace(new RegExp('\{\{title\}\}', 'gi'), data['title']);
+            _html = _html.replace(new RegExp('\{\{desc\}\}', 'gi'), data['desc']);
+            _html = _html.replace(new RegExp('\{\{author\}\}', 'gi'), data['artist'].title);
+          
 
 
+          //alert('!!');
+            var cfg = {
+                width: document.documentElement.clientWidth*0.98,
+                height: (document.documentElement.clientHeight - $('#suspender').outerHeight() - document.documentElement.clientHeight * 0.05 - 20)*0.98,
+                closeable: true,
+                align: {
+                    points: ['tc','tc']
+                },
+                content: _html,
+                elCls: 'album-popup'
+            };
+
+            var pop = new Overlay(cfg);
+            pop.render().show();
+
+            //pop.show();
+
+            //console.log(pop.render());
+            (function(){
+                var _descHeight     = pop.get('el').all('.desc').height();
+                    _titleHeight    = pop.get('el').all('dt').height();
+                    _contentHeight  = pop.get('el').height();
+                
+                    if(_descHeight > _contentHeight - 50 - _titleHeight );
+                    pop.get('el').all('.desc').css('height', (_contentHeight - _titleHeight - 50) + 'px');
+
+                    window.scrollview = new ScrollView({
+                        srcNode: pop.get('el').all('.desc'),
+                        plugins: [new ScrollbarPlugin({})]
+                    }).render();
+            })();
+
+            pop.get('el').all('.J_close').on('click', function(){
+                pop.get('el').remove();
+
+            });
+          
         }
-      });
-    },
 
-    getTemplate: function(){
-      var _html = [
-        '<div class="album-title">',
-            '<div class="album-img"><img src="{{img}}"></div>',
-            '<div class="album-info album-inline">',
-                '<h3>{{title}}</h3>',
-                '<div class="album-desc">{{desc}}</div>',
-                '<div class="album-control">',
-                    '<button class="play inline">&nbsp;</button>',
-                    '<button class="list inline">&nbsp;</button>',
-                '</div>',
-            '</div>',
-            '<div class="album-list-count">{{list_count}}首歌曲</div>',
-        '</div>'
-      ].join('');
-      return _html;
-    },
-
-    getListTemplate: function(){
-      var _html = [
-            '<li>',
-                '<h3>{{title}}</h3>',
-                '<div class="album-btn-group">',
-                    '<button class="J_album_play play inline" data-id="{{song_id}}">&nbsp;</button>',
-                    '<button class="J_album_add_list list inline" data-id="{{song_id}}">&nbsp;</button>',
-                '</div>',
-            '</li>'
-      ].join('');
-      return _html;
-    }
-
-  };
+    };
 
 }, {
-  requires: ["node", "./index", "event", "../header"]
+    requires: ["node", "./index", "event", "../header", 'overlay', 'scrollview', 'scrollview/plugin/scrollbar']
 });
 

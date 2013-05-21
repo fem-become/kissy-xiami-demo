@@ -1,272 +1,323 @@
-@media all and (max-width:360px){
-.album-inline{
-                
-}
-.album-title{
-    padding: 20px;
-    font-size: 12px;
-    background-color: #f4f4f4;
-    width: 280px;
-    overflow: hidden;
-}
-    .album-title .album-img{
-        position: absolute;        
-        left: 10px;
-        width: 150px;
-        height: 150px;
+@media all and (max-width:480px){
+    .album-inline{
+                    
+    }
+    .album-title{
+        padding: 20px;
+        font-size: 12px;
+        background-color: #f4f4f4;
         overflow: hidden;
-        border: 3px solid #fff;
-        -webkit-box-shadow: 3px 3px 10px #999;
-           -moz-box-shadow: 3px 3px 10px #999;
-                box-shadow: 3px 3px 10px #999;
     }
+        .album-title .album-img{
+            position: absolute;        
+            left: 10px;
+            width: 150px;
+            height: 150px;
+            overflow: hidden;
+            border: 3px solid #fff;
+            -webkit-box-shadow: 3px 3px 10px #999;
+               -moz-box-shadow: 3px 3px 10px #999;
+                    box-shadow: 3px 3px 10px #999;
+        }
 
-    .album-title .album-img img{
-        width: 150px;
-        height: 150px;
+        .album-title .album-img img{
+            width: 100%;
+        }
+
+    .album-info {
+        margin-left: 165px;
     }
+        .album-info h3 {
+            color: #828282;
+            margin: 0;
+            max-width: 9em;
+            height: 1.75em;
+            line-height: 1.75em;
+            overflow: hidden;
+        }
 
-.album-info {
-    margin-left: 165px;
-}
-    .album-info h3 {
-        color: #828282;
+        .album-info .album-desc {
+            line-height: 1.5em;
+            height: 4.5em;
+            overflow: hidden;
+            color: #b0b0b0;
+            word-wrap: break-word;
+            word-break: break-all;
+        }
+
+        .album-info .album-control {
+            position: relative;
+            height: 77px;
+            margin-top: 12px;
+            width: 166px;
+        }
+
+        .album-title .album-list-count{
+            border-top: 2px solid #e3e7ea;
+            margin-top: 6px;
+            padding-top: 10px;
+            color: #828282;
+        }
+
+        .album-info .album-control button{
+            background: url(http://img04.taobaocdn.com/tps/i4/T1PCyrXEhaXXX.GXMQ-123-105.png) no-repeat #f6f6f6;
+            border: 0;
+            font-size: 0;
+        }
+
+        .album-info .album-control .play{
+            width: 63px;
+            height: 61px;
+        }
+
+        .album-info .album-control .list{
+            background-position: -75px 2px;
+            width: 48px;
+            height: 61px;
+        }
+
+    ul.album-list{
+        list-style: none;
         margin: 0;
-        width: 7em;
-        height: 1.75em;
-        line-height: 1.75em;
+        padding: 0;
+        width: 100%;
         overflow: hidden;
     }
 
-    .album-info .album-desc {
-        line-height: 1.5em;
-        height: 4.5em;
-        overflow: hidden;
-        color: #b0b0b0;
-    }
-
-    .album-info .album-control {
+    ul.album-list li{
         position: relative;
-        height: 77px;
-        margin-top: 12px;
-        width: 166px;
+        display: block;
+        width: 100%;
+        padding: 10px 0;
+        font-size: 12px;
     }
 
-    .album-title .album-list-count{
-        border-top: 2px solid #e3e7ea;
-        margin-top: 6px;
-        padding-top: 10px;
-        color: #828282;
-    }
 
-    .album-info .album-control button{
-        background: url(http://img04.taobaocdn.com/tps/i4/T1PCyrXEhaXXX.GXMQ-123-105.png) no-repeat #f6f6f6;
-        border: 0;
-        font-size: 0;
-    }
+        ul.album-list li:nth-child(2n+1){
+            background-color: #dfe4e7;
+        }
 
-    .album-info .album-control .play{
-        width: 63px;
-        height: 61px;
-    }
+        ul.album-list li:nth-child(2n){
+            background-color: #f6f6f6;
+        }
 
-    .album-info .album-control .list{
-        background-position: -75px 2px;
-        width: 48px;
-        height: 61px;
-    }
+        ul.album-list li h3{
+            display: inline-block;
+            margin-left: 10px;
+            font-size: 14px;
+            color: #3162c3;
+            line-height: 16px;
+            height: 1.5em;
+            width: 80%;
+            overflow: hidden;
+        }
 
-ul.album-list{
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    width: 320px;
-    overflow: hidden;
-}
+        ul.album-list li .album-btn-group{
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
 
-ul.album-list li{
-    position: relative;
-    display: block;
-    width: 100%;
-    padding: 10px 0;
-    font-size: 12px;
-}
+        ul.album-list li .album-btn-group button{
+            border: 0;
+            font-size: 0;
+            line-height: 53px;
+            background: url(http://img04.taobaocdn.com/tps/i4/T1PCyrXEhaXXX.GXMQ-123-105.png) no-repeat transparent;
+        }
 
+        ul.album-list li .album-btn-group button.play{
+            width: 38px;
+            height: 38px;
+            background-position: 0 -65px;
+        }
 
-    ul.album-list li:nth-child(2n+1){
-        background-color: #dfe4e7;
-    }
-
-    ul.album-list li:nth-child(2n){
-        background-color: #f6f6f6;
-    }
-
-    ul.album-list li h3{
-        display: inline-block;
-        margin-left: 10px;
-        font-size: 14px;
-        color: #3162c3;
-        line-height: 16px;
-    }
-
-    ul.album-list li .album-btn-group{
-        position: absolute;
-        top: 10px;
-        right: 10px;
-    }
-
-    ul.album-list li .album-btn-group button{
-        border: 0;
-        font-size: 0;
-        line-height: 53px;
-        background: url(http://img04.taobaocdn.com/tps/i4/T1PCyrXEhaXXX.GXMQ-123-105.png) no-repeat transparent;
-    }
-
-    ul.album-list li .album-btn-group button.play{
-        width: 38px;
-        height: 38px;
-        background-position: 0 -65px;
-    }
-
-    ul.album-list li .album-btn-group button.list{
-        width: 38px;
-        height: 38px;
-        background-position: -37px -65px;
-    }
+        ul.album-list li .album-btn-group button.list{
+            width: 38px;
+            height: 38px;
+            background-position: -37px -65px;
+        }
 }
 
 
-@media all and (min-width:361px){
-.album-inline{
-                
-}
-.album-title{
-    padding: 20px;
-    font-size: 12px;
-    background-color: #f4f4f4;
-}
-    .album-title .album-img{
-        position: absolute;        
-        left: 10px;
-        width: 190px;
-        height: 190px;
-        overflow: hidden;
-        border: 3px solid #fff;
-        -webkit-box-shadow: 3px 3px 10px #999;
-           -moz-box-shadow: 3px 3px 10px #999;
-                box-shadow: 3px 3px 10px #999;
+@media all and (min-width:480px){
+    .album-inline{
+                    
     }
-
-    .album-title .album-img img{
-        width: 190px;
-        height: 190px;
+    .album-title{
+        padding: 20px;
+        font-size: 12px;
+        background-color: #f4f4f4;
     }
+        .album-title .album-img{
+            position: absolute;        
+            left: 10px;
+            width: 190px;
+            height: 190px;
+            overflow: hidden;
+            border: 3px solid #fff;
+            -webkit-box-shadow: 3px 3px 10px #999;
+               -moz-box-shadow: 3px 3px 10px #999;
+                    box-shadow: 3px 3px 10px #999;
+        }
 
-.album-info {
-    margin-left: 205px;
-}
-    .album-info h3 {
-        color: #828282;
+        .album-title .album-img img{
+            width: 190px;
+        }
+
+    .album-info {
+        margin-left: 205px;
+    }
+        .album-info h3 {
+            color: #828282;
+            margin: 0;
+            width: 7em;
+            height: 1.75em;
+            line-height: 1.75em;
+            overflow: hidden;
+        }
+
+        .album-info .album-desc {
+            line-height: 1.5em;
+            height: 4.5em;
+            overflow: hidden;
+            color: #b0b0b0;
+        }
+
+        .album-info .album-control {
+            position: relative;
+            height: 77px;
+            margin-top: 14px;
+            width: 235px;
+        }
+
+        .album-title .album-list-count{
+            border-top: 2px solid #e3e7ea;
+            margin-top: 38px;
+            padding-top: 10px;
+            color: #828282;
+        }
+
+        .album-info .album-control button{
+            background: url(http://img02.taobaocdn.com/tps/i2/T1HuiDXtlgXXb0UuAk-178-265.png) no-repeat #f6f6f6;
+            border: 0;
+            font-size: 0;
+        }
+
+        .album-info .album-control .play{
+            width: 96px;
+            height: 99px;
+        }
+
+        .album-info .album-control .list{
+            background-position: -106px -6px;
+            width: 69px;
+            height: 84px;
+        }
+
+    ul.album-list{
+        list-style: none;
         margin: 0;
-        width: 7em;
-        height: 1.75em;
-        line-height: 1.75em;
-        overflow: hidden;
+        padding: 0;
     }
 
-    .album-info .album-desc {
-        line-height: 1.5em;
-        height: 3em;
-        overflow: hidden;
-        color: #b0b0b0;
-    }
-
-    .album-info .album-control {
+    ul.album-list li{
         position: relative;
-        height: 77px;
-        margin-top: 23px;
-        width: 235px;
+        display: block;
+        width: 100%;
+        padding: 10px 0;
+        font-size: 12px;
     }
 
-    .album-title .album-list-count{
-        border-top: 2px solid #e3e7ea;
-        margin-top: 38px;
-        padding-top: 10px;
-        color: #828282;
-    }
 
-    .album-info .album-control button{
-        background: url(http://img02.taobaocdn.com/tps/i2/T1HuiDXtlgXXb0UuAk-178-265.png) no-repeat #f6f6f6;
-        border: 0;
-        font-size: 0;
-    }
+        ul.album-list li:nth-child(2n+1){
+            background-color: #dfe4e7;
+        }
 
-    .album-info .album-control .play{
-        width: 96px;
-        height: 99px;
-    }
+        ul.album-list li:nth-child(2n){
+            background-color: #f6f6f6;
+        }
 
-    .album-info .album-control .list{
-        background-position: -106px -6px;
-        width: 69px;
-        height: 84px;
-    }
+        ul.album-list li h3{
+            display: inline-block;
+            margin-left: 10px;
+            font-size: 14px;
+            color: #3162c3;
+            line-height: 30px;
+        }
 
-ul.album-list{
-    list-style: none;
-    margin: 0;
-    padding: 0;
+        ul.album-list li .album-btn-group{
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+
+        ul.album-list li .album-btn-group button{
+            border: 0;
+            font-size: 0;
+            line-height: 53px;
+            background: url(http://img02.taobaocdn.com/tps/i2/T1HuiDXtlgXXb0UuAk-178-265.png) no-repeat transparent;
+        }
+
+        ul.album-list li .album-btn-group button.play{
+            width: 57px;
+            height: 57px;
+            background-position: 0 -121px;
+        }
+
+        ul.album-list li .album-btn-group button.list{
+            width: 57px;
+            height: 57px;
+            background-position: -54px -121px;
+        }
 }
 
-ul.album-list li{
-    position: relative;
+
+.ks-overlay {
+    position:absolute;
+    left:-9999px;
+    top:-9999px;
+}
+.ks-overlay-hidden {
+    visibility: hidden;
+}
+
+.ks-overlay-mask-hidden {
+    display: none;
+}
+
+.ks-overlay-shown {
+    visibility: visible;
+}
+
+.ks-overlay-mask-shown{
     display: block;
-    width: 100%;
-    padding: 10px 0;
-    font-size: 12px;
+}
+.album-popup {
+    z-index: 999;
+    background-color: #fff;
+    overflow: hidden;
+    top: 2%!important;
+    -webkit-border-radius: 10px;
+    -webkit-box-shadow: 0px 0px 6px #333; 
 }
 
-
-    ul.album-list li:nth-child(2n+1){
-        background-color: #dfe4e7;
+    .album-popup .desc-container{
+        margin: 20px;
     }
 
-    ul.album-list li:nth-child(2n){
-        background-color: #f6f6f6;
+    .album-popup .desc-container .desc{
+        margin-left: 0;
+        padding: 0 10px;
+        
     }
 
-    ul.album-list li h3{
-        display: inline-block;
-        margin-left: 10px;
-        font-size: 14px;
-        color: #3162c3;
-        line-height: 30px;
-    }
-
-    ul.album-list li .album-btn-group{
+    .album-popup .album-close{
+        display: inline;
         position: absolute;
-        top: 10px;
-        right: 10px;
+        font-size: 32px;
+        color: #666;
+        cursor: pointer;
+        top: 15px;
+        right: 15px;
     }
-
-    ul.album-list li .album-btn-group button{
-        border: 0;
-        font-size: 0;
-        line-height: 53px;
-        background: url(http://img02.taobaocdn.com/tps/i2/T1HuiDXtlgXXb0UuAk-178-265.png) no-repeat transparent;
-    }
-
-    ul.album-list li .album-btn-group button.play{
-        width: 57px;
-        height: 57px;
-        background-position: 0 -121px;
-    }
-
-    ul.album-list li .album-btn-group button.list{
-        width: 57px;
-        height: 57px;
-        background-position: -54px -121px;
-    }
-}
-
 
