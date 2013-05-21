@@ -42,6 +42,10 @@ KISSY.add(function(S,Node, Transition, Event) {
       }
 
       return currentHeader;
+    },
+
+    setTitle: function (title) {
+      $("#header div.title").html(title);
     }
   
   };
