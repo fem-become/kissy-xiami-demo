@@ -385,6 +385,8 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
 
     init: function (cfg) {
 
+        header.setTitle("午后音乐");
+
         if (!el) {
             el = $('<div class="home-page home"></div>').appendTo(body);
 
