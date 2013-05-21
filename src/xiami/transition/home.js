@@ -5,7 +5,6 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
   var myName=this.getName();
   var body=$('#body');
 
-  var API_Song = 'http://test.fem.taobao.net:3000/song/hotlist';
 
   if (!localStorage.getItem("MUSIC_LIST")) {
     var test = [12345, 11024, 11020, 11026, 12024];
@@ -459,6 +458,7 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
     },
 
     songListInit: function(){
+        var self = this;
         var song = data.song;
         song.length = 5;
         var render = new XTemplate(TPL_Song).render({data:song});
@@ -466,16 +466,21 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
 
         $('.play', '.J_songList').on(Event.Gesture.tap, function () {
             var song_id = $(this).attr('song-id');
+            alert(song_id);
             Transition.forward(myName, 'xiami/transition/player',{
                 id:song_id
             });
         });
         $('.add-list', '.J_songList').on(Event.Gesture.tap, function () {
             var song_id = $(this).attr('song-id');
-            Transition.forward(myName, 'xiami/transition/player',{
-                id:song_id
-            });
+            self.addToList(song_id);
         });
+    },
+
+    addToList:function(song){
+        var list = localStorage.getItem('MUSIC_LIST')? localStorage.getItem('MUSIC_LIST').split(','):[];
+        list.push(song);
+        localStorage.setItem('MUSIC_LIST', S.unique(list).join(','));
     }
 
   };
