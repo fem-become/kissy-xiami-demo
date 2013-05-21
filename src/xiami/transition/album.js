@@ -1,4 +1,4 @@
-KISSY.add(function(S, Node, Transition, Event, header, Overlay, ScrollView, ScrollbarPlugin) {
+KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, ScrollView, ScrollbarPlugin) {
 
     var $ = Node.all,
         el,
@@ -14,13 +14,15 @@ KISSY.add(function(S, Node, Transition, Event, header, Overlay, ScrollView, Scro
             header.setTitle(''); 
             
             if(config.id != pid){
-                el = $('<div class="mod-page"><img src="http://img04.taobaocdn.com/tps/i4/T1dMOMXqBbXXcsSYfr-42-42.crdownload" /></div>').appendTo(body);
+                el = $('<div class="mod-page"><div class="album-loading"></div></div>').appendTo(body);
+                header.setTitle("loading...");
                 _this.fetchData(config);
             }
             
             if (!headerEl.contents().length) {
                 headerEl.append(myName);
             }
+            suspender.setCurrentMod(myName);
         },
 
         getEl: function() {
@@ -65,8 +67,9 @@ KISSY.add(function(S, Node, Transition, Event, header, Overlay, ScrollView, Scro
                     });
 
                     // 点击加入播放列表
-                    el.all('.J_album_add_list').on(Event.Gesture.tap, function(){
-                  
+                    el.all('.J_album_add_list').on(Event.Gesture.tap, function(e){
+                        var song_id = $(e.target).attr('data-id');
+                        suspender.addToList(song_id);
                     });
 
                     // 点击简介 弹框显示全部内容
@@ -171,6 +174,6 @@ KISSY.add(function(S, Node, Transition, Event, header, Overlay, ScrollView, Scro
     };
 
 }, {
-    requires: ["node", "./index", "event", "../header", 'overlay', 'scrollview', 'scrollview/plugin/scrollbar']
+    requires: ["node", "./index", "event", "../header","../suspender", 'overlay', 'scrollview', 'scrollview/plugin/scrollbar']
 });
 

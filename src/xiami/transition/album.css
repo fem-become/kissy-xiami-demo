@@ -1,3 +1,10 @@
+
+    .album-loading {
+        background: url(http://img02.taobaocdn.com/tps/i2/T1G59MXvtdXXaQpqoD-32-32.crdownload) no-repeat center center;
+        height: 400px;
+    }
+
+
 @media all and (max-width:480px){
     .album-inline{
                     

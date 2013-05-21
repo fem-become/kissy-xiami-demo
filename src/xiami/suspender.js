@@ -1,4 +1,4 @@
-KISSY.add(function(S, Node, Event, Transition) {
+KISSY.add(function(S, Node, Event, Transition, Player) {
 
   var $ = S.all,
       suspender = $('#suspender'),
@@ -45,6 +45,8 @@ KISSY.add(function(S, Node, Event, Transition) {
       // });
       suspender.addClass('playing');
       setTimeout(self._updateLoading,100,false,self);
+      //Player.render('http://m1.file.xiami.com/224/224/992/12345_95993_l.mp3');
+      //Player.init({id: '1769374012'});
     },
 
     _updateLoading: function(){
@@ -62,8 +64,16 @@ KISSY.add(function(S, Node, Event, Transition) {
 
     },
 
-    addToList: function(){
-      popup.one('.J_PopupMsg').text('XXXXXX添加到播放列表').end().show(.3);
+    addToList: function(songs){
+      var list = localStorage.getItem('MUSIC_LIST')? localStorage.getItem('MUSIC_LIST').split(','):[];
+      if(!S.isArray(songs)){
+        songs = [songs];
+      } 
+      for(var i = 0; i < songs.length; i++){
+        list.push(songs[i]);
+      }    
+      localStorage.setItem('MUSIC_LIST', S.unique(list).join(','));
+      popup.one('.J_PopupMsg').text(songs.length + '首歌曲已添加到播放列表').end().show(.3);
       S.later(function(){
         popup.hide(.3);
       },1500);
@@ -73,5 +83,5 @@ KISSY.add(function(S, Node, Event, Transition) {
   };
   
 },{
-  requires:['node','event','./transition/index']
+  requires:['node','event','./transition/index','./transition/player']
 });

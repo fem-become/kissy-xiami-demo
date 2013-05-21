@@ -115,6 +115,8 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
             var headerEl = header.getHeader('discover');
             if (!headerEl.contents().length) {
                 headerEl.html('<h1>发现音乐</h1><a href="#" class="list-icon icon">列表</a><a href="#" class="search-icon icon">搜索</a>');
+            }else {
+                header.setTitle('发现音乐');
             }
             suspender.setCurrentMod(myName);
         },
@@ -252,7 +254,7 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
             // console.log('ratio:'+ratio+' count:'+count+' time:'+time);
             shaking = 1;
             energy.css('width', ratio * 100 + '%');
-            ratio > 0.92 ? anode.css('background', '#90d5fe') : anode.css('background', '#cad0d3');
+            ratio === 1 ? anode.css('background', '#90d5fe') : anode.css('background', '#cad0d3');
         },
 
         /**
@@ -277,10 +279,6 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
                         var html = new XTemplate(S.one('#songs-list-tpl').html()).render({songs:response.songs});
                         S.one('.J_SongsList').one('ul').html(html).end().show();
                         scrollview.show().sync();   
-
-                        energy.css('width','0');
-                        anode.css('background', '#cad0d3');  
-
                         shaking = 0;                   
                     }
                 }
@@ -495,12 +493,22 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
                 }else if(mode === 'shake' && e.direction === 'right'){                    
                     switchToRadar();
                     shake.stop();
+                }else if(e.direction === 'up'){
+                    window.scrollBy(0, 100);
+                }else if(e.direction === 'down'){
+                    window.scrollBy(0, -100);
                 }
             });
 
             //摇一摇模式
             shake.on('shakestart',function(e){
                 shaking = shaking ^ 1;
+                if(shaking === 0){
+                    var energy = S.one('.battery-energy'),
+                        anode = S.one('.battery-anode');
+                    energy.css('width','0');
+                    anode.css('background', '#cad0d3');  
+                }
             });
 
             shake.on('shaking',function(e){

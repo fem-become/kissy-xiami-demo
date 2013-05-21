@@ -92,7 +92,6 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
         '<div class="hot-albums blocks J_hotAlbums">'+
             '<div class="block-title">'+
             '<h2>推荐专辑</h2>'+
-            '<a href="#" class="icon">....</a>'+
             '</div>'+
             '<ul class="albums-items">'+
             '{{#each data}}'+'<li class="log url albums-item" data-url="{{id}}">'+
@@ -107,7 +106,6 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
         '<div class="blocks hot-styles">'+
             '<div class="block-title ">'+
             '<h2>热门风格</h2>'+
-            '<a href="#" class="icon">....</a>'+
             '</div>'+
             '<ul class="style-items" url-id={{id}}>'+
             '{{#each data}}'+'<li>{{name}}</li>'+'{{/each}}'+
@@ -118,7 +116,6 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
         '<div class="blocks collect J_collect">'+
             '<div class="block-title ">'+
             '<h2>精选集推荐</h2>'+
-            '<a href="#" class="icon">....</a>'+
             '</div>'+
             '{{#each data}}'+'<div class="collect_item {{#if xindex%2 !== 0}}right{{/if}}">'+
             '<p class="cover">'+
@@ -144,7 +141,6 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
         '<div class="blocks song">'+
             '<div class="block-title">'+
             '<h2>推荐金曲</h2>'+
-            '<a href="#" class="icon">....</a>'+
             '</div>'+
             '<ul class="song-list J_songList">'+
             '{{#each data}}'+'<li>'+
@@ -158,8 +154,8 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
 
     var data = {
         promotion :[{
-            "id":"1468771348",
-            "img":"http://img.xiami.com/images/common/promotion/13668928395959.gif"
+            "id":"410839",
+            "img":"http://img01.taobaocdn.com/tps/i1/T1GKuMXw4eXXcOrsQW-340-128.jpg"
         },{
             "id":"379797",
             "img":"http://img.xiami.com/images/common/promotion/13668930421433.gif"
@@ -347,7 +343,7 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
     return {
 
         init: function (cfg) {
-
+            header.setTitle("午后音乐");
             if (!el) {
                 el = $('<div class="home-page home"></div>').appendTo(body);
 
@@ -445,7 +441,7 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
             });
             $('.add-list', '.J_songList').on(Event.Gesture.tap, function () {
                 var song_id = $(this).attr('song-id');
-                self.addToList(song_id);
+                suspender.addToList(song_id);
             });
         },
 
