@@ -29,6 +29,7 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
                     break;
                 case "s5":
                     $("#page").removeClass("cat-show");
+                    $("#page").css('-webkit-transform','none');//否则里面的position:fixed会失效
                     $("#cat").hide();
                     Transition.forward(myName, "xiami/transition/discover");
                     break;

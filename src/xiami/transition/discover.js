@@ -38,8 +38,10 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
                     '</div><!-- end of .radar-area -->',
                     '<div class="songs-area center">',
                         '<div class="songs-list J_SongsList">',
-                            '<ul class="unstyled">',
-                            '</ul>',
+                            '<div class="ks-scrollview-content ks-content">',
+                                '<ul class="unstyled">',
+                                '</ul>',
+                            '</div>',
                         '</div>',
                     '</div><!-- end of .songs-area -->',
                 '</div><!-- end of .display-area -->',
@@ -526,7 +528,7 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
                 // Transition.forward(myName, 'xiami/transition/player',{
                 //     id: target.parent('li').attr('data-id')
                 // });
-                suspender.playOne(target.parent('li').attr('data-id'));
+                suspender.playOne({id: target.parent('li').attr('data-id')});
             });
 
             //加入列表
@@ -557,5 +559,5 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
 
 }, {
     requires: ['node','event','./index','event','../header','dd',
-    'scrollview/drag','scrollview/plugin/scrollbar','ajax', 'xtemplate','../suspender','./shake']
+    'scrollview/drag','scrollview/plugin/scrollbar','ajax', 'xtemplate','../suspender','./shake','./discover.css']
 });

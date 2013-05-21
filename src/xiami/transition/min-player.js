@@ -10,7 +10,7 @@
 			});
 		})
  */
-KISSY.add('min-player', function(S, Node) {
+KISSY.add(function(S, Node) {
 	var $ = Node.all;
 	var re = {};
 	var player;
