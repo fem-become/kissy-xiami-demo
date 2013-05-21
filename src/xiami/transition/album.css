@@ -318,6 +318,11 @@
         color: #3162c3;
     }
 
+    .album-popup .desc-container .desc {
+        overflow: hidden;
+        position: relative;
+    }
+
     .album-popup .desc-container .desc-header {
         margin-bottom: 20px;
     }

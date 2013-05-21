@@ -130,7 +130,7 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
                         '<h4 class="title">{{title}}</h4>',
                         '<h4 class="article">{{author}}</h4>',
                     '</dt>',
-                    '<dd class="desc">{{desc}}</dd>',
+                    '<dd class="desc"><div class="ks-scrollview-content ks-content">{{desc}}</div></dd>',
                 '</dl>',
                 '<i class="J_close album-close">×</i>'
             ].join('');
@@ -154,35 +154,38 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
             };
 
             var pop = new Overlay(cfg);
+            pop.on('afterRenderUI',function(){
+                (function(){
+                    var _descHeight     = pop.get('el').all('.desc').height();
+                        _titleHeight    = pop.get('el').all('dt').height();
+                        _contentHeight  = pop.get('el').height();
+                    
+                        if(_descHeight > _contentHeight - 80 - _titleHeight );
+                        pop.get('el').all('.desc').css('height', (_contentHeight - _titleHeight - 80) + 'px');
+
+                    var scrollview = new ScrollView({
+                            srcNode: pop.get('el').all('.desc'),
+                            plugins: [new ScrollbarPlugin({})]
+                        }).render();
+                })();
+
+                pop.get('el').all('.J_close').on('click', function(){
+                    pop.get('el').remove();
+
+                });
+            });
             pop.render().show();
 
             //pop.show();
 
             //console.log(pop.render());
-            (function(){
-                var _descHeight     = pop.get('el').all('.desc').height();
-                    _titleHeight    = pop.get('el').all('dt').height();
-                    _contentHeight  = pop.get('el').height();
-                
-                    if(_descHeight > _contentHeight - 80 - _titleHeight );
-                    pop.get('el').all('.desc').css('height', (_contentHeight - _titleHeight - 80) + 'px');
 
-                    window.scrollview = new ScrollView({
-                        srcNode: pop.get('el').all('.desc'),
-                        plugins: [new ScrollbarPlugin({})]
-                    }).render();
-            })();
-
-            pop.get('el').all('.J_close').on('click', function(){
-                pop.get('el').remove();
-
-            });
           
         }
 
     };
 
 }, {
-    requires: ["node", "./index", "event", "../header","../suspender", 'overlay', 'scrollview', 'scrollview/plugin/scrollbar']
+    requires: ["node", "./index", "event", "../header","../suspender", 'overlay', 'scrollview', 'scrollview/plugin/scrollbar','./album.css']
 });
 
