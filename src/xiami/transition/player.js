@@ -110,6 +110,7 @@ S.getScript('http://lab.cubiq.org/iscroll/src/iscroll.js', function() {
 	S.mix(re, {
 
 		init: function(config) {
+			header.setTitle("播放器");
 			numInit = 0;
 			if (!config || !config.id) {
 				musicInfo.id = listArr[0];
