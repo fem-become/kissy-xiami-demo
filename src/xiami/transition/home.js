@@ -475,11 +475,7 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
         });
         $('.add-list', '.J_songList').on(Event.Gesture.tap, function () {
             var song_id = $(this).attr('song-id');
-<<<<<<< HEAD
             suspender.addToList(song_id);
-=======
-            self.addToList(song_id);
->>>>>>> a32e1786be297b94d4480457d93e06fe989b10ab
         });
     },
 
