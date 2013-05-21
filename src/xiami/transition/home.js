@@ -1,4 +1,4 @@
-KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, suspender) {
+KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, suspender, DD) {
 
   var $ = Node.all;
   var el;
@@ -7,7 +7,7 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
 
 
   if (!localStorage.getItem("MUSIC_LIST")) {
-    var test = [12345, 11024, 11020, 11026, 12024];
+    var test = [12345, 11024];
     localStorage.setItem('MUSIC_LIST', test.toString());
   }
 
@@ -28,8 +28,13 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
           alert("// TODO");
           break;
         case "s5":
-          $("#page").removeClass("cat-show");
+          var pEl = $("#page");
+          pEl.removeClass("cat-show");
           $("#cat").hide();
+          // $("#cat").show();
+          pEl.css("-webkit-transition", "300ms");
+          pEl.css("transition", "300ms");
+          pEl.css("-webkit-transform", "translate3d(0px, 0, 0)");
           Transition.forward(myName, "xiami/transition/discover");
           break;
       }
@@ -495,6 +500,7 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
       'event',
       'gallery/slide/1.0/',
       '../header',
-      '../suspender'
+      '../suspender',
+      "dd"
       ]
 });
