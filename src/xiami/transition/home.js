@@ -158,12 +158,12 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
             "img":"http://img01.taobaocdn.com/tps/i1/T1GKuMXw4eXXcOrsQW-340-128.jpg"
         },{
             "id":"379797",
-            "img":"http://img.xiami.com/images/common/promotion/13668930421433.gif"
+            "img":"http://img04.taobaocdn.com/tps/i4/T16WSOXxVaXXcOrsQW-340-128.jpg"
         },{
             "id":"1769133591",
             "img":"http://img.xiami.com/images/common/uploadpic/76/13545037766588.jpg"
         },{
-            "id":"21581326",
+            "id":"1468771348",
             "img":"http://img.xiami.com/images/common/promotion/13668929958435.jpg"
         }],
         hotAlbums:[
