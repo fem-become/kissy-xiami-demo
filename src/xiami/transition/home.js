@@ -376,7 +376,7 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
                 effect:'hSlide',
                 touchmove:true
             }).next();
-            $('.J_promotion').on(Event.Gesture.tap, function () {
+            $('.J_promotion').on('click', function () {
                 var album_id = $(this).attr('data-url');
                 Transition.forward(myName, 'xiami/transition/album',{
                     id:album_id
