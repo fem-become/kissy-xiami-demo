@@ -252,8 +252,8 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
                 count = e.count,
                 time = e.time,
                 speed = time/count,//[200,600]->[100,0]
-                ratio = speed < 200 ? 1 : (speed > 300? 0 : (1.5 - speed / 400));
-            // console.log('ratio:'+ratio+' count:'+count+' time:'+time);
+                ratio = speed < 200 ? 1 : (speed > 600? 0 : (1.5 - speed / 400));
+            //console.log('ratio:'+ratio+' count:'+count+' time:'+time);
             shaking = 1;
             energy.css('width', ratio * 100 + '%');
             ratio === 1 ? anode.css('background', '#90d5fe') : anode.css('background', '#cad0d3');
@@ -433,7 +433,8 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
             scrollview = new ScrollView({
                 srcNode: '.songs-list',
                 plugins: [new ScrollbarPlugin({})]
-            }).render().hide();
+            }).render();
+            S.one('.J_SongsList').hide();
 
             var shakePanel = S.one('.J_ShakePanel'),
                 radarPanel = S.one('.J_RadarPanel'),
@@ -504,18 +505,19 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
 
             //摇一摇模式
             shake.on('shakestart',function(e){
-                shaking = shaking ^ 1;
                 if(shaking === 0){
                     var energy = S.one('.battery-energy'),
                         anode = S.one('.battery-anode');
                     energy.css('width','0');
                     anode.css('background', '#cad0d3');  
                 }
+                shaking = shaking ^ 1;
             });
 
             shake.on('shaking',function(e){
-                if(shaking === 1)
+                if(shaking === 1){
                     self._updateEnergy(e);
+                }
             });
             shake.on('shakeend',function(e){
                 if(shaking === 1)

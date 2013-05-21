@@ -278,7 +278,8 @@
 		.pl-tab-content{
 			width: 100%;
 			background: #f4f4f4;
-			
+			position: relative;
+			overflow: hidden;
 		}
 		.pl-player-tab{
 			width: 100%;

@@ -464,6 +464,7 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
       'gallery/slide/1.0/',
       '../header',
       '../suspender',
-      "dd"
+      "dd",
+      './home.css'
       ]
 });
