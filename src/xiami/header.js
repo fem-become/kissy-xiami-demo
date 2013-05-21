@@ -25,6 +25,7 @@ KISSY.add(function(S,Node, Transition, Event) {
       } else {
         currentHeader = headerMap[mod] = $(TPL).appendTo(header);
         currentHeader.all("a.go-back").on(Event.Gesture.tap, function() {
+           S.Player && S.Player.fire('go-back');
           Transition.backward();
         });
         currentHeader.all("a.go-cat").on(Event.Gesture.tap, function() {
@@ -42,6 +43,10 @@ KISSY.add(function(S,Node, Transition, Event) {
       }
 
       return currentHeader;
+    },
+
+    setTitle: function (title) {
+      $("#header div.title").html(title);
     }
   
   };

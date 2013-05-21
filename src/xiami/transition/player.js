@@ -99,7 +99,9 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 	S.mix(re, {
 
 		init: function(config) {
+
 			this.bringRest();
+			header.setTitle("播放器");
 			numInit = 0;
 			if (!config || !config.id) {
 				musicInfo.id = localArr[0];
