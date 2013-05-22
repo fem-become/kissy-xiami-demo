@@ -191,6 +191,9 @@ html {
     height: 140px;
     padding: 10px 15px 10px 15px;
 }
+.home .right{
+    background-color: #D7DDE1;
+}
 .collect_item .cover{
     padding: 0;
     margin: 0;
@@ -255,6 +258,7 @@ html {
     border-radius: 25px;
     background-position: -39px 12px;
 }
+
 /*collect end*/
 
 /*song start*/
