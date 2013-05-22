@@ -67,7 +67,7 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
                         var target = $(this),
                             song_id = target.attr('data-id'),
                             location = target.attr('data-location'),
-                            title = target.parent('li').one('.album-title').text(),
+                            title = target.parent('li').one('.album-song-title').text(),
                             cover = albumCover;
                         suspender.playOne({'id':song_id,'location':location,'albumCover': cover,'title':title});
                     });
@@ -91,7 +91,7 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
                     el.all('.J_album_add_list_all').on(Event.Gesture.tap, function(e){
                         var songs = [];
                         for(var i = 0; i < list_songs.length; i++){
-                            songs.push(list_songs[i]['id']);
+                            songs.push({'id':list_songs[i]['id'],'location':list_songs[i]['location'],'albumCover': cover,'title':list_songs[i]['title']});
                         }
                         suspender.addToList(songs);
                     });
