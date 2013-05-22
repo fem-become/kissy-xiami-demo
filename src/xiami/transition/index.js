@@ -49,6 +49,7 @@ KISSY.add( function (S, Node) {
                     useTransition:true,
                     complete:function(){
                         preEl.hide();
+                        window.scroll(0, 0);
                     }
                 });
             });
@@ -101,6 +102,7 @@ KISSY.add( function (S, Node) {
                     useTransition:true,
                     complete:function(){
                         preEl.hide();
+                        window.scroll(0, 0);
                     }
                 });
 
