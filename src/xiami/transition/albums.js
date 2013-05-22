@@ -52,5 +52,5 @@ KISSY.add(function (S, Node, Transition, Event, IO, header) {
   };
 
 }, {
-  requires: ['node', './index', 'event', 'ajax', '../header']
+  requires: ['node', './index', 'event', 'ajax', '../header','./albums.css']
 });

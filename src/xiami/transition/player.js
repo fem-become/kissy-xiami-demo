@@ -74,19 +74,27 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 		'	<div id="J_PlayerTab" class="pl-player-tab">' +
 		'		<div class="pl-img-tab" id="J_PlImgTab">' +
 		'			<div class="pl-img-content">' +
-		'				<img class="pl-img" id="J_PlImg" src="http://img04.taobaocdn.com/tps/i4/T1mAOLXtXgXXbTIWs3-128-128.gif" alt="img">' +
+		'				<img class="pl-img" id="J_PlImg" src="http://www.lettersmarket.com/uploads/lettersmarket/blog/loaders/common_metal/ajax_loader_metal_64.gif" alt="img">' +
 		'			</div>	' +
 		'		</div>' +
 		'		<div class="pl-list-tab" id="J_PlListTab" style="display:none">' +
+		'			<div class="ks-scrollview-content ks-content">' + 
 		'			<ul class="pl-music-list" id="J_PlMusicList">' +
-		'				<li><img class="pl-img" src="http://img04.taobaocdn.com/tps/i4/T1mAOLXtXgXXbTIWs3-128-128.gif" alt="img"></li>'+
+		'				<li><img class="pl-img" src="http://www.lettersmarket.com/uploads/lettersmarket/blog/loaders/common_metal/ajax_loader_metal_64.gif" alt="img"></li>'+
 		'			</ul>' +
+		'			</div>' +
 		'		</div>' +
 		'	</div>' +
 		'</div>';
 
+
 	var numInit = 0;
 	var initProg;
+
+	var numInit = 0,
+		scrollview = null;
+
+
 
 
 	S.Player = new S.Base();
@@ -108,8 +116,6 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 				musicInfo.id = config.id;
 				musicInfo.src = config.src || 'http://m1.file.xiami.com/1/218/218/915/11024_186271_l.mp3';
 			}
-			alert(musicInfo.id);
-			alert(musicInfo.src);
 			if (!el) {
 				el = $('<div class="mod-page"></div>').appendTo(body);
 				el.html(TAB_CONTENT_TEMP + HANDLE_TEMPLATE);
@@ -122,14 +128,28 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 			this.render();
 			this.fillList();
 			this._bindEvent();
-			this.setScrollView();
+			//this.setScrollView();
 
 			
 
 
-			var height = $(window).height() - 145 - 45;
+			var HEADER_HEIGHT = 45,
+				PLAY_INFO_HEIGHT = $('#J_PlayInfo').height(),
+				MAXHEIGHT = 185,
+				PADDING = 8,
+				tabHeight = $(window).height() - PLAY_INFO_HEIGHT - HEADER_HEIGHT,
+				winWidth = $(window).width();
 			//alert(height);
-			$('#J_PlTabContent').css('height', height);
+			//$('#J_PlTabContent').css('height', height);
+			$('#J_PlayerTab').height(tabHeight);
+			$('#J_PlImg').css({'margin-top':(tabHeight - 185 - 2 * PADDING)/2 + 'px'});
+
+			// 滚动条
+			scrollview = new ScrollView({
+				srcNode: '#J_PlListTab',
+				plugins: [new ScrollbarPlugin({})]
+			}).render();
+
 
 			var headerEl = header.getHeader(myName);
 			if (!headerEl.contents().length) {
@@ -196,7 +216,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 			if (!S.player) S.player = new Audio();
 
 			S.player.src = src;
-			S.player.type = 'audio/mp3';
+			//S.player.type = 'audio/mp3';
 			S.player.load();
 
 			$('#J_TotalTime').html('loading');
@@ -398,7 +418,11 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 				el.addClass('is-playing').siblings('.J_MusicItem').removeClass('is-playing');
 				self.bringRest();
 				progress && progress.cancel();
-				self.createAudio(el.attr('data-url'));
+				musicInfo.id = el.attr('data-id');
+				musicInfo.src = el.attr('data-url');
+				self.render();
+				//self.createAudio(el.attr('data-url'));
+
 				//Music.src = el.attr('data-src');
 
 				self.updateProgress();
@@ -550,6 +574,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 							//S.log(listA);
 							//alert(listA)
 							$('#J_PlMusicList').html(listA.join(''));
+							scrollview.sync();
 							re._changeColor();
 							re._pointMusic();
 						}
@@ -624,7 +649,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 	return re;
 
 }, {
-	requires: ["node", "./index", "event", "../header", 'dd', 'dd/plugin/constrain', 'scrollview/drag', 'scrollview/plugin/scrollbar']
+	requires: ["node", "./index", "event", "../header", 'dd', 'dd/plugin/constrain', 'scrollview/drag', 'scrollview/plugin/scrollbar','./player.css']
 });
 
 /**

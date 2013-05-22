@@ -1,7 +1,7 @@
 ﻿/*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 19 18:18
+build time: May 7 19:42
 */
 /**
  * @ignore
@@ -166,7 +166,7 @@ KISSY.add('dom/base/api', function (S) {
 
 /*
  2011-08
- - 添加键盘枚举值，方便依赖程序清晰
+ - 添加节点类型枚举值，方便依赖程序清晰
  */
 /**
  * @ignore
@@ -178,8 +178,6 @@ KISSY.add('dom/base/attr', function (S, DOM, undefined) {
     var doc = S.Env.host.document,
         NodeType = DOM.NodeType,
         docElement = doc && doc.documentElement,
-        TEXT = docElement && docElement.textContent === undefined ?
-            'innerText' : 'textContent',
         EMPTY = '',
         nodeName = DOM.nodeName,
         R_BOOLEAN = /^(?:autofocus|autoplay|async|checked|controls|defer|disabled|hidden|loop|multiple|open|readonly|required|scoped|selected)$/i,
@@ -284,7 +282,7 @@ KISSY.add('dom/base/attr', function (S, DOM, undefined) {
                         ret,
                         i,
                         len,
-                        one = elem.type === 'select-one';
+                        one = (String(elem.type) === 'select-one');
 
                     // Nothing was selected
                     if (index < 0) {
@@ -334,6 +332,7 @@ KISSY.add('dom/base/attr', function (S, DOM, undefined) {
                 if (S.isArray(value)) {
                     return elem.checked = S.inArray(DOM.val(elem), value);
                 }
+                return undefined;
             }
         };
     });
@@ -471,7 +470,8 @@ KISSY.add('dom/base/attr', function (S, DOM, undefined) {
              * @param {HTMLElement[]|HTMLElement|String} selector matched elements
              * @param {String|Object} name The name of the attribute to set. or A map of attribute-value pairs to set.
              * @param [val] A value to set for the attribute.
-             * @return {String}
+             * @param [pass] internal use by anim
+             * @return {String|undefined}
              */
             attr: function (selector, name, val, /*internal use by anim/fx*/pass) {
                 /*
@@ -520,10 +520,6 @@ KISSY.add('dom/base/attr', function (S, DOM, undefined) {
                     return undefined;
                 }
 
-                if (!(name = S.trim(name))) {
-                    return undefined;
-                }
-
                 // attr functions
                 if (pass && attrFn[name]) {
                     return DOM[name](selector, val);
@@ -549,7 +545,6 @@ KISSY.add('dom/base/attr', function (S, DOM, undefined) {
                     attrNormalizer = attrHooks[name];
                 }
 
-
                 if (val === undefined) {
                     if (el && el.nodeType === NodeType.ELEMENT_NODE) {
                         // browsers index elements by id/name on forms, give priority to attributes.
@@ -561,6 +556,13 @@ KISSY.add('dom/base/attr', function (S, DOM, undefined) {
                         }
 
                         ret = el.getAttribute(name);
+
+                        if (ret === "") {
+                            var attrNode = el.getAttributeNode(name);
+                            if (!attrNode || !attrNode.specified) {
+                                return undefined;
+                            }
+                        }
 
                         // standard browser non-existing attribute return null
                         // ie<8 will return undefined , because it return property
@@ -721,35 +723,31 @@ KISSY.add('dom/base/attr', function (S, DOM, undefined) {
              * @return {String|undefined}
              */
             text: function (selector, val) {
-                var el, els, i;
+                var el, els, i, nodeType;
                 // getter
                 if (val === undefined) {
                     // supports css selector/Node/NodeList
                     el = DOM.get(selector);
-
-                    // only gets value on supported nodes
-                    if (el.nodeType == NodeType.ELEMENT_NODE) {
-                        return el[TEXT] || EMPTY;
-                    }
-                    else if (el.nodeType == NodeType.TEXT_NODE) {
-                        return el.nodeValue;
-                    }
-                    return undefined;
-                }
-                // setter
-                else {
+                    return DOM._getText(el);
+                } else {
                     els = DOM.query(selector);
                     for (i = els.length - 1; i >= 0; i--) {
                         el = els[i];
-                        if (el.nodeType == NodeType.ELEMENT_NODE) {
-                            el[TEXT] = val;
+                        nodeType = el.nodeType;
+                        if (nodeType == NodeType.ELEMENT_NODE) {
+                            DOM.empty(el);
+                            el.appendChild(el.ownerDocument.createTextNode(val));
                         }
-                        else if (el.nodeType == NodeType.TEXT_NODE) {
+                        else if (nodeType == NodeType.TEXT_NODE || nodeType == NodeType.CDATA_SECTION_NODE) {
                             el.nodeValue = val;
                         }
                     }
                 }
                 return undefined;
+            },
+
+            _getText: function (el) {
+                return el.textContent;
             }
         });
 
@@ -759,6 +757,12 @@ KISSY.add('dom/base/attr', function (S, DOM, undefined) {
 });
 /*
  NOTES:
+ yiminghe@gmail.com: 2013-03-19
+ - boolean property 和 attribute ie 和其他浏览器不一致，统一为类似 ie8：
+ - attr('checked',string) == .checked=true setAttribute('checked','checked') // ie8 相同 setAttribute()
+ - attr('checked',false) == removeAttr('check') // ie8 不同, setAttribute ie8 相当于 .checked=true setAttribute('checked','checked')
+ - removeAttr('checked') == .checked=false removeAttribute('checked') // ie8 removeAttribute 相同
+
  yiminghe@gmail.com: 2012-11-27
  - 拆分 ie attr，条件加载
 
@@ -817,7 +821,16 @@ KISSY.add('dom/base/class', function (S, DOM) {
 
     function strToArray(str) {
         str = S.trim(str || '');
-        return str.split(RE_SPLIT);
+        var arr = str.split(RE_SPLIT),
+            newArr = [], v,
+            l = arr.length,
+            i = 0;
+        for (; i < l; i++) {
+            if (v = arr[i]) {
+                newArr.push(v);
+            }
+        }
+        return newArr;
     }
 
     function batchClassList(method) {
@@ -957,7 +970,6 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
 
     var doc = S.Env.host.document,
         NodeType = DOM.NodeType,
-        slice = Array.prototype.slice,
         UA = S.UA,
         ie = UA['ie'],
         DIV = 'div',
@@ -966,7 +978,8 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
         R_XHTML_TAG = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/ig,
         RE_TAG = /<([\w:]+)/,
         R_LEADING_WHITESPACE = /^\s+/,
-        lostLeadingWhitespace = ie && ie < 9,
+        R_TAIL_WHITESPACE = /\s+$/,
+        lostLeadingTailWhitespace = ie && ie < 9,
         R_HTML = /<|&#?\w+;/,
         supportOuterHTML = doc && 'outerHTML' in doc.documentElement,
         RE_SIMPLE_TAG = /^<(\w+)\s*\/?>(?:<\/\1>)?$/;
@@ -1006,6 +1019,7 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
              * @param {String} html A string of HTML to create on the fly. Note that this parses HTML, not XML.
              * @param {Object} [props] An map of attributes on the newly-created element.
              * @param {HTMLDocument} [ownerDoc] A document in which the new elements will be created
+             * @param {Boolean} [_trim]
              * @return {DocumentFragment|HTMLElement}
              */
             create: function (html, props, ownerDoc, _trim/*internal*/) {
@@ -1060,10 +1074,14 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
 
                     holder = (creators[tag] || defaultCreator)(html, context);
                     // ie 把前缀空白吃掉了
-                    if (lostLeadingWhitespace &&
+                    if (lostLeadingTailWhitespace &&
                         (whitespaceMatch = html.match(R_LEADING_WHITESPACE))) {
                         holder.insertBefore(context.createTextNode(whitespaceMatch[0]),
                             holder.firstChild);
+                    }
+                    if (lostLeadingTailWhitespace && /\S/.test(html) &&
+                        (whitespaceMatch = html.match(R_TAIL_WHITESPACE))) {
+                        holder.appendChild(context.createTextNode(whitespaceMatch[0]));
                     }
 
                     nodes = holder.childNodes;
@@ -1082,7 +1100,13 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
                 return attachProps(ret, props);
             },
 
-            _fixCloneAttributes: null,
+            _fixCloneAttributes: function (src, dest) {
+                // value of textarea can not be clone in chrome/firefox??
+                if (DOM.nodeName(src) === 'textarea') {
+                    dest.defaultValue = src.defaultValue;
+                    dest.value = src.value;
+                }
+            },
 
             _creators: {
                 div: defaultCreator
@@ -1095,21 +1119,19 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
              * or
              * Set the HTML contents of each element in the set of matched elements.
              * @param {HTMLElement|String|HTMLElement[]} selector matched elements
-             * @param {String} htmlString  A string of HTML to set as the content of each matched element.
+             * @param {String} [htmlString]  A string of HTML to set as the content of each matched element.
              * @param {Boolean} [loadScripts=false] True to look for and process scripts
              */
-            html: function (selector, htmlString, loadScripts, callback) {
+            html: function (selector, htmlString, loadScripts) {
                 // supports css selector/Node/NodeList
                 var els = DOM.query(selector),
                     el = els[0],
                     success = false,
                     valNode,
                     i, elem;
-
                 if (!el) {
-                    return
+                    return null;
                 }
-
                 // getter
                 if (htmlString === undefined) {
                     // only gets value on the first of element nodes
@@ -1126,7 +1148,7 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
                     // faster
                     // fix #103,some html element can not be set through innerHTML
                     if (!htmlString.match(/<(?:script|style|link)/i) &&
-                        (!lostLeadingWhitespace || !htmlString.match(R_LEADING_WHITESPACE)) && !creatorsMap[ (htmlString.match(RE_TAG) || ['', ''])[1].toLowerCase() ]) {
+                        (!lostLeadingTailWhitespace || !htmlString.match(R_LEADING_WHITESPACE)) && !creatorsMap[ (htmlString.match(RE_TAG) || ['', ''])[1].toLowerCase() ]) {
 
                         try {
                             for (i = els.length - 1; i >= 0; i--) {
@@ -1149,8 +1171,8 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
                         DOM.empty(els);
                         DOM.append(valNode, els, loadScripts);
                     }
-                    callback && callback();
                 }
+                return undefined;
             },
 
             /**
@@ -1158,7 +1180,7 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
              * or
              * Set the outerHTML of each element in the set of matched elements.
              * @param {HTMLElement|String|HTMLElement[]} selector matched elements
-             * @param {String} htmlString  A string of HTML to set as outerHTML of each matched element.
+             * @param {String} [htmlString]  A string of HTML to set as outerHTML of each matched element.
              * @param {Boolean} [loadScripts=false] True to look for and process scripts
              */
             outerHTML: function (selector, htmlString, loadScripts) {
@@ -1170,7 +1192,7 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
                     length = els.length,
                     el = els[0];
                 if (!el) {
-                    return
+                    return null;
                 }
                 // getter
                 if (htmlString === undefined) {
@@ -1203,6 +1225,7 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
                         DOM.remove(els);
                     }
                 }
+                return undefined;
             },
 
             /**
@@ -1253,7 +1276,6 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
              * @member KISSY.DOM
              */
             clone: function (selector, deep, withDataAndEvent, deepWithDataAndEvent) {
-
                 if (typeof deep === 'object') {
                     deepWithDataAndEvent = deep['deepWithDataAndEvent'];
                     withDataAndEvent = deep['withDataAndEvent'];
@@ -1275,7 +1297,9 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
                 // ie bug :
                 // 1. ie<9 <script>xx</script> => <script></script>
                 // 2. ie will execute external script
-                clone = elem.cloneNode(deep);
+                clone = /**
+                 @type HTMLElement
+                 @ignore*/elem.cloneNode(deep);
 
                 if (elemNodeType == NodeType.ELEMENT_NODE ||
                     elemNodeType == NodeType.DOCUMENT_FRAGMENT_NODE) {
@@ -1365,7 +1389,7 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
             // remove event data (but without dom attached listener) which is copied from above DOM.data
             Event._DOMUtils.removeData(dest);
             // attach src 's event data and dom attached listener to dest
-            Event._clone(src, dest);
+            Event['_clone'](src, dest);
         }
     }
 
@@ -1458,7 +1482,7 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
 KISSY.add('dom/base/data', function (S, DOM, undefined) {
 
     var win = S.Env.host,
-        EXPANDO = '__ks_data_' + S.now(), // 让每一份 kissy 的 expando 都不同
+        EXPANDO = '_ks_data_' + S.now(), // 让每一份 kissy 的 expando 都不同
         dataCache = { }, // 存储 node 节点的 data
         winDataCache = { }, // 避免污染全局
 
@@ -2008,457 +2032,462 @@ KISSY.add('dom/base/insertion', function (S, DOM) {
  */
 KISSY.add('dom/base/offset', function (S, DOM, undefined) {
 
-    var win = S.Env.host,
-        doc = win.document,
-        NodeType = DOM.NodeType,
-        docElem = doc && doc.documentElement,
-        getWin = DOM.getWindow,
-        CSS1Compat = 'CSS1Compat',
-        compatMode = 'compatMode',
-        MAX = Math.max,
-        myParseInt = parseInt,
-        POSITION = 'position',
-        RELATIVE = 'relative',
-        DOCUMENT = 'document',
-        BODY = 'body',
-        DOC_ELEMENT = 'documentElement',
-        OWNER_DOCUMENT = 'ownerDocument',
-        VIEWPORT = 'viewport',
-        SCROLL = 'scroll',
-        CLIENT = 'client',
-        LEFT = 'left',
-        TOP = 'top',
-        isNumber = S.isNumber,
-        SCROLL_LEFT = SCROLL + 'Left',
-        SCROLL_TOP = SCROLL + 'Top';
+        var win = S.Env.host,
+            doc = win.document,
+            NodeType = DOM.NodeType,
+            docElem = doc && doc.documentElement,
+            getWin = DOM.getWindow,
+            CSS1Compat = 'CSS1Compat',
+            compatMode = 'compatMode',
+            MAX = Math.max,
+            myParseInt = parseInt,
+            POSITION = 'position',
+            RELATIVE = 'relative',
+            DOCUMENT = 'document',
+            BODY = 'body',
+            DOC_ELEMENT = 'documentElement',
+            OWNER_DOCUMENT = 'ownerDocument',
+            VIEWPORT = 'viewport',
+            SCROLL = 'scroll',
+            CLIENT = 'client',
+            LEFT = 'left',
+            TOP = 'top',
+            isNumber = S.isNumber,
+            SCROLL_LEFT = SCROLL + 'Left',
+            SCROLL_TOP = SCROLL + 'Top';
 
-    S.mix(DOM,
-        /**
-         * @override KISSY.DOM
-         * @class
-         * @singleton
-         */
-        {
-
+        S.mix(DOM,
             /**
-             * Get the current coordinates of the first element in the set of matched elements, relative to the document.
-             * or
-             * Set the current coordinates of every element in the set of matched elements, relative to the document.
-             * @param {HTMLElement[]|String|HTMLElement} selector Matched elements
-             * @param {Object} [coordinates ] An object containing the properties top and left,
-             * which are integers indicating the new top and left coordinates for the elements.
-             * @param {Number} [coordinates.left ] the new top and left coordinates for the elements.
-             * @param {Number} [coordinates.top ] the new top and top coordinates for the elements.
-             * @param {window} [relativeWin] The window to measure relative to. If relativeWin
-             *     is not in the ancestor frame chain of the element, we measure relative to
-             *     the top-most window.
-             * @return {Object|undefined} if Get, the format of returned value is same with coordinates.
+             * @override KISSY.DOM
+             * @class
+             * @singleton
              */
-            offset: function (selector, coordinates, relativeWin) {
-                // getter
-                if (coordinates === undefined) {
-                    var elem = DOM.get(selector), ret;
-                    if (elem) {
-                        ret = getOffset(elem, relativeWin);
-                    }
-                    return ret;
-                }
-                // setter
-                var els = DOM.query(selector), i;
-                for (i = els.length - 1; i >= 0; i--) {
-                    elem = els[i];
-                    setOffset(elem, coordinates);
-                }
-                return undefined;
-            },
+            {
 
-            /**
-             * scrolls the first of matched elements into container view
-             * @param {HTMLElement[]|String|HTMLElement} selector Matched elements
-             * @param {String|HTMLElement|HTMLDocument} [container=window] Container element
-             * @param {Boolean|Object} [alignWithTop=true]If true, the scrolled element is aligned with the top of the scroll area.
-             * If false, it is aligned with the bottom.
-             * @param {Boolean} [alignWithTop.allowHorizontalScroll=true] Whether trigger horizontal scroll.
-             * @param {Boolean} [alignWithTop.onlyScrollIfNeeded=false] scrollIntoView when element is out of view
-             * and set top to false or true automatically if top is undefined
-             * @param {Boolean} [allowHorizontalScroll=true] Whether trigger horizontal scroll.
-             * refer: http://www.w3.org/TR/2009/WD-html5-20090423/editing.html#scrollIntoView
-             *        http://www.sencha.com/deploy/dev/docs/source/Element.scroll-more.html#scrollIntoView
-             *        http://yiminghe.javaeye.com/blog/390732
-             */
-            scrollIntoView: function (selector, container, alignWithTop, allowHorizontalScroll) {
-                var elem,
-                    onlyScrollIfNeeded;
-
-                if (!(elem = DOM.get(selector))) {
-                    return;
-                }
-
-                if (container) {
-                    container = DOM.get(container);
-                }
-
-                if (!container) {
-                    container = elem.ownerDocument;
-                }
-
-                // document 归一化到 window
-                if (container.nodeType == NodeType.DOCUMENT_NODE) {
-                    container = getWin(container);
-                }
-
-                if (S.isPlainObject(alignWithTop)) {
-                    allowHorizontalScroll = alignWithTop.allowHorizontalScroll;
-                    onlyScrollIfNeeded = alignWithTop.onlyScrollIfNeeded;
-                    alignWithTop = alignWithTop.alignWithTop;
-                }
-
-                allowHorizontalScroll = allowHorizontalScroll === undefined ? true : allowHorizontalScroll;
-
-                var isWin = !!getWin(container),
-                    elemOffset = DOM.offset(elem),
-                    eh = DOM.outerHeight(elem),
-                    ew = DOM.outerWidth(elem),
-                    containerOffset,
-                    ch,
-                    cw,
-                    containerScroll,
-                    diffTop,
-                    diffBottom,
-                    win,
-                    winScroll,
-                    ww,
-                    wh;
-
-                if (isWin) {
-                    win = container;
-                    wh = DOM.height(win);
-                    ww = DOM.width(win);
-                    winScroll = {
-                        left: DOM.scrollLeft(win),
-                        top: DOM.scrollTop(win)
-                    };
-                    // elem 相对 container 可视视窗的距离
-                    diffTop = {
-                        left: elemOffset[LEFT] - winScroll[LEFT],
-                        top: elemOffset[TOP] - winScroll[TOP]
-                    };
-                    diffBottom = {
-                        left: elemOffset[LEFT] + ew - (winScroll[LEFT] + ww),
-                        top: elemOffset[TOP] + eh - (winScroll[TOP] + wh)
-                    };
-                    containerScroll = winScroll;
-                }
-                else {
-                    containerOffset = DOM.offset(container);
-                    ch = container.clientHeight;
-                    cw = container.clientWidth;
-                    containerScroll = {
-                        left: DOM.scrollLeft(container),
-                        top: DOM.scrollTop(container)
-                    };
-                    // elem 相对 container 可视视窗的距离
-                    // 注意边框 , offset 是边框到根节点
-                    diffTop = {
-                        left: elemOffset[LEFT] - (containerOffset[LEFT] +
-                            (myParseInt(DOM.css(container, 'borderLeftWidth')) || 0)),
-                        top: elemOffset[TOP] - (containerOffset[TOP] +
-                            (myParseInt(DOM.css(container, 'borderTopWidth')) || 0))
-                    };
-                    diffBottom = {
-                        left: elemOffset[LEFT] + ew -
-                            (containerOffset[LEFT] + cw +
-                                (myParseInt(DOM.css(container, 'borderRightWidth')) || 0)),
-                        top: elemOffset[TOP] + eh -
-                            (containerOffset[TOP] + ch +
-                                (myParseInt(DOM.css(container, 'borderBottomWidth')) || 0))
-                    };
-                }
-
-                if (onlyScrollIfNeeded) {
-                    if (diffTop.top < 0 || diffBottom.top > 0) {
-                        // 强制向上
-                        if (alignWithTop === true) {
-                            DOM.scrollTop(container, containerScroll.top + diffTop.top);
-                        } else if (alignWithTop === false) {
-                            DOM.scrollTop(container, containerScroll.top + diffBottom.top);
-                        } else {
-                            // 自动调整
-                            if (diffTop.top < 0) {
-                                DOM.scrollTop(container, containerScroll.top + diffTop.top);
-                            } else {
-                                DOM.scrollTop(container, containerScroll.top + diffBottom.top);
-                            }
+                /**
+                 * Get the current coordinates of the first element in the set of matched elements, relative to the document.
+                 * or
+                 * Set the current coordinates of every element in the set of matched elements, relative to the document.
+                 * @param {HTMLElement[]|String|HTMLElement} selector Matched elements
+                 * @param {Object} [coordinates ] An object containing the properties top and left,
+                 * which are integers indicating the new top and left coordinates for the elements.
+                 * @param {Number} [coordinates.left ] the new top and left coordinates for the elements.
+                 * @param {Number} [coordinates.top ] the new top and top coordinates for the elements.
+                 * @param {window} [relativeWin] The window to measure relative to. If relativeWin
+                 *     is not in the ancestor frame chain of the element, we measure relative to
+                 *     the top-most window.
+                 * @return {Object|undefined} if Get, the format of returned value is same with coordinates.
+                 */
+                offset: function (selector, coordinates, relativeWin) {
+                    // getter
+                    if (coordinates === undefined) {
+                        var elem = DOM.get(selector),
+                            ret;
+                        if (elem) {
+                            ret = getOffset(elem, relativeWin);
                         }
+                        return ret;
                     }
-                } else {
-                    alignWithTop = alignWithTop === undefined ? true : !!alignWithTop;
-                    if (alignWithTop) {
-                        DOM.scrollTop(container, containerScroll.top + diffTop.top);
-                    } else {
-                        DOM.scrollTop(container, containerScroll.top + diffBottom.top);
+                    // setter
+                    var els = DOM.query(selector), i;
+                    for (i = els.length - 1; i >= 0; i--) {
+                        elem = els[i];
+                        setOffset(elem, coordinates);
                     }
-                }
+                    return undefined;
+                },
 
-                if (allowHorizontalScroll) {
+                /**
+                 * scrolls the first of matched elements into container view
+                 * @param {HTMLElement[]|String|HTMLElement} selector Matched elements
+                 * @param {String|HTMLElement|HTMLDocument} [container=window] Container element
+                 * @param {Boolean|Object} [alignWithTop=true]If true, the scrolled element is aligned with the top of the scroll area.
+                 * If false, it is aligned with the bottom.
+                 * @param {Boolean} [alignWithTop.allowHorizontalScroll=true] Whether trigger horizontal scroll.
+                 * @param {Boolean} [alignWithTop.onlyScrollIfNeeded=false] scrollIntoView when element is out of view
+                 * and set top to false or true automatically if top is undefined
+                 * @param {Boolean} [allowHorizontalScroll=true] Whether trigger horizontal scroll.
+                 * refer: http://www.w3.org/TR/2009/WD-html5-20090423/editing.html#scrollIntoView
+                 *        http://www.sencha.com/deploy/dev/docs/source/Element.scroll-more.html#scrollIntoView
+                 *        http://yiminghe.javaeye.com/blog/390732
+                 */
+                scrollIntoView: function (selector, container, alignWithTop, allowHorizontalScroll) {
+                    var elem,
+                        onlyScrollIfNeeded;
+
+                    if (!(elem = DOM.get(selector))) {
+                        return;
+                    }
+
+                    if (container) {
+                        container = DOM.get(container);
+                    }
+
+                    if (!container) {
+                        container = elem.ownerDocument;
+                    }
+
+                    // document 归一化到 window
+                    if (container.nodeType == NodeType.DOCUMENT_NODE) {
+                        container = getWin(container);
+                    }
+
+                    if (S.isPlainObject(alignWithTop)) {
+                        allowHorizontalScroll = alignWithTop.allowHorizontalScroll;
+                        onlyScrollIfNeeded = alignWithTop.onlyScrollIfNeeded;
+                        alignWithTop = alignWithTop.alignWithTop;
+                    }
+
+                    allowHorizontalScroll = allowHorizontalScroll === undefined ? true : allowHorizontalScroll;
+
+                    var isWin = !!getWin(container),
+                        elemOffset = DOM.offset(elem),
+                        eh = DOM.outerHeight(elem),
+                        ew = DOM.outerWidth(elem),
+                        containerOffset,
+                        ch,
+                        cw,
+                        containerScroll,
+                        diffTop,
+                        diffBottom,
+                        win,
+                        winScroll,
+                        ww,
+                        wh;
+
+                    if (isWin) {
+                        win = container;
+                        wh = DOM.height(win);
+                        ww = DOM.width(win);
+                        winScroll = {
+                            left: DOM.scrollLeft(win),
+                            top: DOM.scrollTop(win)
+                        };
+                        // elem 相对 container 可视视窗的距离
+                        diffTop = {
+                            left: elemOffset[LEFT] - winScroll[LEFT],
+                            top: elemOffset[TOP] - winScroll[TOP]
+                        };
+                        diffBottom = {
+                            left: elemOffset[LEFT] + ew - (winScroll[LEFT] + ww),
+                            top: elemOffset[TOP] + eh - (winScroll[TOP] + wh)
+                        };
+                        containerScroll = winScroll;
+                    }
+                    else {
+                        containerOffset = DOM.offset(container);
+                        ch = container.clientHeight;
+                        cw = container.clientWidth;
+                        containerScroll = {
+                            left: DOM.scrollLeft(container),
+                            top: DOM.scrollTop(container)
+                        };
+                        // elem 相对 container 可视视窗的距离
+                        // 注意边框 , offset 是边框到根节点
+                        diffTop = {
+                            left: elemOffset[LEFT] - (containerOffset[LEFT] +
+                                (myParseInt(DOM.css(container, 'borderLeftWidth')) || 0)),
+                            top: elemOffset[TOP] - (containerOffset[TOP] +
+                                (myParseInt(DOM.css(container, 'borderTopWidth')) || 0))
+                        };
+                        diffBottom = {
+                            left: elemOffset[LEFT] + ew -
+                                (containerOffset[LEFT] + cw +
+                                    (myParseInt(DOM.css(container, 'borderRightWidth')) || 0)),
+                            top: elemOffset[TOP] + eh -
+                                (containerOffset[TOP] + ch +
+                                    (myParseInt(DOM.css(container, 'borderBottomWidth')) || 0))
+                        };
+                    }
+
                     if (onlyScrollIfNeeded) {
-                        if (diffTop.left < 0 || diffBottom.left > 0) {
+                        if (diffTop.top < 0 || diffBottom.top > 0) {
                             // 强制向上
                             if (alignWithTop === true) {
-                                DOM.scrollLeft(container, containerScroll.left + diffTop.left);
+                                DOM.scrollTop(container, containerScroll.top + diffTop.top);
                             } else if (alignWithTop === false) {
-                                DOM.scrollLeft(container, containerScroll.left + diffBottom.left);
+                                DOM.scrollTop(container, containerScroll.top + diffBottom.top);
                             } else {
                                 // 自动调整
-                                if (diffTop.left < 0) {
-                                    DOM.scrollLeft(container, containerScroll.left + diffTop.left);
+                                if (diffTop.top < 0) {
+                                    DOM.scrollTop(container, containerScroll.top + diffTop.top);
                                 } else {
-                                    DOM.scrollLeft(container, containerScroll.left + diffBottom.left);
+                                    DOM.scrollTop(container, containerScroll.top + diffBottom.top);
                                 }
                             }
                         }
                     } else {
                         alignWithTop = alignWithTop === undefined ? true : !!alignWithTop;
                         if (alignWithTop) {
-                            DOM.scrollLeft(container, containerScroll.left + diffTop.left);
+                            DOM.scrollTop(container, containerScroll.top + diffTop.top);
                         } else {
-                            DOM.scrollLeft(container, containerScroll.left + diffBottom.left);
+                            DOM.scrollTop(container, containerScroll.top + diffBottom.top);
                         }
                     }
+
+                    if (allowHorizontalScroll) {
+                        if (onlyScrollIfNeeded) {
+                            if (diffTop.left < 0 || diffBottom.left > 0) {
+                                // 强制向上
+                                if (alignWithTop === true) {
+                                    DOM.scrollLeft(container, containerScroll.left + diffTop.left);
+                                } else if (alignWithTop === false) {
+                                    DOM.scrollLeft(container, containerScroll.left + diffBottom.left);
+                                } else {
+                                    // 自动调整
+                                    if (diffTop.left < 0) {
+                                        DOM.scrollLeft(container, containerScroll.left + diffTop.left);
+                                    } else {
+                                        DOM.scrollLeft(container, containerScroll.left + diffBottom.left);
+                                    }
+                                }
+                            }
+                        } else {
+                            alignWithTop = alignWithTop === undefined ? true : !!alignWithTop;
+                            if (alignWithTop) {
+                                DOM.scrollLeft(container, containerScroll.left + diffTop.left);
+                            } else {
+                                DOM.scrollLeft(container, containerScroll.left + diffBottom.left);
+                            }
+                        }
+                    }
+                },
+
+                /**
+                 * Get the width of document
+                 * @param {window} [win=window] Window to be referred.
+                 * @method
+                 */
+                docWidth: 0,
+                /**
+                 * Get the height of document
+                 * @param {window} [win=window] Window to be referred.
+                 * @method
+                 */
+                docHeight: 0,
+                /**
+                 * Get the height of window
+                 * @param {window} [win=window] Window to be referred.
+                 * @method
+                 */
+                viewportHeight: 0,
+                /**
+                 * Get the width of document
+                 * @param {window} [win=window] Window to be referred.
+                 * @method
+                 */
+                viewportWidth: 0,
+                /**
+                 * Get the current vertical position of the scroll bar for the first element in the set of matched elements.
+                 * or
+                 * Set the current vertical position of the scroll bar for each of the set of matched elements.
+                 * @param {HTMLElement[]|String|HTMLElement|window} selector matched elements
+                 * @param {Number} value An integer indicating the new position to set the scroll bar to.
+                 * @method
+                 */
+                scrollTop: 0,
+                /**
+                 * Get the current horizontal position of the scroll bar for the first element in the set of matched elements.
+                 * or
+                 * Set the current horizontal position of the scroll bar for each of the set of matched elements.
+                 * @param {HTMLElement[]|String|HTMLElement|window} selector matched elements
+                 * @param {Number} value An integer indicating the new position to set the scroll bar to.
+                 * @method
+                 */
+                scrollLeft: 0
+            });
+
+// http://old.jr.pl/www.quirksmode.org/viewport/compatibility.html
+// http://www.quirksmode.org/dom/w3c_cssom.html
+// add ScrollLeft/ScrollTop getter/setter methods
+        S.each(['Left', 'Top'], function (name, i) {
+            var method = SCROLL + name;
+
+            DOM[method] = function (elem, v) {
+                if (isNumber(elem)) {
+                    return arguments.callee(win, elem);
                 }
-            },
-            /**
-             * Get the width of document
-             * @param {window} [win=window] Window to be referred.
-             * @method
-             */
-            docWidth: 0,
-            /**
-             * Get the height of document
-             * @param {window} [win=window] Window to be referred.
-             * @method
-             */
-            docHeight: 0,
-            /**
-             * Get the height of window
-             * @param {window} [win=window] Window to be referred.
-             * @method
-             */
-            viewportHeight: 0,
-            /**
-             * Get the width of document
-             * @param {window} [win=window] Window to be referred.
-             * @method
-             */
-            viewportWidth: 0,
-            /**
-             * Get the current vertical position of the scroll bar for the first element in the set of matched elements.
-             * or
-             * Set the current vertical position of the scroll bar for each of the set of matched elements.
-             * @param {HTMLElement[]|String|HTMLElement|window} selector matched elements
-             * @param {Number} value An integer indicating the new position to set the scroll bar to.
-             * @method
-             */
-            scrollTop: 0,
-            /**
-             * Get the current horizontal position of the scroll bar for the first element in the set of matched elements.
-             * or
-             * Set the current horizontal position of the scroll bar for each of the set of matched elements.
-             * @param {HTMLElement[]|String|HTMLElement|window} selector matched elements
-             * @param {Number} value An integer indicating the new position to set the scroll bar to.
-             * @method
-             */
-            scrollLeft: 0
+                elem = DOM.get(elem);
+                var ret,
+                    left,
+                    top,
+                    w = getWin(elem),
+                    d;
+                if (w) {
+                    if (v !== undefined) {
+                        v = parseFloat(v);
+                        // 注意多 window 情况，不能简单取 win
+                        left = name == 'Left' ? v : DOM.scrollLeft(w);
+                        top = name == 'Top' ? v : DOM.scrollTop(w);
+                        w['scrollTo'](left, top);
+                    } else {
+                        //标准
+                        //chrome == body.scrollTop
+                        //firefox/ie9 == documentElement.scrollTop
+                        ret = w[ 'page' + (i ? 'Y' : 'X') + 'Offset'];
+                        if (!isNumber(ret)) {
+                            d = w[DOCUMENT];
+                            //ie6,7,8 standard mode
+                            ret = d[DOC_ELEMENT][method];
+                            if (!isNumber(ret)) {
+                                //quirks mode
+                                ret = d[BODY][method];
+                            }
+                        }
+                    }
+                } else if (elem.nodeType == NodeType.ELEMENT_NODE) {
+                    if (v !== undefined) {
+                        elem[method] = parseFloat(v)
+                    } else {
+                        ret = elem[method];
+                    }
+                }
+                return ret;
+            }
         });
 
-    // http://old.jr.pl/www.quirksmode.org/viewport/compatibility.html
-    // http://www.quirksmode.org/dom/w3c_cssom.html
-    // add ScrollLeft/ScrollTop getter/setter methods
-    S.each(['Left', 'Top'], function (name, i) {
-        var method = SCROLL + name;
-
-        DOM[method] = function (elem, v) {
-            if (isNumber(elem)) {
-                return arguments.callee(win, elem);
-            }
-            elem = DOM.get(elem);
-            var ret,
-                left,
-                top,
-                w = getWin(elem),
-                d;
-            if (w) {
-                if (v !== undefined) {
-                    v = parseFloat(v);
-                    // 注意多 window 情况，不能简单取 win
-                    left = name == 'Left' ? v : DOM.scrollLeft(w);
-                    top = name == 'Top' ? v : DOM.scrollTop(w);
-                    w['scrollTo'](left, top);
-                } else {
-                    //标准
-                    //chrome == body.scrollTop
-                    //firefox/ie9 == documentElement.scrollTop
-                    ret = w[ 'page' + (i ? 'Y' : 'X') + 'Offset'];
-                    if (!isNumber(ret)) {
-                        d = w[DOCUMENT];
-                        //ie6,7,8 standard mode
-                        ret = d[DOC_ELEMENT][method];
-                        if (!isNumber(ret)) {
-                            //quirks mode
-                            ret = d[BODY][method];
-                        }
-                    }
-                }
-            } else if (elem.nodeType == NodeType.ELEMENT_NODE) {
-                if (v !== undefined) {
-                    elem[method] = parseFloat(v)
-                } else {
-                    ret = elem[method];
-                }
-            }
-            return ret;
-        }
-    });
-
-    // add docWidth/Height, viewportWidth/Height getter methods
-    S.each(['Width', 'Height'], function (name) {
-        DOM['doc' + name] = function (refWin) {
-            refWin = DOM.get(refWin);
-            var w = getWin(refWin),
-                d = w[DOCUMENT];
-            return MAX(
-                //firefox chrome documentElement.scrollHeight< body.scrollHeight
-                //ie standard mode : documentElement.scrollHeight> body.scrollHeight
-                d[DOC_ELEMENT][SCROLL + name],
-                //quirks : documentElement.scrollHeight 最大等于可视窗口多一点？
-                d[BODY][SCROLL + name],
-                DOM[VIEWPORT + name](d));
-        };
-
-        DOM[VIEWPORT + name] = function (refWin) {
-            refWin = DOM.get(refWin);
-            var prop = CLIENT + name,
-                win = getWin(refWin),
-                doc = win[DOCUMENT],
-                body = doc[BODY],
-                documentElement = doc[DOC_ELEMENT],
-                documentElementProp = documentElement[prop];
-            // 标准模式取 documentElement
-            // backcompat 取 body
-            return doc[compatMode] === CSS1Compat
-                && documentElementProp ||
-                body && body[ prop ] || documentElementProp;
-        }
-    });
-
-    function getClientPosition(elem) {
-        var box, x , y ,
-            doc = elem.ownerDocument,
-            body = doc.body;
-
-        if (!elem.getBoundingClientRect) {
-            return {
-                left: 0,
-                top: 0
+// add docWidth/Height, viewportWidth/Height getter methods
+        S.each(['Width', 'Height'], function (name) {
+            DOM['doc' + name] = function (refWin) {
+                refWin = DOM.get(refWin);
+                var w = getWin(refWin),
+                    d = w[DOCUMENT];
+                return MAX(
+                    //firefox chrome documentElement.scrollHeight< body.scrollHeight
+                    //ie standard mode : documentElement.scrollHeight> body.scrollHeight
+                    d[DOC_ELEMENT][SCROLL + name],
+                    //quirks : documentElement.scrollHeight 最大等于可视窗口多一点？
+                    d[BODY][SCROLL + name],
+                    DOM[VIEWPORT + name](d));
             };
+
+            DOM[VIEWPORT + name] = function (refWin) {
+                refWin = DOM.get(refWin);
+                var prop = CLIENT + name,
+                    win = getWin(refWin),
+                    doc = win[DOCUMENT],
+                    body = doc[BODY],
+                    documentElement = doc[DOC_ELEMENT],
+                    documentElementProp = documentElement[prop];
+                // 标准模式取 documentElement
+                // backcompat 取 body
+                return doc[compatMode] === CSS1Compat
+                    && documentElementProp ||
+                    body && body[ prop ] || documentElementProp;
+            }
+        });
+
+        function getClientPosition(elem) {
+            var box, x , y ,
+                doc = elem.ownerDocument,
+                body = doc.body;
+
+            if (!elem.getBoundingClientRect) {
+                return {
+                    left: 0,
+                    top: 0
+                };
+            }
+
+            // 根据 GBS 最新数据，A-Grade Browsers 都已支持 getBoundingClientRect 方法，不用再考虑传统的实现方式
+            box = elem.getBoundingClientRect();
+
+            // 注：jQuery 还考虑减去 docElem.clientLeft/clientTop
+            // 但测试发现，这样反而会导致当 html 和 body 有边距/边框样式时，获取的值不正确
+            // 此外，ie6 会忽略 html 的 margin 值，幸运地是没有谁会去设置 html 的 margin
+
+            x = box[LEFT];
+            y = box[TOP];
+
+            // In IE, most of the time, 2 extra pixels are added to the top and left
+            // due to the implicit 2-pixel inset border.  In IE6/7 quirks mode and
+            // IE6 standards mode, this border can be overridden by setting the
+            // document element's border to zero -- thus, we cannot rely on the
+            // offset always being 2 pixels.
+
+            // In quirks mode, the offset can be determined by querying the body's
+            // clientLeft/clientTop, but in standards mode, it is found by querying
+            // the document element's clientLeft/clientTop.  Since we already called
+            // getClientBoundingRect we have already forced a reflow, so it is not
+            // too expensive just to query them all.
+
+            // ie 下应该减去窗口的边框吧，毕竟默认 absolute 都是相对窗口定位的
+            // 窗口边框标准是设 documentElement ,quirks 时设置 body
+            // 最好禁止在 body 和 html 上边框 ，但 ie < 9 html 默认有 2px ，减去
+            // 但是非 ie 不可能设置窗口边框，body html 也不是窗口 ,ie 可以通过 html,body 设置
+            // 标准 ie 下 docElem.clientTop 就是 border-top
+            // ie7 html 即窗口边框改变不了。永远为 2
+            // 但标准 firefox/chrome/ie9 下 docElem.clientTop 是窗口边框，即使设了 border-top 也为 0
+
+            x -= docElem.clientLeft || body.clientLeft || 0;
+            y -= docElem.clientTop || body.clientTop || 0;
+
+            return { left: x, top: y };
         }
 
-        // 根据 GBS 最新数据，A-Grade Browsers 都已支持 getBoundingClientRect 方法，不用再考虑传统的实现方式
-        box = elem.getBoundingClientRect();
 
-        // 注：jQuery 还考虑减去 docElem.clientLeft/clientTop
-        // 但测试发现，这样反而会导致当 html 和 body 有边距/边框样式时，获取的值不正确
-        // 此外，ie6 会忽略 html 的 margin 值，幸运地是没有谁会去设置 html 的 margin
-
-        x = box[LEFT];
-        y = box[TOP];
-
-        // In IE, most of the time, 2 extra pixels are added to the top and left
-        // due to the implicit 2-pixel inset border.  In IE6/7 quirks mode and
-        // IE6 standards mode, this border can be overridden by setting the
-        // document element's border to zero -- thus, we cannot rely on the
-        // offset always being 2 pixels.
-
-        // In quirks mode, the offset can be determined by querying the body's
-        // clientLeft/clientTop, but in standards mode, it is found by querying
-        // the document element's clientLeft/clientTop.  Since we already called
-        // getClientBoundingRect we have already forced a reflow, so it is not
-        // too expensive just to query them all.
-
-        // ie 下应该减去窗口的边框吧，毕竟默认 absolute 都是相对窗口定位的
-        // 窗口边框标准是设 documentElement ,quirks 时设置 body
-        // 最好禁止在 body 和 html 上边框 ，但 ie < 9 html 默认有 2px ，减去
-        // 但是非 ie 不可能设置窗口边框，body html 也不是窗口 ,ie 可以通过 html,body 设置
-        // 标准 ie 下 docElem.clientTop 就是 border-top
-        // ie7 html 即窗口边框改变不了。永远为 2
-        // 但标准 firefox/chrome/ie9 下 docElem.clientTop 是窗口边框，即使设了 border-top 也为 0
-
-        x -= docElem.clientLeft || body.clientLeft || 0;
-        y -= docElem.clientTop || body.clientTop || 0;
-
-        return { left: x, top: y };
-    }
-
-
-    function getPageOffset(el) {
-        var pos = getClientPosition(el),
-            w = getWin(el[OWNER_DOCUMENT]);
-        pos.left += DOM[SCROLL_LEFT](w);
-        pos.top += DOM[SCROLL_TOP](w);
-        return pos;
-    }
-
-    // 获取 elem 相对 elem.ownerDocument 的坐标
-    function getOffset(el, relativeWin) {
-        var position = {left: 0, top: 0},
-
-        // Iterate up the ancestor frame chain, keeping track of the current window
-        // and the current element in that window.
-            currentWin = getWin(el[OWNER_DOCUMENT]),
-            offset,
-            currentEl = el;
-        relativeWin = relativeWin || currentWin;
-
-        do {
-            // if we're at the top window, we want to get the page offset.
-            // if we're at an inner frame, we only want to get the window position
-            // so that we can determine the actual page offset in the context of
-            // the outer window.
-            offset = currentWin == relativeWin ?
-                getPageOffset(currentEl) :
-                getClientPosition(currentEl);
-            position.left += offset.left;
-            position.top += offset.top;
-        } while (currentWin &&
-            currentWin != relativeWin &&
-            (currentEl = currentWin['frameElement']) &&
-            (currentWin = currentWin.parent));
-
-        return position;
-    }
-
-    // 设置 elem 相对 elem.ownerDocument 的坐标
-    function setOffset(elem, offset) {
-        // set position first, in-case top/left are set even on static elem
-        if (DOM.css(elem, POSITION) === 'static') {
-            elem.style[POSITION] = RELATIVE;
+        function getPageOffset(el) {
+            var pos = getClientPosition(el),
+                w = getWin(el[OWNER_DOCUMENT]);
+            pos.left += DOM[SCROLL_LEFT](w);
+            pos.top += DOM[SCROLL_TOP](w);
+            return pos;
         }
 
-        var old = getOffset(elem),
-            ret = { },
-            current, key;
+// 获取 elem 相对 elem.ownerDocument 的坐标
+        function getOffset(el, relativeWin) {
+            var position = {left: 0, top: 0},
 
-        for (key in offset) {
-            current = myParseInt(DOM.css(elem, key), 10) || 0;
-            ret[key] = current + offset[key] - old[key];
+            // Iterate up the ancestor frame chain, keeping track of the current window
+            // and the current element in that window.
+                currentWin = getWin(el[OWNER_DOCUMENT]),
+                offset,
+                currentEl = el;
+            relativeWin = relativeWin || currentWin;
+
+            do {
+                // if we're at the top window, we want to get the page offset.
+                // if we're at an inner frame, we only want to get the window position
+                // so that we can determine the actual page offset in the context of
+                // the outer window.
+                offset = currentWin == relativeWin ?
+                    getPageOffset(currentEl) :
+                    getClientPosition(currentEl);
+                position.left += offset.left;
+                position.top += offset.top;
+            } while (currentWin &&
+                currentWin != relativeWin &&
+                (currentEl = currentWin['frameElement']) &&
+                (currentWin = currentWin.parent));
+
+            return position;
         }
-        DOM.css(elem, ret);
-    }
 
-    return DOM;
-}, {
-    requires: ['./api']
-});
+// 设置 elem 相对 elem.ownerDocument 的坐标
+        function setOffset(elem, offset) {
+            // set position first, in-case top/left are set even on static elem
+            if (DOM.css(elem, POSITION) === 'static') {
+                elem.style[POSITION] = RELATIVE;
+            }
+
+            var old = getOffset(elem),
+                ret = { },
+                current, key;
+
+            for (key in offset) {
+                current = myParseInt(DOM.css(elem, key), 10) || 0;
+                ret[key] = current + offset[key] - old[key];
+            }
+            DOM.css(elem, ret);
+        }
+
+        return DOM;
+    },
+    {
+        requires: ['./api']
+    }
+)
+;
 
 /*
  2012-03-30
@@ -2482,63 +2511,64 @@ KISSY.add('dom/base/offset', function (S, DOM, undefined) {
  * selector
  * @author yiminghe@gmail.com, lifesinger@gmail.com
  */
-KISSY.add('dom/base/selector', function (S, DOM, undefined) {
+KISSY.add('dom/base/selector', function (S, DOM) {
 
     var doc = S.Env.host.document,
-        NodeType = DOM.NodeType,
-        filter = S.filter,
-        require = function (selector) {
-            return S.require(selector);
-        },
+        docElem = doc.documentElement,
+        matches = docElem.matches ||
+            docElem.webkitMatchesSelector ||
+            docElem.mozMatchesSelector ||
+            docElem.oMatchesSelector ||
+            docElem.msMatchesSelector,
         isArray = S.isArray,
         makeArray = S.makeArray,
         isNodeList = DOM._isNodeList,
-        getNodeName = DOM.nodeName,
-        push = Array.prototype.push,
         SPACE = ' ',
-        COMMA = ',',
-        trim = S.trim,
-        RE_ID = /^#[\w-]+$/,
-        RE_QUERY = /^(?:#([\w-]+))?\s*([\w-]+|\*)?\.?([\w-]+)?$/;
+        push = Array.prototype.push,
+        RE_QUERY = /^(?:#([\w-]+))?\s*([\w-]+|\*)?\.?([\w-]+)?$/,
+        trim = S.trim;
 
     function query_each(f) {
-        var self = this,
-            el, i;
-        for (i = 0; i < self.length; i++) {
-            el = self[i];
-            if (f(el, i) === false) {
+        var els = this,
+            l = els.length,
+            i;
+        for (i = 0; i < l; i++) {
+            if (f(els[i], i) === false) {
                 break;
             }
         }
     }
 
     function query(selector, context) {
+
         var ret,
             i,
             simpleContext,
             isSelectorString = typeof selector == 'string',
-        // optimize common usage
-        // consider context == null
-            contexts = (context == undefined && (simpleContext = 1)) ?
-                [doc] :
-                query(context);
+            contexts = context ? query(context) : (simpleContext = 1) && [doc],
+            contextsLen = contexts.length;
+
         // 常见的空
         if (!selector) {
             ret = [];
-        }
-        // 常见的选择器
-        // DOM.query('#x')
-        else if (isSelectorString) {
+        } else if (isSelectorString) {
             selector = trim(selector);
             // shortcut
             if (simpleContext && selector == 'body') {
-                ret = [doc.body]
-            } else if (contexts.length == 1 && selector) {
-                ret = quickFindBySelectorStr(selector, contexts[0]);
+                ret = [ doc.body ]
+            } else {
+                ret = [];
+                for (i = 0; i < contextsLen; i++) {
+                    push.apply(ret, DOM._selectInternal(selector, contexts[i]));
+                }
+                // multiple contexts unique
+                if (ret.length > 1 && contextsLen > 1) {
+                    DOM.unique(ret);
+                }
             }
         }
         // 不写 context，就是包装一下
-        else if (simpleContext) {
+        else {
             // 1.常见的单个元素
             // DOM.query(document.getElementById('xx'))
             if (selector['nodeType'] || selector['setTimeout']) {
@@ -2560,26 +2590,23 @@ KISSY.add('dom/base/selector', function (S, DOM, undefined) {
             // document.createElement('select').item 已经在 1 处理了
             // S.all().item 已经在 2 处理了
             else if (isNodeList(selector)) {
-                ret = S.makeArray(selector);
+                ret = makeArray(selector);
             } else {
                 ret = [ selector ];
             }
-        }
 
-        if (!ret) {
-            ret = [];
-            if (selector) {
-                for (i = 0; i < contexts.length; i++) {
-                    push.apply(ret, queryByContexts(selector, contexts[i]));
-                }
-                //必要时去重排序
-                if (ret.length > 1 &&
-                    // multiple contexts
-                    (contexts.length > 1 ||
-                        (isSelectorString &&
-                            // multiple selector
-                            selector.indexOf(COMMA) > -1))) {
-                    DOM.unique(ret);
+            if (!simpleContext) {
+                var tmp = ret,
+                    ci,
+                    len = tmp.length;
+                ret = [];
+                for (i = 0; i < len; i++) {
+                    for (ci = 0; ci < contextsLen; ci++) {
+                        if (DOM._contains(contexts[ci], tmp[i])) {
+                            ret.push(tmp[i]);
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -2590,155 +2617,22 @@ KISSY.add('dom/base/selector', function (S, DOM, undefined) {
         return ret;
     }
 
-    function queryByContexts(selector, context) {
-        var ret = [],
-            isSelectorString = typeof selector == 'string';
-        if (isSelectorString && selector.match(RE_QUERY) || !isSelectorString) {
-            // 简单选择器自己处理
-            ret = queryBySimple(selector, context);
-        }
-        // 如果选择器有, 分开递归一部分一部分来
-        else if (isSelectorString &&
-            // #255
-            // [data-key='a,b']
-            selector
-                .replace(/"(?:(?:\\.)|[^"])*"/g, '')
-                .replace(/'(?:(?:\\.)|[^'])*'/g, '').indexOf(COMMA) > -1) {
-            ret = queryBySelectors(selector, context);
-        }
-        else {
-            // 复杂了，交给 sizzle
-            ret = queryBySizzle(selector, context);
-        }
-        return ret;
-    }
-
-    // 交给 sizzle 模块处理
-    function queryBySizzle(selector, context) {
-        var ret = [],
-            sizzle = require('sizzle');
-        if (sizzle) {
-            sizzle(selector, context, ret);
-        } else {
-            // 原生不支持
-            error(selector);
-        }
-        return ret;
-    }
-
-    // 处理 selector 的每个部分
-    function queryBySelectors(selector, context) {
-        var ret = [],
-            i,
-            selectors = selector.split(/\s*,\s*/);
-        for (i = 0; i < selectors.length; i++) {
-            push.apply(ret, queryByContexts(selectors[i], context));
-        }
-        // 多部分选择器可能得到重复结果
-        return ret;
-    }
-
-    function quickFindBySelectorStr(selector, context) {
-        var ret, t, match, id, tag, cls;
-        // selector 为 #id 是最常见的情况，特殊优化处理
-        if (RE_ID.test(selector)) {
-            t = getElementById(selector.slice(1), context);
-            // #id 无效时，返回空数组
-            ret = t ? [t] : [];
-        }
-        // selector 为支持列表中的其它 6 种
-        else {
-            match = RE_QUERY.exec(selector);
-            if (match) {
-                // 获取匹配出的信息
-                id = match[1];
-                tag = match[2];
-                cls = match[3];
-                // 空白前只能有 id ，取出来作为 context
-                context = (id ? getElementById(id, context) : context);
-                if (context) {
-                    // #id .cls | #id tag.cls | .cls | tag.cls | #id.cls
-                    if (cls) {
-                        if (!id || selector.indexOf(SPACE) != -1) { // 排除 #id.cls
-                            ret = [].concat(DOM._getElementsByClassName(cls, tag, context));
-                        }
-                        // 处理 #id.cls
-                        else {
-                            t = getElementById(id, context);
-                            if (hasSingleClass(t, cls)) {
-                                ret = [t];
-                            }
-                        }
-                    }
-                    // #id tag | tag
-                    else if (tag) { // 排除空白字符串
-                        ret = makeArray(DOM._getElementsByTagName(tag, context));
-                    }
-                }
-
-                ret = ret || [];
-            }
-        }
-        return ret;
-    }
-
-    // 最简单情况了，单个选择器部分，单个上下文
-    function queryBySimple(selector, context) {
-        var ret,
-            isSelectorString = typeof selector == 'string';
-        if (isSelectorString) {
-            ret = quickFindBySelectorStr(selector, context) || [];
-        }
-        // 传入的 selector 是 NodeList 或已是 Array
-        else if (isArray(selector) || isNodeList(selector)) {
-            // 只能包含在 context 里面
-            // filter 会转换为 nodelist 为数组
-            ret = filter(selector, function (s) {
-                return testByContext(s, context);
-            });
-        }
-        // 传入的 selector 是 HTMLNode 查看约束
-        // 否则 window/document，原样返回
-        else if (testByContext(selector, context)) {
-            ret = [selector];
-        }
-        return ret;
-    }
-
-    function testByContext(element, context) {
-        if (!element) {
-            return false;
-        }
-        // 防止 element 节点还没添加到 document ，但是也可以获取到 query(element) => [element]
-        // document 的上下文一律放行
-        // context == doc 意味着没有提供第二个参数，到这里只是想单纯包装原生节点，则不检测
-        if (context == doc) {
-            return true;
-        }
-        // 节点受上下文约束
-        return DOM._contains(context, element);
-    }
-
-    // throw exception
-    function error(msg) {
-        S.error('Unsupported selector: ' + msg);
-    }
-
-    // query #id
-    function getElementById(id, context) {
-        var contextIsDocument = context.nodeType == NodeType.DOCUMENT_NODE,
-            doc = contextIsDocument ? context : context.ownerDocument;
-        return DOM._getElementById(id, context, doc, contextIsDocument);
-    }
-
     function hasSingleClass(el, cls) {
-        var className = el && el.className;
+        // consider xml
+        var className = el && (el.className || getAttr(el, 'class'));
         return className && (SPACE + className + SPACE).indexOf(SPACE + cls + SPACE) > -1;
     }
 
     function getAttr(el, name) {
         var ret = el && el.getAttributeNode(name);
-        return ret && ret.nodeValue;
+        if (ret && ret.specified) {
+            return ret.nodeValue;
+        }
+        return undefined;
+    }
+
+    function isTag(el, value) {
+        return value == '*' || el.nodeName.toLowerCase() === value.toLowerCase();
     }
 
     S.mix(DOM,
@@ -2748,53 +2642,36 @@ KISSY.add('dom/base/selector', function (S, DOM, undefined) {
          * @singleton
          */
         {
-            _hasSingleClass: hasSingleClass,
-
-            _getElementById: function (id, context, doc, contextIsDocument) {
-                var el = doc.getElementById(id),
-                // ie confuse name with id
-                // https://github.com/kissyteam/kissy/issues/67
-                // 不能直接 el.id ，否则 input shadow form attribute
-                    elId = getAttr(el, 'id');
-
-                // 1. context is not document and context is not in document,
-                // so el is null and context must not be document
-                // so filter inside context
-
-                // 2. ie confuse name with id, so if el 's id is not with parameter
-                // filter inside context
-
-                // 3. context is document, return getElementById directly
-
-                // 4. context is not document and context contains document.getElementById
-                // return getElementById
-
-                // return null
-                if (!el && !contextIsDocument && !DOM._contains(doc, context) ||
-                    el && elId != id) {
-                    return DOM.filter('*', '#' + id, context)[0] || null;
-                } else if (contextIsDocument || el && DOM._contains(context, el)) {
-                    return el;
-                }
-                return null;
-            },
-
-            _getElementsByTagName: function (tag, context) {
-                return context.getElementsByTagName(tag);
-            },
-
-            _getElementsByClassName: function (cls, tag, context) {
-                // ie8 return staticNodeList 对象,[].concat 会形成 [ staticNodeList ] ，手动转化为普通数组
-                return  makeArray(context.querySelectorAll((tag || '') + '.' + cls));
-            },
-
-            // 貌似除了 ie 都有了...
             _compareNodeOrder: function (a, b) {
                 if (!a.compareDocumentPosition || !b.compareDocumentPosition) {
                     return a.compareDocumentPosition ? -1 : 1;
                 }
 
                 return a.compareDocumentPosition(b) & 4 ? -1 : 1;
+            },
+
+            _getSimpleAttr: getAttr,
+
+            _isTag: isTag,
+
+            _hasSingleClass: hasSingleClass,
+
+            _matchesInternal: function (str, seeds) {
+                var ret = [],
+                    i = 0,
+                    n,
+                    len = seeds.length;
+                for (; i < len; i++) {
+                    n = seeds[i];
+                    if (matches.call(n, str)) {
+                        ret.push(n);
+                    }
+                }
+                return ret;
+            },
+
+            _selectInternal: function (str, context) {
+                return makeArray(context.querySelectorAll(str));
             },
 
             /**
@@ -2863,6 +2740,7 @@ KISSY.add('dom/base/selector', function (S, DOM, undefined) {
                         while (i < len) {
                             if (elements[i] === elements[ i - 1 ]) {
                                 elements.splice(i, 1);
+                                --len;
                             } else {
                                 i++;
                             }
@@ -2883,27 +2761,25 @@ KISSY.add('dom/base/selector', function (S, DOM, undefined) {
              */
             filter: function (selector, filter, context) {
                 var elems = query(selector, context),
-                    sizzle = require('sizzle'),
-                    match,
-                    tag,
                     id,
+                    tag,
+                    match,
                     cls,
                     ret = [];
 
-                // 默认仅支持最简单的 tag.cls 或 #id 形式
-                if (typeof filter == 'string' &&
-                    (filter = trim(filter)) &&
+                if (typeof filter == 'string' && (filter = trim(filter)) &&
                     (match = RE_QUERY.exec(filter))) {
                     id = match[1];
                     tag = match[2];
                     cls = match[3];
                     if (!id) {
                         filter = function (elem) {
-                            var tagRe = true, clsRe = true;
+                            var tagRe = true,
+                                clsRe = true;
 
                             // 指定 tag 才进行判断
                             if (tag) {
-                                tagRe = getNodeName(elem) == tag.toLowerCase();
+                                tagRe = isTag(elem, tag);
                             }
 
                             // 指定 cls 才进行判断
@@ -2922,14 +2798,8 @@ KISSY.add('dom/base/selector', function (S, DOM, undefined) {
 
                 if (S.isFunction(filter)) {
                     ret = S.filter(elems, filter);
-                }
-                // 其它复杂 filter, 采用外部选择器
-                else if (filter && sizzle) {
-                    ret = sizzle.matches(filter, elems);
-                }
-                // filter 为空或不支持的 selector
-                else {
-                    error(filter);
+                } else {
+                    ret = DOM._matchesInternal(filter, elems);
                 }
 
                 return ret;
@@ -2953,101 +2823,22 @@ KISSY.add('dom/base/selector', function (S, DOM, undefined) {
 }, {
     requires: ['./api']
 });
-
-/*
- NOTES:
-
- 2012.12.26
- - 尽量用原生方法提高性能
-
- 2011.08.02
- - 利用 sizzle 重构选择器
- - 1.1.6 修正，原来 context 只支持 #id 以及 document
- 1.2 context 支持任意，和 selector 格式一致
- - 简单选择器也和 jquery 保持一致 DOM.query('xx','yy') 支持
- - context 不提供则为当前 document ，否则通过 query 递归取得
- - 保证选择出来的节点（除了 document window）都是位于 context 范围内
-
-
- 2010.01
- - 对 reg exec 的结果(id, tag, className)做 cache, 发现对性能影响很小，去掉。
- - getElementById 使用频率最高，使用直达通道优化。
- - getElementsByClassName 性能优于 querySelectorAll, 但 IE 系列不支持。
- - instanceof 对性能有影响。
- - 内部方法的参数，比如 cls, context 等的异常情况，已经在 query 方法中有保证，无需冗余“防卫”。
- - query 方法中的条件判断考虑了“频率优先”原则。最有可能出现的情况放在前面。
- - Array 的 push 方法可以用 j++ 来替代，性能有提升。
- - 返回值策略和 Sizzle 一致，正常时，返回数组；其它所有情况，返回空数组。
-
- - 从压缩角度考虑，还可以将 getElementsByTagName 和 getElementsByClassName 定义为常量，
- 不过感觉这样做太“压缩控”，还是保留不替换的好。
-
- - 调整 getElementsByClassName 的降级写法，性能最差的放最后。
-
- 2010.02
- - 添加对分组选择器的支持（主要参考 Sizzle 的代码，代去除了对非 Grade A 级浏览器的支持）
-
- 2010.03
- - 基于原生 dom 的两个 api: S.query 返回数组; S.get 返回第一个。
- 基于 Node 的 api: S.one, 在 Node 中实现。
- 基于 NodeList 的 api: S.all, 在 NodeList 中实现。
- 通过 api 的分层，同时满足初级用户和高级用户的需求。
-
- 2010.05
- - 去掉给 S.query 返回值默认添加的 each 方法，保持纯净。
- - 对于不支持的 selector, 采用外部耦合进来的 Selector.
-
- 2010.06
- - 增加 filter 和 test 方法
-
- 2010.07
- - 取消对 , 分组的支持，group 直接用 Sizzle
-
- 2010.08
- - 给 S.query 的结果 attach each 方法
-
- 2011.05
- - yiminghe@gmail.com：恢复对简单分组支持
-
- Ref: http://ejohn.org/blog/selectors-that-people-actually-use/
- 考虑 2/8 原则，仅支持以下选择器：
- #id
- tag
- .cls
- #id tag
- #id .cls
- tag.cls
- #id tag.cls
- 注 1：RE_QUERY 还会匹配 #id.cls
- 注 2：tag 可以为 * 字符
- 注 3: 支持 , 号分组
-
-
- Bugs:
- - S.query('#test-data *') 等带 * 号的选择器，在 IE6 下返回的值不对。jQuery 等类库也有此 bug, 诡异。
-
- References:
- - http://ejohn.org/blog/selectors-that-people-actually-use/
- - http://ejohn.org/blog/thoughts-on-queryselectorall/
- - MDC: querySelector, querySelectorAll, getElementsByClassName
- - Sizzle: http://github.com/jeresig/sizzle
- - MINI: http://james.padolsey.com/javascript/mini/
- - Peppy: http://jamesdonaghue.com/?p=40
- - Sly: http://github.com/digitarald/sly
- - XPath, TreeWalker：http://www.cnblogs.com/rubylouvre/archive/2009/07/24/1529640.html
-
- - http://www.quirksmode.org/blog/archives/2006/01/contains_for_mo.html
- - http://www.quirksmode.org/dom/getElementsByTagNames.html
- - http://ejohn.org/blog/comparing-document-position/
- - http://github.com/jeresig/sizzle/blob/master/sizzle.js
+/**
+ * yiminghe@gmail.com - 2013-03-26
+ * - refactor to use own css3 selector engine
  */
+
 /**
  * @ignore
  * dom/style
  * @author yiminghe@gmail.com, lifesinger@gmail.com
  */
 KISSY.add('dom/base/style', function (S, DOM, undefined) {
-    var WINDOW = S.Env.host,
+    var
+        WINDOW = /**
+         @ignore
+         @type window
+         */S.Env.host,
         UA = S.UA,
         getNodeName = DOM.nodeName,
         doc = WINDOW.document,
@@ -3055,11 +2846,9 @@ KISSY.add('dom/base/style', function (S, DOM, undefined) {
         RE_MARGIN = /^margin/,
         WIDTH = 'width',
         HEIGHT = 'height',
-        AUTO = 'auto',
         DISPLAY = 'display',
         OLD_DISPLAY = DISPLAY + S.now(),
         NONE = 'none',
-        myParseInt = parseInt,
         cssNumber = {
             'fillOpacity': 1,
             'fontWeight': 1,
@@ -3071,23 +2860,25 @@ KISSY.add('dom/base/style', function (S, DOM, undefined) {
             'zoom': 1
         },
         rmsPrefix = /^-ms-/,
-    // 考虑 ie9 ...
+    // ie9+
         R_UPPER = /([A-Z]|^ms)/g,
         EMPTY = '',
         DEFAULT_UNIT = 'px',
+        NO_PX_REG = /\d(?!px)[a-z%]+$/i,
         CUSTOM_STYLES = {},
         cssProps = {
             'float': 'cssFloat'
         },
         defaultDisplay = {},
-        RE_DASH = /-([a-z])/ig,
-        CAMEL_CASE_FN = function (all, letter) {
-            return letter.toUpperCase();
-        };
+        RE_DASH = /-([a-z])/ig;
+
+    function upperCase() {
+        return arguments[1].toUpperCase();
+    }
 
     function camelCase(name) {
         // fix #92, ms!
-        return name.replace(rmsPrefix, 'ms-').replace(RE_DASH, CAMEL_CASE_FN);
+        return name.replace(rmsPrefix, 'ms-').replace(RE_DASH, upperCase);
     }
 
     function getDefaultDisplay(tagName) {
@@ -3236,7 +3027,7 @@ KISSY.add('dom/base/style', function (S, DOM, undefined) {
                             ret = DOM._getComputedStyle(elem, name);
                         }
                     }
-                    return (ret === undefined) ? '' : ret;
+                    return (typeof ret == 'undefined') ? '' : ret;
                 }
                 // setter
                 else {
@@ -3473,47 +3264,36 @@ KISSY.add('dom/base/style', function (S, DOM, undefined) {
              * @ignore
              */
             get: function (elem, computed) {
+                var val;
                 if (computed) {
-                    return getWHIgnoreDisplay(elem, name) + 'px';
+                    val = getWHIgnoreDisplay(elem, name) + 'px';
                 }
+                return val;
             }
         };
     });
 
     S.each(['left', 'top'], function (name) {
-
         CUSTOM_STYLES[ name ] = {
-            get: function (elem, computed) {
+            get: function (el, computed) {
+                var val,
+                    isAutoPosition,
+                    position;
                 if (computed) {
-                    var val = DOM._getComputedStyle(elem, name), offset;
-
-                    // 1. 当没有设置 style.left 时，getComputedStyle 在不同浏览器下，返回值不同
-                    //    比如：firefox 返回 0, webkit/ie 返回 auto
-                    // 2. style.left 设置为百分比时，返回值为百分比
-                    // 对于第一种情况，如果是 relative 元素，值为 0. 如果是 absolute 元素，值为 offsetLeft - marginLeft
-                    // 对于第二种情况，大部分类库都未做处理，属于“明之而不 fix”的保留 bug
-                    if (val === AUTO) {
-                        val = 0;
-                        if (S.inArray(DOM.css(elem, 'position'), ['absolute', 'fixed'])) {
-                            offset = elem[name === 'left' ? 'offsetLeft' : 'offsetTop'];
-
-                            // old-ie 下，elem.offsetLeft 包含 offsetParent 的 border 宽度，需要减掉
-                            if (UA.ie && (doc['documentMode'] || 0) < 9 || UA['opera']) {
-                                // 类似 offset ie 下的边框处理
-                                // 如果 offsetParent 为 html ，需要减去默认 2 px == documentElement.clientTop
-                                // 否则减去 borderTop 其实也是 clientTop
-                                // http://msdn.microsoft.com/en-us/library/aa752288%28v=vs.85%29.aspx
-                                // ie<9 注意有时候 elem.offsetParent 为 null ...
-                                // 比如 DOM.append(DOM.create('<div class='position:absolute'></div>'),document.body)
-                                offset -= elem.offsetParent && elem.offsetParent['client' + (name == 'left' ? 'Left' : 'Top')]
-                                    || 0;
-                            }
-                            val = offset - (myParseInt(DOM.css(elem, 'margin-' + name)) || 0);
-                        }
-                        val += 'px';
+                    position = DOM.css(el, 'position');
+                    if (position === "static") {
+                        return "auto";
                     }
-                    return val;
+                    val = DOM._getComputedStyle(el, name);
+                    isAutoPosition = val === "auto";
+                    if (isAutoPosition && position === "relative") {
+                        return "0px";
+                    }
+                    if (isAutoPosition || NO_PX_REG.test(val)) {
+                        val = getPosition(el)[name] + 'px';
+                    }
                 }
+                return val;
             }
         };
     });
@@ -3664,6 +3444,43 @@ KISSY.add('dom/base/style', function (S, DOM, undefined) {
         }
 
         return val;
+    }
+
+    var ROOT_REG = /^(?:body|html)$/i;
+
+    function getPosition(el) {
+        var offsetParent ,
+            offset ,
+            parentOffset = {top: 0, left: 0};
+
+        if (DOM.css(el, 'position') == 'fixed') {
+            offset = el.getBoundingClientRect();
+        } else {
+            offsetParent = getOffsetParent(el);
+            offset = DOM.offset(el);
+            parentOffset = DOM.offset(offsetParent);
+            parentOffset.top += parseFloat(DOM.css(offsetParent, "borderTopWidth")) || 0;
+            parentOffset.left += parseFloat(DOM.css(offsetParent, "borderLeftWidth")) || 0;
+        }
+
+        offset.top -= parseFloat(DOM.css(el, "marginTop")) || 0;
+        offset.left -= parseFloat(DOM.css(el, "marginLeft")) || 0;
+
+        // known bug: if el is relative && offsetParent is document.body, left %
+        // should - document.body.paddingLeft
+        return {
+            top: offset.top - parentOffset.top,
+            left: offset.left - parentOffset.left
+        };
+    }
+
+    function getOffsetParent(el) {
+        var offsetParent = el.offsetParent || ( el.ownerDocument || doc).body;
+        while (offsetParent && !ROOT_REG.test(offsetParent.nodeName) &&
+            DOM.css(offsetParent, "position") === "static") {
+            offsetParent = offsetParent.offsetParent;
+        }
+        return offsetParent;
     }
 
     return DOM;

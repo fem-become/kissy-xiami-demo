@@ -37,11 +37,6 @@
 </style>
 <link rel="stylesheet" type="text/css" href="../src/xiami/reset.css" />
 <link rel="stylesheet" type="text/css" href="../src/xiami/dpl.css" />
-<link rel="stylesheet" type="text/css" href="../src/xiami/transition/discover.css" />
-<link rel="stylesheet" type="text/css" href="../src/xiami/transition/home.css" />
-<link rel="stylesheet" type="text/css" href="../src/xiami/transition/player.css" />
-<link rel="stylesheet" type="text/css" href="../src/xiami/transition/album.css" />
-<link rel="stylesheet" type="text/css" href="../src/xiami/transition/albums.css" />
 <link rel="stylesheet" type="text/css" href="../src/xiami/transition/header.css" />
 </head>
 <body>
@@ -61,11 +56,6 @@
 	</div>
 	<div id='body'>
 	</div>
-	<div id="suspender">
-		<div class="s-inner">
-			<s class="s-play-icon"></s>
-		</div>
-	</div>
 	<div class="s-popup">
 		<span class="J_PopupMsg"></span>
 		<div class="tip-wrapper">
@@ -73,12 +63,17 @@
 		</div>
 	</div>
 	</div>
+	<div id="suspender">
+		<div class="s-inner">
+			<s class="s-play-icon"></s>
+		</div>
+	</div>
 <script src='assets/kissy/seed.js'></script>
 <!-- <script src="http://jsconsole.com/remote.js?57E6AC72-4917-496A-A05E-DF6E51A3263C"></script> -->
 <script>
 	KISSY.config('packages',{
 		xiami: {
-			tag:Math.random(),
+			tag: KISSY.now(),
 			base:'../src/'
 		},
 		gallery: {

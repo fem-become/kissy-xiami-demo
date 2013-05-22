@@ -1,7 +1,7 @@
 ﻿/*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 11 10:34
+build time: May 21 14:11
 */
 /**
 ks-editor-post ，编辑器内容外部包装容器
@@ -325,14 +325,10 @@ LoVe F HAte
 
 .ks-editor-button {
     display: inline-block;
-    *display: inline;
-    *zoom:1;
     margin: 2px;
     border-radius: 2px;
     padding: 3px 18px;
     border: 1px solid rgb(193, 200, 209);
-    _padding-bottom: 2px;
-    *padding-bottom: 2px;
     color: black;
     vertical-align: middle;
     white-space: nowrap;
@@ -343,6 +339,13 @@ LoVe F HAte
   background-position: left -0px;
 }
 
+.ks-ie6 .ks-editor-button,
+.ks-ie7 .ks-editor-button {
+    display: inline;
+    zoom: 1;
+    padding-bottom: 2px;
+}
+
 .ks-editor-tools .ks-editor-button {
     padding: 0;
     box-shadow: none;
@@ -351,10 +354,13 @@ LoVe F HAte
 
 .ks-editor-toolbar-button {
     border: 1px solid transparent;
-    /*透明边框 ie6 不支持 ,_hack*/
-    _border-color: tomato;
-    _filter: chroma(color = tomato);
     /*outline: none;*/
+}
+
+.ks-ie6 .ks-editor-toolbar-button {
+    /*透明边框 ie6 不支持 ,_hack*/
+    border-color: tomato;
+    filter: chroma(color=tomato);
 }
 
 .ks-editor-tools .ks-editor-button-checked {
@@ -380,14 +386,18 @@ LoVe F HAte
 
 .ks-editor-button-disabled {
     opacity: 0.3;
-    /*ie7不支持透明属性*/
-    /*ie8 标准模式也需要，不知为何透明度不能作用下层*/
-    filter: chroma(color = tomato) alpha(opacity = 30);
 }
 
 /*ie9 标准模式 filter 形成黑框*/
-.ks-ie9 .ks-editor-button-disabled {
-    filter: none;
+.ks-ie7 .ks-editor-button-disabled,
+.ks-ie8 .ks-editor-button-disabled{
+    /*ie7不支持透明属性*/
+    /*ie8 标准模式也需要，不知为何透明度不能作用下层*/
+    filter: alpha(opacity=30);
+}
+
+.ks-ie6 .ks-editor-button-disabled {
+    filter: chroma(color=tomato) alpha(opacity=30);
 }
 
 /**
@@ -553,7 +563,7 @@ a.ks-editor-color-remove:hover {
     margin-right: 2px;
 }
 
-.ks-editor-draft .ks-editor-menu-button-caption {
+.ks-editor-draft .ks-editor-menu-button-content {
     padding-left: 4px;
     height: 20px;
     line-height: 20px;
@@ -761,8 +771,8 @@ ks-editor-toolbar-padding {
     margin-right: 0;
 }
 
-.ks-editor-tools .ks-editor-toolbar-unorderedListArrowBtn .ks-editor-menu-button-caption,
-.ks-editor-tools .ks-editor-toolbar-orderedListArrowBtn .ks-editor-menu-button-caption {
+.ks-editor-tools .ks-editor-toolbar-unorderedListArrowBtn .ks-editor-menu-button-content,
+.ks-editor-tools .ks-editor-toolbar-orderedListArrowBtn .ks-editor-menu-button-content {
     margin: 0;
     padding: 0;
     width: 0;
@@ -845,8 +855,7 @@ ks-editor-toolbar-padding {
 }
 
 .ks-editor-toolbar-backColor {
-    position: relative;
-    left: -1px;
+    margin-left: 3px;
 }
 
 .ks-editor-toolbar-foreColor {
@@ -1027,6 +1036,14 @@ menu style for kissy editor ,include contextmenu and select menu
     box-shadow: 0px 1px 1px rgb(228, 228, 228);
 }
 
+.ks-editor-popupmenu-hidden {
+    visibility: hidden;
+}
+
+.ks-editor-popupmenu-shown {
+    visibility: visible;
+}
+
 .ks-editor-menuitem {
     margin: 0;
     border-width: 0;
@@ -1034,13 +1051,19 @@ menu style for kissy editor ,include contextmenu and select menu
     white-space: nowrap;
     /*ie6 can hover*/
     position: relative;
-    zoom:1;
+    zoom: 1;
 }
 
 .ks-editor-menuitem-hover, .ks-editor-option-selected {
     background: #D6E9F8;
     text-decoration: none;
     color: black;
+}
+
+.ks-editor-menuitem-disabled{
+    opacity: 0.3;
+    -moz-opacity: 0.3;
+    filter: alpha(opacity = 30);
 }.ks-editor-dialog, .ks-editor-overlay {
     position: absolute;
     /*防止移位带来的闪烁*/
@@ -1050,12 +1073,28 @@ menu style for kissy editor ,include contextmenu and select menu
     overflow: hidden;
 }
 
+.ks-editor-overlay-hidden{
+    visibility: hidden;
+}
+
+.ks-editor-overlay-shown{
+    visibility: visible;
+}
+
+.ks-editor-overlay-mask-hidden {
+    visibility: hidden;
+}
+
+.ks-editor-overlay-mask-shown {
+    visibility: visible;
+}
+
 .ks-editor-dialog label,
 .ks-editor-dialog input{
     vertical-align: middle;
 }
 
-.ks-editor-dialog .ks-editor-contentbox, .ks-editor-popup .ks-editor-contentbox {
+.ks-editor-dialog .ks-editor-content, .ks-editor-popup .ks-editor-content {
     background-color: #FBFBFB;
     border: 1px solid #ACB4BE;
 }
@@ -1242,7 +1281,7 @@ select style for kissy editor
     filter: none;
 }
 
-.ks-editor-tools .ks-editor-menu-button-caption {
+.ks-editor-tools .ks-editor-menu-button-content {
     padding-left: 4px;
     height: 20px;
     line-height: 20px;
@@ -1272,7 +1311,7 @@ select style for kissy editor
     background-image: url("text-bg.png");
 }
 
-.ks-editor-big-menu-button-caption {
+.ks-editor-big-menu-button-content {
     padding-left: 5px;
 }.ks-editor-smiley-sprite {
     background: url("http://a.tbcdn.cn/sys/wangwang/smiley/sprite.png") no-repeat scroll -1px 0 transparent;

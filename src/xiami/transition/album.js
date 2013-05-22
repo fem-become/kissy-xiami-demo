@@ -6,6 +6,7 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
         body = $("#body"),
         headerEl = header.getHeader(myName),
         pid = 0;
+    var Album = { pop: null, pageName: null };
 
     return {
 
@@ -17,6 +18,8 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
                 el = $('<div class="mod-page"><div class="album-loading"></div></div>').appendTo(body);
                 header.setTitle("loading...");
                 _this.fetchData(config);
+            } else {
+                header.setTitle(Album.pageName);
             }
             
             if (!headerEl.contents().length) {
@@ -85,8 +88,8 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
                         }
                         suspender.addToList(songs);
                     });
-
-                    header.setTitle( data['title']);   
+                    Album.pageName = data['title'];
+                    header.setTitle(Album.pageName);   
              
                 }
             });
@@ -124,13 +127,16 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
         },
 
         getAlbumDescPopup: function(data){
+            if(Album.pop){
+                return false;
+            }
             var _html = [
                 '<dl class="desc-container">',
                     '<dt class="desc-header">',
                         '<h4 class="title">{{title}}</h4>',
                         '<h4 class="article">{{author}}</h4>',
                     '</dt>',
-                    '<dd class="desc">{{desc}}</dd>',
+                    '<dd class="desc"><div class="ks-scrollview-content ks-content">{{desc}}</div></dd>',
                 '</dl>',
                 '<i class="J_close album-close">×</i>'
             ].join('');
@@ -153,36 +159,34 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
                 elCls: 'album-popup'
             };
 
-            var pop = new Overlay(cfg);
-            pop.render().show();
+            Album.pop = new Overlay(cfg);
+            Album.pop.on('afterRenderUI',function(){
+                (function(){
+                    var _descHeight     = Album.pop.get('el').all('.desc').height();
+                        _titleHeight    = Album.pop.get('el').all('dt').height();
+                        _contentHeight  = Album.pop.get('el').height();
+                    
+                        if(_descHeight > _contentHeight - 80 - _titleHeight );
+                        Album.pop.get('el').all('.desc').css('height', (_contentHeight - _titleHeight - 80) + 'px');
 
-            //pop.show();
+                    var scrollview = new ScrollView({
+                            srcNode: Album.pop.get('el').all('.desc'),
+                            plugins: [new ScrollbarPlugin({})]
+                        }).render();
+                })();
 
-            //console.log(pop.render());
-            (function(){
-                var _descHeight     = pop.get('el').all('.desc').height();
-                    _titleHeight    = pop.get('el').all('dt').height();
-                    _contentHeight  = pop.get('el').height();
-                
-                    if(_descHeight > _contentHeight - 80 - _titleHeight );
-                    pop.get('el').all('.desc').css('height', (_contentHeight - _titleHeight - 80) + 'px');
-
-                    window.scrollview = new ScrollView({
-                        srcNode: pop.get('el').all('.desc'),
-                        plugins: [new ScrollbarPlugin({})]
-                    }).render();
-            })();
-
-            pop.get('el').all('.J_close').on('click', function(){
-                pop.get('el').remove();
-
+                Album.pop.get('el').all('.J_close').on('click', function(){
+                    Album.pop.get('el').remove();
+                    Album.pop = null;
+                });
             });
-          
+
+            Album.pop.render().show();
         }
 
     };
 
 }, {
-    requires: ["node", "./index", "event", "../header","../suspender", 'overlay', 'scrollview', 'scrollview/plugin/scrollbar']
+    requires: ["node", "./index", "event", "../header","../suspender", 'overlay', 'scrollview', 'scrollview/plugin/scrollbar','./album.css']
 });
 

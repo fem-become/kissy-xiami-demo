@@ -1,7 +1,7 @@
 ﻿/*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 11 10:34
+build time: Apr 17 00:19
 */
 /**
  * multiple-upload dialog
@@ -21,7 +21,7 @@ KISSY.add("editor/plugin/multiple-upload/dialog", function (S, Editor, DragPlugi
         PIC_SIZE_LIMIT = 1000,
         PIC_SIZE_LIMIT_WARNING = "图片太大，请压缩至 n M以下",
         KEY = "Multiple-Upload-Save",
-        swfSrc = Editor.Utils.debugUrl("plugin/uploader/uploader.longzang.swf"),
+        swfSrc = Editor.Utils.debugUrl("plugin/uploader/assets/uploader.longzang.swf"),
         name = "ks-editor-multipleUpload",
         FLASH_VERSION_REQUIRED = "10.0.0";
 
@@ -182,8 +182,8 @@ KISSY.add("editor/plugin/multiple-upload/dialog", function (S, Editor, DragPlugi
             if (!SWF.fpvGTE(FLASH_VERSION_REQUIRED)) {
                 return;
             }
-            if (uploadCfg['extraHtml']) {
-                listTableWrap.append(uploadCfg['extraHtml']);
+            if (uploadCfg['extraHTML']) {
+                listTableWrap.append(uploadCfg['extraHTML']);
             }
 
             self._list = list;
@@ -444,7 +444,7 @@ KISSY.add("editor/plugin/multiple-upload/dialog", function (S, Editor, DragPlugi
                 uploader = self.uploader,
                 id = ev.id || (ev['file'] && ev['file'].id);
             if (!id) {
-                S.log(ev);
+
                 return;
             }
             var tr = self._getFileTr(id),
@@ -453,7 +453,7 @@ KISSY.add("editor/plugin/multiple-upload/dialog", function (S, Editor, DragPlugi
 
             uploader['removeFile'](id);
             if (!ev._custom) {
-                S.log(status);
+
                 status = "服务器出错或格式不正确";
             }
             if (tr) {
@@ -503,8 +503,8 @@ KISSY.add("editor/plugin/multiple-upload/dialog", function (S, Editor, DragPlugi
             try {
                 data = S.parseJSON(data);
             } catch (ex) {
-                S.log("multiUpload _onUploadCompleteData error :");
-                S.log(ex);
+
+
                 throw ex;
             }
             if (data.error) {
@@ -814,9 +814,9 @@ KISSY.add("editor/plugin/multiple-upload/dialog", function (S, Editor, DragPlugi
 }, {
     requires: ['editor',
         'component/plugin/drag',
-        '../progressbar/',
-        '../dialog/',
-        '../flash-bridge/',
-        '../local-storage/',
+        '../progressbar',
+        '../dialog',
+        '../flash-bridge',
+        '../local-storage',
         'swf']
 });

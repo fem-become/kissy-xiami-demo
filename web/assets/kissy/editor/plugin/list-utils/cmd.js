@@ -1,7 +1,7 @@
 ﻿/*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 11 10:34
+build time: Apr 17 00:19
 */
 /**
  * Add ul and ol command identifier for KISSY Editor.
@@ -393,5 +393,5 @@ KISSY.add("editor/plugin/list-utils/cmd", function (S, Editor, ListUtils, undefi
     };
 
 }, {
-    requires: ['editor', '../list-utils/']
+    requires: ['editor', '../list-utils']
 });

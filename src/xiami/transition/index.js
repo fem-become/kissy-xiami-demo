@@ -40,6 +40,9 @@ KISSY.add( function (S, Node) {
                     useTransition:true
                 });
 
+                if (nextMod.indexOf("player") > -1) {
+                    $("#suspender").hide();
+                }
                 $("#header").removeClass("header-is-home");
 
                 preEl.animate({
@@ -49,6 +52,7 @@ KISSY.add( function (S, Node) {
                     useTransition:true,
                     complete:function(){
                         preEl.hide();
+                        window.scroll(0, 0);
                     }
                 });
             });
@@ -93,6 +97,9 @@ KISSY.add( function (S, Node) {
                 if (nextMod.indexOf("home") > -1) {
                     $("#header").addClass("header-is-home");
                 }
+                if (currentMod.indexOf("player") > -1) {
+                    $("#suspender").show();
+                }
 
                 current.getEl().animate({
                     left: width
@@ -101,6 +108,7 @@ KISSY.add( function (S, Node) {
                     useTransition:true,
                     complete:function(){
                         preEl.hide();
+                        window.scroll(0, 0);
                     }
                 });
 

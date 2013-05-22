@@ -1,7 +1,7 @@
 ﻿/*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Jan 31 23:02
+build time: Apr 17 00:22
 */
 /**
  * collection of models
@@ -427,7 +427,6 @@ KISSY.add("mvc/model", function (S, Base) {
                     }
                     for (var l in lists) {
                         lists[l].remove(self, opts);
-                        self.removeFromCollection(lists[l]);
                     }
                     self.fire("destroy");
                     success && success.apply(this, arguments);
@@ -883,11 +882,11 @@ KISSY.add('mvc/router', function (S, Event, Base) {
         }
     }
 
-    /**
-     * transform route declaration to router reg
-     * @param str
-     *         /search/:q
-     *         /user/*path
+    /*
+      transform route declaration to router reg
+      @param str
+              /search/:q
+              /user/*path
      */
     function transformRouterReg(self, str, callback) {
         var name = str,
@@ -1123,7 +1122,7 @@ KISSY.add('mvc/router', function (S, Event, Base) {
                                 history['replaceState']({}, "", getFullPath(hash));
                                 opts.triggerRoute = 1;
                             } else {
-                                S.error("location path must be same with urlRoot!");
+
                             }
                         }
                     }

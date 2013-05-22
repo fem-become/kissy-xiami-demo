@@ -1,7 +1,7 @@
 
     .album-loading {
         background: url(http://img02.taobaocdn.com/tps/i2/T1G59MXvtdXXaQpqoD-32-32.crdownload) no-repeat center center;
-        height: 400px;
+        height: 300px;
     }
 
 
@@ -32,7 +32,7 @@
         }
 
     .album-info {
-        margin-left: 165px;
+        margin-left: 175px;
     }
         .album-info h3 {
             color: #828282;
@@ -151,7 +151,7 @@
                     
     }
     .album-title{
-        padding: 20px;
+        padding: 20px 10px;
         font-size: 12px;
         background-color: #f4f4f4;
     }
@@ -172,7 +172,7 @@
         }
 
     .album-info {
-        margin-left: 205px;
+        margin-left: 215px;
     }
         .album-info h3 {
             color: #828282;
@@ -316,6 +316,11 @@
 
     .album-popup .desc-container .title {
         color: #3162c3;
+    }
+
+    .album-popup .desc-container .desc {
+        overflow: hidden;
+        position: relative;
     }
 
     .album-popup .desc-container .desc-header {

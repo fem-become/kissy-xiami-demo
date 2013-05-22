@@ -45,7 +45,7 @@ KISSY.add(function(S, Node, Event, Transition, Player) {
       // });
       suspender.addClass('playing');
       setTimeout(self._updateLoading,100,false,self);
-      //Player.render('http://m1.file.xiami.com/224/224/992/12345_95993_l.mp3');
+      //Player.render(musicInfo.id);
       //Player.init({id: '1769374012'});
     },
 
@@ -83,5 +83,5 @@ KISSY.add(function(S, Node, Event, Transition, Player) {
   };
   
 },{
-  requires:['node','event','./transition/index','./transition/player']
+  requires:['node','event','./transition/index','./transition/min-player']
 });
