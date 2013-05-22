@@ -452,8 +452,9 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 				el.addClass('is-playing').siblings('.J_MusicItem').removeClass('is-playing');
 				self.bringRest();
 				progress && progress.cancel();
-				self.createAudio(el.attr('data-url'));
-				//Music.src = el.attr('data-src');
+				musicInfo.id = el.attr('data-id');
+				musicInfo.src = el.attr('data-url');
+				self.render();
 
 				self.updateProgress();
 
