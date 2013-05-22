@@ -121,19 +121,19 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
             '{{#each data}}'+'<div class="collect_item {{#if xindex%2 !== 0}}right{{/if}}">'+
             '<p class="cover">'+
             '<span>'+
-            '<a title="{{title}}" class="J_collectCover" song-id="{{id}}">'+
+            '<a title="{{title}}" class="J_collectCover" collect-id="{{id}}">'+
             '<img  src="{{img}}" alt="{{title}}" >'+
             '</a>'+
             '</span>'+
             '</p>'+
             '<div class="collect_main">'+
             '<strong class="collect_title">'+
-            '<a href="{{id}}" title="{{title}}">{{title}}</a>'+
+            '<a collect-id="{{id}}" title="{{title}}" class="J_collectTitle">{{title}}</a>'+
             '</strong>'+
             '<p class="num">25首精选</p>'+
             '<p class="brief">{{des}}</p>'+
-            '<a class="play big-icon" song-id="{{id}}"></a>'+
-            '<a class="add-list icon" song-id="{{id}}"></a>'+
+            '<a class="play big-icon" song-id="{{firstSong}}"></a>'+
+            '<a class="add-list icon" songs-id="{{songs}}"></a>'+
             '</div>'+
             '</div>'+'{{/each}}'+
             '</div>';
@@ -249,6 +249,8 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
                     "id": "7390",
                     "title": "洪卓立"
                 },
+                "firstSong":"1771542090",
+                "songs":"1771542090,1771824792,1771737720,1771824794,1771824795,1771824796,1771824797,1771824798,1771810956,1771824800",
                 "img": "http://img.xiami.com/./images/album/img90/7390/4663593451366960487_1.jpg",
                 "company": "英皇娱乐",
                 "pub": "2013年04月",
@@ -261,6 +263,8 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
                     "id": "32884",
                     "title": "She & Him"
                 },
+                "firstSong":"1771645975",
+                "songs":"1771645975,1771731479,1771645977,1771645978",
                 "img": "http://img.xiami.com/./images/album/img88/505188/5051881359505188_1.jpg",
                 "company": "Merge",
                 "pub": "2013年05月",
@@ -273,6 +277,8 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
                     "id": "10141",
                     "title": "Deep Purple"
                 },
+                "firstSong":"1771750295",
+                "songs":"1771750295,1771750296,1771750297,1771750298",
                 "img": "http://img.xiami.com/./images/album/img41/10141/17635869091364706121_1.jpg",
                 "company": "Edel",
                 "pub": "2013年04月",
@@ -285,6 +291,8 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
                     "id": "23256",
                     "title": "Soundtrack"
                 },
+                "firstSong":"1771805048",
+                "songs":"1771805048,1771805049,1771805050,1771805051,1771805052",
                 "img": "http://img.xiami.com/./images/album/img56/23256/3656661891365666190_1.jpg",
                 "company": "Hollywood Records",
                 "pub": "2013年04月",
@@ -409,10 +417,10 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
             collectData.length = 4;
             var render = new XTemplate(TPL_collect).render({data:collectData});
             $(render).appendTo(el);
-            $('.J_collectCover').on(Event.Gesture.tap, function () {
-                var song_id = $(this).attr('song-id');
+            $('.J_collectCover, .J_collectTitle').on(Event.Gesture.tap, function () {
+                var collect_id = $(this).attr('collect-id');
                 Transition.forward(myName, 'xiami/transition/album',{
-                    id:song_id
+                    id:collect_id
                 });
             });
             $('.play', '.J_collect').on(Event.Gesture.tap, function () {
@@ -422,8 +430,9 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
                 });
             });
             $('.add-list', '.J_collect').on(Event.Gesture.tap, function () {
-                var song_id = $(this).attr('song-id');
-                self.addToList(song_id);
+                var songs_id = $(this).attr('songs-id');
+                var songs = songs_id.split(',');
+                suspender.addToList(songs);
             });
         },
 
