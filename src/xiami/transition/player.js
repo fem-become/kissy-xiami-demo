@@ -1,5 +1,5 @@
 KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView, ScrollbarPlugin) {
-
+	//alert(Audio);
 	var $ = Node.all;
 	var el;
 	var myName = this.getName();
@@ -14,7 +14,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 	var PLAY_CLASS = 'pl-play';
 	var STOP_CLASS = 'pl-pause';
 
-	var player = null;
+	//var player = null;
 
 	var progress = null;
 
@@ -26,7 +26,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 	var elTabContent = [];
 
 
-	var LIST_TEMP_HTML = '<li class="J_MusicItem" id="J_MusicItem{id}" data-id="{id}">' +
+	var LIST_TEMP_HTML = '<li class="J_MusicItem" id="J_MusicItem{id}" data-url="{location}" data-id="{id}">' +
 		'<p class="bar J_PlListBar" class="J_ItemBar"></p>' +
 		'<p class="pl-name">' +
 		'	<strong class="tt" title="{title}">' +
@@ -74,29 +74,31 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 		'	<div id="J_PlayerTab" class="pl-player-tab">' +
 		'		<div class="pl-img-tab" id="J_PlImgTab">' +
 		'			<div class="pl-img-content">' +
-		'				<img class="pl-img" id="J_PlImg" src="http://img04.taobaocdn.com/tps/i4/T1mAOLXtXgXXbTIWs3-128-128.gif" alt="img">' +
+		'				<img class="pl-img" id="J_PlImg" src="http://www.lettersmarket.com/uploads/lettersmarket/blog/loaders/common_metal/ajax_loader_metal_64.gif" alt="img">' +
 		'			</div>	' +
 		'		</div>' +
 		'		<div class="pl-list-tab" id="J_PlListTab" style="display:none">' +
 		'			<div class="ks-scrollview-content ks-content">' + 
 		'			<ul class="pl-music-list" id="J_PlMusicList">' +
+		'				<li><img class="pl-img" src="http://www.lettersmarket.com/uploads/lettersmarket/blog/loaders/common_metal/ajax_loader_metal_64.gif" alt="img"></li>'+
 		'			</ul>' +
 		'			</div>' +
 		'		</div>' +
 		'	</div>' +
 		'</div>';
 
+
+	var numInit = 0;
+	var initProg;
+
 	var numInit = 0,
 		scrollview = null;
 
 
 
+
 	S.Player = new S.Base();
-
-	
-
-
-
+	S.plScrollView = null;
 
 	var localArr = localStorage.getItem('MUSIC_LIST') ? localStorage.getItem('MUSIC_LIST').split(',') : [];
 
@@ -109,8 +111,10 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 			numInit = 0;
 			if (!config || !config.id) {
 				musicInfo.id = localArr[0];
+				musicInfo.src = 'http://m1.file.xiami.com/1/218/218/915/11024_186271_l.mp3';
 			} else {
 				musicInfo.id = config.id;
+				musicInfo.src = config.src || 'http://m1.file.xiami.com/1/218/218/915/11024_186271_l.mp3';
 			}
 			if (!el) {
 				el = $('<div class="mod-page"></div>').appendTo(body);
@@ -124,6 +128,10 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 			this.render();
 			this.fillList();
 			this._bindEvent();
+			//this.setScrollView();
+
+			
+
 
 			var HEADER_HEIGHT = 45,
 				PLAY_INFO_HEIGHT = $('#J_PlayInfo').height(),
@@ -142,6 +150,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 				plugins: [new ScrollbarPlugin({})]
 			}).render();
 
+
 			var headerEl = header.getHeader(myName);
 			if (!headerEl.contents().length) {
 				headerEl.append(myName);
@@ -149,6 +158,19 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 		},
 		getEl: function() {
 			return el;
+		},
+		/**
+		 * 设置滚动条
+		 */
+		setScrollView:function(){
+			// 滚动条
+			if (!S.plScrollView) {
+				S.plScrollView = new ScrollView({
+					srcNode: '#J_PlTabContent',
+					plugins: [new ScrollbarPlugin({})]
+				});
+				S.plScrollView.render();
+			}
 		},
 		/**
 		 * 渲染
@@ -175,18 +197,12 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 
 			var self = this;
 
-			if(player) player.pause();
-			
-			//alert(1)
+			if (S.player) S.player.pause();
+			this.createAudio(musicInfo.src);
+
 			this.getMusicInfo(musicInfo.id, function() {
-
-				self.createAudio(musicInfo.location, isSwitch);
-
-				//self.createAudio(TEST_URL, isSwitch);
-
-				//$('#J_MusicTittle').html(musicInfo.title);
+				//self.createAudio(musicInfo.location, isSwitch);
 				$('#J_PlImg').attr('src', musicInfo.albumCover);
-				//$('#J_MusicLrc').html(musicInfo.lrc);
 			});
 
 			return this;
@@ -197,32 +213,22 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 		 */
 		createAudio: function(src, isSwitch) {
 			var self = this;
-			player = new Audio();
-			player.src = src;
-			player.load();
+			if (!S.player) S.player = new Audio();
+
+			S.player.src = src;
+			//S.player.type = 'audio/mp3';
+			S.player.load();
+
+			$('#J_TotalTime').html('loading');
+			$(S.player).on('canplay', function() {
+				re._changeProgress();
+				re._setProgress();
+				self._startPlay();
+				self._switchMusic();
+			});
 
 
-			self._switchMusic();
-			//alert(self.isIOS() && !numInit)
-			if (self.isIOS()) {
-				$('#J_TotalTime').html('4:02');
-			} else {
-				$('#J_TotalTime').html('loading');
-				var initProg = S.later(function() {
-					if (re.getTotalTime()) {
-						re._changeProgress();
-						re._setProgress();
-						initProg.cancel();
-					}
-				}, 200, true);
-			}
-			if(isSwitch){
-				self.play();
-			}
-			numInit++;
-
-
-			return player;
+			return S.player;
 		},
 		/**
 		 * 获取player
@@ -237,7 +243,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 		 * @return {Object} this
 		 */
 		stop: function(callback) {
-			player && player.pause();
+			S.player && S.player.pause();
 			if (callback) callback();
 			return this;
 		},
@@ -247,7 +253,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 		 * @return {Object} this
 		 */
 		play: function(callback) {
-			player.play();
+			S.player.play();
 			if (callback) callback();
 			return this;
 		},
@@ -256,22 +262,22 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 		 * @return {String} 时间
 		 */
 		getTotalTime: function() {
-			return player && player.duration;
+			return (S.player && S.player.duration) || 0;
 		},
 		/**
 		 * 归零
 		 * @return {Object} this
 		 */
 		bringRest: function() {
-			if (player) {
-				player.pause();
-				if (player.currentTime) player.currentTime = 0;
-				if(progress)progress.cancel();
+			if (S.player) {
+				S.player.pause();
+				if (S.player.currentTime) S.player.currentTime = 0;
+				if (progress) progress.cancel();
 				$('#J_CurrentTime').html('0:00');
-				$('#J_PlayProgress').css('width',0);
-				$('#J_PlayBarIcon').css('left',0);
+				$('#J_PlayProgress').css('width', 0);
+				$('#J_PlayBarIcon').css('left', 0);
 				$('#J_PlaySwitch').replaceClass(PLAY_CLASS, STOP_CLASS);
-				player = null;
+				S.player = null;
 			}
 			return this;
 		},
@@ -293,7 +299,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 					//musicInfo = data;
 					//console.log('Music Info :');
 					//console.log(musicInfo);
-					callback();
+					callback && callback();
 				},
 				error: function() {
 					alert('error')
@@ -328,7 +334,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 				elNow = $('#J_CurrentTime'),
 				elTotal = $('#J_TotalTime'),
 				elDrag = $('#J_PlayBarIcon');
-			var elListBar = $('#J_MusicItem' + musicInfo.id).children('.J_PlListBar');
+			var elListBar = $('.is-playing').children('.J_PlListBar');
 			// 当前播放的时间 （值可set）
 			var nowTime = this.progress(),
 				// 歌曲的总时间
@@ -364,10 +370,10 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 		 */
 		progress: function(control) {
 			if (control) {
-				player.currentTime = control;
+				S.player.currentTime = control;
 				return this;
 			} else {
-				return player.currentTime;
+				return S.player.currentTime;
 			}
 		},
 		/**
@@ -401,11 +407,26 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 			elTarget.on('click', function() {
 				self.bringRest();
 				nextNode = $('.is-playing').next('.J_MusicItem');
-				nextNode && nextNode.fire(Event.Gesture.doubleTap);
-				if(self.isIOS()){
-					$('#J_PlaySwitch').removeClass(PLAY_CLASS).addClass(STOP_CLASS);
-					return;
-				}
+
+				//nextNode && nextNode.fire(Event.Gesture.doubleTap);
+
+
+
+				var el = nextNode;
+				if (!el) return false;
+				//musicInfo.id = el.attr('data-id');
+				el.addClass('is-playing').siblings('.J_MusicItem').removeClass('is-playing');
+				self.bringRest();
+				progress && progress.cancel();
+				musicInfo.id = el.attr('data-id');
+				musicInfo.src = el.attr('data-url');
+				self.render();
+				//self.createAudio(el.attr('data-url'));
+
+				//Music.src = el.attr('data-src');
+
+				self.updateProgress();
+
 				$('#J_PlaySwitch').removeClass(STOP_CLASS).addClass(PLAY_CLASS);
 
 			});
@@ -422,11 +443,21 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 			elTarget.on('click', function() {
 				self.bringRest();
 				prevNode = $('.is-playing').prev('.J_MusicItem');
-				prevNode && prevNode.fire(Event.Gesture.doubleTap);
-				if(self.isIOS()){
-					$('#J_PlaySwitch').removeClass(PLAY_CLASS).addClass(STOP_CLASS);
-					return;
-				}
+
+
+
+				var el = prevNode;
+				if (!el) return false;
+				//musicInfo.id = el.attr('data-id');
+				el.addClass('is-playing').siblings('.J_MusicItem').removeClass('is-playing');
+				self.bringRest();
+				progress && progress.cancel();
+				musicInfo.id = el.attr('data-id');
+				musicInfo.src = el.attr('data-url');
+				self.render();
+
+				self.updateProgress();
+
 				$('#J_PlaySwitch').removeClass(STOP_CLASS).addClass(PLAY_CLASS);
 			});
 			return this;
@@ -497,13 +528,10 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 		},
 		_pointMusic: function() {
 			var self = this;
-			//alert(21)
-			//alert(KISSY.Event.Gesture.doubleTap)
-			//alert($('.J_MusicItem').length);
 			$('.J_MusicItem').on(Event.Gesture.doubleTap, function(e) {
-				//alert(1)
 				var elTarget = $(e.target);
 				musicInfo.id = elTarget.attr('data-id');
+				musicInfo.src = elTarget.attr('data-url');
 				elTarget.addClass('is-playing').siblings('.J_MusicItem').removeClass('is-playing');
 				self.bringRest();
 				progress && progress.cancel();
@@ -518,7 +546,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 				return true;
 			}
 		},
-				/**
+		/**
 		 * 填充列表
 		 * @return {Object} this
 		 */

@@ -258,7 +258,25 @@ html {
     border-radius: 25px;
     background-position: -39px 12px;
 }
-
+.collect .right{
+     background:#D7DDE1;
+}
+.collect .right .cover{
+     float: right;
+}
+.collect .right .collect_main{
+    float: right;
+    text-align: right;
+    margin-right: 20px;
+    padding-left: 0;
+}
+.collect .right .collect_main .play,
+.collect .right .collect_main .add-list{
+   float: right;
+}
+.collect .right .collect_main .play{
+    margin-left: 10px;
+}
 /*collect end*/
 
 /*song start*/
