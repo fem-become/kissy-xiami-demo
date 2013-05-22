@@ -131,10 +131,10 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 				PADDING = 8,
 				tabHeight = $(window).height() - PLAY_INFO_HEIGHT - HEADER_HEIGHT,
 				winWidth = $(window).width();
-			//alert(height);
+			console.log($(window).height()+' '+PLAY_INFO_HEIGHT);
 			//$('#J_PlTabContent').css('height', height);
 			$('#J_PlayerTab').height(tabHeight);
-			$('#J_PlImg').css({'margin-top':(tabHeight - 185 - 2 * PADDING)/2 + 'px'});
+			$('#J_PlImg').css({'margin-top':(tabHeight - MAXHEIGHT - 2 * PADDING)/2 + 'px'});
 
 			// 滚动条
 			scrollview = new ScrollView({

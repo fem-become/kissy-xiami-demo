@@ -445,13 +445,14 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
 
             $('.play', '.J_songList').on(Event.Gesture.tap, function () {
                 var song_id = $(this).attr('song-id');
-                Transition.forward(myName, 'xiami/transition/player',{
-                    id:song_id
-                });
+                // Transition.forward(myName, 'xiami/transition/player',{
+                //     id:song_id
+                // });
+                suspender.playOne({'id':song_id});
             });
             $('.add-list', '.J_songList').on(Event.Gesture.tap, function () {
                 var song_id = $(this).attr('song-id');
-                suspender.addToList(song_id);
+                suspender.addToList({'id':song_id});
             });
         },
 
