@@ -71,7 +71,6 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 
 
 	var TAB_CONTENT_TEMP = '<div id="J_PlTabContent" class="pl-tab-content">' +
-		'<div class="ks-scrollview-content ks-content">' + 
 		'	<div id="J_PlayerTab" class="pl-player-tab">' +
 		'		<div class="pl-img-tab" id="J_PlImgTab">' +
 		'			<div class="pl-img-content">' +
@@ -79,14 +78,17 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 		'			</div>	' +
 		'		</div>' +
 		'		<div class="pl-list-tab" id="J_PlListTab" style="display:none">' +
+		'			<div class="ks-scrollview-content ks-content">' + 
 		'			<ul class="pl-music-list" id="J_PlMusicList">' +
 		'			</ul>' +
+		'			</div>' +
 		'		</div>' +
 		'	</div>' +
-		'</div>' +
 		'</div>';
 
-	var numInit = 0;
+	var numInit = 0,
+		scrollview = null;
+
 
 
 	S.Player = new S.Base();
@@ -123,15 +125,22 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 			this.fillList();
 			this._bindEvent();
 
+			var HEADER_HEIGHT = 45,
+				PLAY_INFO_HEIGHT = $('#J_PlayInfo').height(),
+				MAXHEIGHT = 185,
+				PADDING = 8,
+				tabHeight = $(window).height() - PLAY_INFO_HEIGHT - HEADER_HEIGHT,
+				winWidth = $(window).width();
+			//alert(height);
+			//$('#J_PlTabContent').css('height', height);
+			$('#J_PlayerTab').height(tabHeight);
+			$('#J_PlImg').css({'margin-top':(tabHeight - 185 - 2 * PADDING)/2 + 'px'});
+
 			// 滚动条
-			new ScrollView({
-				srcNode: '#J_PlTabContent',
+			scrollview = new ScrollView({
+				srcNode: '#J_PlListTab',
 				plugins: [new ScrollbarPlugin({})]
 			}).render();
-
-			var height = $(window).height() - 145 - 45;
-			//alert(height);
-			$('#J_PlTabContent').css('height', height);
 
 			var headerEl = header.getHeader(myName);
 			if (!headerEl.contents().length) {
@@ -538,6 +547,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 							//S.log(listA);
 							//alert(listA)
 							$('#J_PlMusicList').html(listA.join(''));
+							scrollview.sync();
 							re._changeColor();
 							re._pointMusic();
 						}
