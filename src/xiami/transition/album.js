@@ -79,7 +79,7 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
                             location = target.attr('data-location'),
                             title = target.parent('li').one('.album-song-title').text(),
                             cover = albumCover;
-                        suspender.addToList({'id':song_id,'location':location,'albumCover': cover,'title':title});
+                        suspender.addToList({'id':song_id,'location':location,'albumCover': albumCover,'title':title});
                     });
 
                     // 点击简介 弹框显示全部内容
@@ -91,7 +91,7 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
                     el.all('.J_album_add_list_all').on(Event.Gesture.tap, function(e){
                         var songs = [];
                         for(var i = 0; i < list_songs.length; i++){
-                            songs.push({'id':list_songs[i]['id'],'location':list_songs[i]['location'],'albumCover': cover,'title':list_songs[i]['title']});
+                            songs.push({'id':list_songs[i]['id'],'location':list_songs[i]['location'],'albumCover': albumCover,'title':list_songs[i]['title']});
                         }
                         suspender.addToList(songs);
                     });

@@ -30,7 +30,6 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 
 
 
-
 	var elTabContent = [];
 
 
@@ -85,7 +84,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 		'				<img class="pl-img" id="J_PlImg" src="http://img04.taobaocdn.com/tps/i4/T1mAOLXtXgXXbTIWs3-128-128.gif" alt="img">' +
 		'			</div>	' +
 		'		</div>' +
-		'		<div class="pl-list-tab" id="J_PlListTab" style="display:none">' +
+		'		<div class="pl-list-tab" id="J_PlListTab" style="display:none;">' +
 		'			<div class="ks-scrollview-content ks-content">' + 
 		'			<ul class="pl-music-list" id="J_PlMusicList">' +
 		'			</ul>' +
@@ -137,6 +136,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 
 			if(!eventBinded){
 				this._bindEvent();//难道每次都绑定？
+				eventBinded = true;
 			}
 
 			var headerEl = header.getHeader(myName);
@@ -703,7 +703,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 		playSong: function(){
 			var self = this;
 			if(!player){
-				window.player = player = new Audio();
+				player = new Audio();
 				player.addEventListener('ended',function(e){  
 			        //归零，下一首播放，更新各种状态
 			        self._bringRest();
@@ -753,16 +753,16 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 				htmlArray.push(S.substitute(LIST_TEMP_HTML, musicList[i]));
 			}
 			$('#J_PlMusicList').html(htmlArray.join(''));
-			//S.later(function(){
 				// 滚动条
 				if(!scrollview){
-					scrollview = new ScrollView({
+					scrollview = scrollview = new ScrollView({
 						srcNode: '#J_PlListTab',
 						plugins: [new ScrollbarPlugin({})]
 					}).render();
 				}
+			S.later(function(){
 				scrollview.sync();
-			//}, 3000);
+			}, 3000);
 			self._changeColor();			
 		},
 		/**
@@ -785,7 +785,8 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 		 */
 		_bindPlayNext: function(){
 			var self = this;
-			$('#J_PlayNext').on('click', function() {
+			$('#J_PlayNext').on('click', function(e) {
+				e.halt();
 				self._bringRest();
 				self.playSongNow(musicList[(currentIdx + 1)%musicList.length]);
 				self.updateMusicControl();
@@ -799,7 +800,8 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 		 */
 		_bindPlayPrev: function(){
 			var self = this;
-			$('#J_PlayLast').on('click', function() {
+			$('#J_PlayLast').on('click', function(e) {
+				e.halt();
 				self._bringRest();
 				self.playSongNow(musicList[(currentIdx + musicList.length - 1)%musicList.length]);
 				self.updateMusicControl();
@@ -818,6 +820,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 				if (player.currentTime) player.currentTime = 0;
 				//if(progress)progress.cancel();
 				$('#J_CurrentTime').html('0:00');
+				$('#J_TotalTime').html('0:00');
 				$('#J_PlayProgress').css('width',0);
 				$('#J_PlayBarIcon').css('left',0);
 				$('#J_PlaySwitch').removeClass(PLAY_CLASS).addClass(STOP_CLASS);

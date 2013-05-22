@@ -434,10 +434,11 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
                 var songs_id = $(this).attr('songs-id');
                 var songs = songs_id.split(',');
                 //suspender.addToList(songs);
-                var i, l = songs.length;
+                var i, l = songs.length, arr = [];
                 for(i = 0; i < l; i++){
-                    suspender.addToList({'id':songs[i]});
+                    arr.push({'id':songs[i]});
                 }
+                suspender.addToList(arr);
             });
         },
 
