@@ -146,8 +146,8 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
             '<ul class="song-list J_songList">'+
             '{{#each data}}'+'<li>'+
             '<a>{{title}}</a>'+
-            '<a class="play icon" song-id ="{{id}}"></a>'+
             '<a class="add-list icon" song-id ="{{id}}"></a>'+
+            '<a class="play icon" song-id ="{{id}}"></a>'+
             '</li>'+'{{/each}}'+
             '</ul></div>';
 
