@@ -91,8 +91,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 	var numInit = 0;
 	var initProg;
 
-	var numInit = 0,
-		scrollview = null;
+	var scrollview = null;
 
 
 
@@ -111,10 +110,10 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 			numInit = 0;
 			if (!config || !config.id) {
 				musicInfo.id = localArr[0];
-				musicInfo.src = 'http://m1.file.xiami.com/1/218/218/915/11024_186271_l.mp3';
+				musicInfo.src = TEST_URL;
 			} else {
 				musicInfo.id = config.id;
-				musicInfo.src = config.src || 'http://m1.file.xiami.com/1/218/218/915/11024_186271_l.mp3';
+				musicInfo.src = config.src || TEST_URL;
 			}
 			if (!el) {
 				el = $('<div class="mod-page"></div>').appendTo(body);
@@ -123,15 +122,9 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 			} else {
 				S.log(myName + ' is coming again');
 			}
-
-
 			this.render();
 			this.fillList();
 			this._bindEvent();
-			//this.setScrollView();
-
-			
-
 
 			var HEADER_HEIGHT = 45,
 				PLAY_INFO_HEIGHT = $('#J_PlayInfo').height(),
@@ -589,6 +582,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 		},
 		_bindTabSwitch: function() {
 			$('#J_PlListTab').css('left', $(window).width());
+			$('#J_PlImgTab').css('left', 0).show();
 			var self = this;
 			Event.delegate(document, Event.Gesture.tap, '.J_PlayTabIcon', function(e) {
 				var elTarget = $(e.target);
@@ -607,8 +601,17 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 			});
 		},
 		_changeColor: function() {
+			var self = this;
 			//alert($('.J_MusicItem').length);
 			$('.J_MusicItem').each(function(v, index) {
+				var elName = v.children('.pl-name').children('.tt');
+				var strName = elName.text();
+				//alert(self.getWindowWidth() < 400);
+				if(self.getWindowWidth() < 400){
+					//alert(self.getWindowWidth())
+					strName = strName.substr(0,12);
+					elName.html(strName);
+				} 
 				//alert(index)
 				if (index === 0) {
 					return v.addClass('is-playing');
@@ -654,6 +657,9 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 });
 
 /**
+ *
+ *  data
+ *
  * jj && jj({
   "title": "大日子",
   "albumCover": "http://img.xiami.com/./images/album/img25/125/485_2.jpg",
