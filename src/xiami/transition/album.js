@@ -6,6 +6,7 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
         body = $("#body"),
         headerEl = header.getHeader(myName),
         pid = 0;
+    var Album = { pop: null, pageName: null };
 
     return {
 
@@ -17,6 +18,8 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
                 el = $('<div class="mod-page"><div class="album-loading"></div></div>').appendTo(body);
                 header.setTitle("loading...");
                 _this.fetchData(config);
+            } else {
+                header.setTitle(Album.pageName);
             }
             
             if (!headerEl.contents().length) {
@@ -85,8 +88,8 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
                         }
                         suspender.addToList(songs);
                     });
-
-                    header.setTitle( data['title']);   
+                    Album.pageName = data['title'];
+                    header.setTitle(Album.pageName);   
              
                 }
             });
@@ -124,6 +127,9 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
         },
 
         getAlbumDescPopup: function(data){
+            if(Album.pop){
+                return false;
+            }
             var _html = [
                 '<dl class="desc-container">',
                     '<dt class="desc-header">',
@@ -153,34 +159,29 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
                 elCls: 'album-popup'
             };
 
-            var pop = new Overlay(cfg);
-            pop.on('afterRenderUI',function(){
+            Album.pop = new Overlay(cfg);
+            Album.pop.on('afterRenderUI',function(){
                 (function(){
-                    var _descHeight     = pop.get('el').all('.desc').height();
-                        _titleHeight    = pop.get('el').all('dt').height();
-                        _contentHeight  = pop.get('el').height();
+                    var _descHeight     = Album.pop.get('el').all('.desc').height();
+                        _titleHeight    = Album.pop.get('el').all('dt').height();
+                        _contentHeight  = Album.pop.get('el').height();
                     
                         if(_descHeight > _contentHeight - 80 - _titleHeight );
-                        pop.get('el').all('.desc').css('height', (_contentHeight - _titleHeight - 80) + 'px');
+                        Album.pop.get('el').all('.desc').css('height', (_contentHeight - _titleHeight - 80) + 'px');
 
                     var scrollview = new ScrollView({
-                            srcNode: pop.get('el').all('.desc'),
+                            srcNode: Album.pop.get('el').all('.desc'),
                             plugins: [new ScrollbarPlugin({})]
                         }).render();
                 })();
 
-                pop.get('el').all('.J_close').on('click', function(){
-                    pop.get('el').remove();
-
+                Album.pop.get('el').all('.J_close').on('click', function(){
+                    Album.pop.get('el').remove();
+                    Album.pop = null;
                 });
             });
-            pop.render().show();
 
-            //pop.show();
-
-            //console.log(pop.render());
-
-          
+            Album.pop.render().show();
         }
 
     };
