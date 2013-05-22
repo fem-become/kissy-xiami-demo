@@ -40,16 +40,6 @@ html {
     border-top: 8px solid #219ffb;
 }
 
-/*.home .icon{*/
-    /*border-radius: 20px;*/
-    /*-moz-box-shadow: 2px 2px 10px #909090;*/
-    /*-webkit-box-shadow: 2px 2px 10px #909090;*/
-/*}*/
-.home .big-icon{
-    border-radius: 25px;
-    -moz-box-shadow: 2px 2px 10px #909090;
-    -webkit-box-shadow: 2px 2px 10px #909090;
-}
 
 /*promotion start*/
 .home .promotion_slider{
@@ -240,43 +230,30 @@ html {
     overflow: hidden;
     color:#B0B0B0;
 }
-.collect_main .play{
-    float: left;
-    display: inline-block;
-    width:50px;
-    height: 50px;
-    text-indent: -9999px;
-    background: url(http://img02.taobaocdn.com/tps/i2/T1P9irXzBcXXaCG0rh-50-50.png);
-}
+.collect_main .play,
 .collect_main .add-list{
     float: left;
     display: inline-block;
+    text-indent: -9999px;
+    background-color: #ffffff;
+    -moz-box-shadow: 2px 2px 10px #909090;
+    -webkit-box-shadow: 2px 2px 10px #909090;
+    background-image: url(http://img01.taobaocdn.com/tps/i1/T11o5NXyJbXXaEwc2c-150-80.png);
+}
+
+.collect_main .play{
+    width:50px;
+    height: 50px;
+    border-radius: 25px;
+    background-position: 17px 13px;
+}
+.collect_main .add-list{
     margin-top: 5px;
     margin-left: 10px;
     width:40px;
     height:40px;
-    text-indent: -9999px;
-    background: url(http://img04.taobaocdn.com/tps/i4/T1xg9sXAxbXXbe.mPe-40-40.png);
-}
-/*right*/
-.collect .right{
-    background:#D7DDE1;
-}
-.collect .right .cover{
-    /*float: right;*/
-}
-.collect .right .collect_main{
-    /*float: right;*/
-    /*text-align: right;*/
-    margin-right: 20/*px;
-    padding-left: 0;*/
-}
-.collect .right .collect_main .play,
-.collect .right .collect_main .add-list{
-    /*float: right;*/
-}
-.collect .right .collect_main .play{
-    /*margin-left: 10px;*/
+    border-radius: 25px;
+    background-position: -39px 12px;
 }
 /*collect end*/
 
@@ -293,6 +270,7 @@ html {
     height: 60px;
     line-height: 60px;
     border-bottom: 1px solid #FF627C;
+    font-size: 16px;
 }
 
 .bottom-block{
@@ -300,20 +278,15 @@ html {
     background: #D7DDE1;
 }
 
-
-.icon{
-    border: 0;
-    font-size: 0;
-    line-height: 53px;
-    background: url(http://img04.taobaocdn.com/tps/i4/T1PCyrXEhaXXX.GXMQ-123-105.png) no-repeat transparent;
-}
-
 .song-list .icon{
     display: inline-block;
     margin-top:10px;
     width: 38px;
     height: 38px;
-    float: right;
+    float: right;    border: 0;
+    font-size: 0;
+    line-height: 53px;
+    background: url(http://img04.taobaocdn.com/tps/i4/T1PCyrXEhaXXX.GXMQ-123-105.png) no-repeat transparent;
 }
 .song-list .play{
     background-position: 0 -65px;

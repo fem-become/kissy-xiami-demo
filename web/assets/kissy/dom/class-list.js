@@ -1,7 +1,7 @@
 ﻿/*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 12 21:51
+build time: Apr 17 00:15
 */
 /**
  * implement class-list for ie<10

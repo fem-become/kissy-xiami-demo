@@ -71,6 +71,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 
 
 	var TAB_CONTENT_TEMP = '<div id="J_PlTabContent" class="pl-tab-content">' +
+		'<div class="ks-scrollview-content ks-content">' + 
 		'	<div id="J_PlayerTab" class="pl-player-tab">' +
 		'		<div class="pl-img-tab" id="J_PlImgTab">' +
 		'			<div class="pl-img-content">' +
@@ -82,6 +83,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 		'			</ul>' +
 		'		</div>' +
 		'	</div>' +
+		'</div>' +
 		'</div>';
 
 	var numInit = 0;
@@ -610,7 +612,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 	return re;
 
 }, {
-	requires: ["node", "./index", "event", "../header", 'dd', 'dd/plugin/constrain', 'scrollview/drag', 'scrollview/plugin/scrollbar']
+	requires: ["node", "./index", "event", "../header", 'dd', 'dd/plugin/constrain', 'scrollview/drag', 'scrollview/plugin/scrollbar','./player.css']
 });
 
 /**

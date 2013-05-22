@@ -1,7 +1,7 @@
 ﻿/*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 11 10:34
+build time: Apr 17 00:21
 */
 /**
  * video dialog
@@ -12,7 +12,7 @@ KISSY.add("editor/plugin/video/dialog", function (S, Editor, FlashDialog, MenuBu
         TYPE_VIDEO = "video",
         DTIP = "自动",
         MARGIN_DEFAULT = 0,
-        bodyHtml = "<div style='padding:20px 20px 0 20px'>" +
+        bodyHTML = "<div style='padding:20px 20px 0 20px'>" +
             "<p>" +
             "<label>" +
             "链接： " +
@@ -68,7 +68,7 @@ KISSY.add("editor/plugin/video/dialog", function (S, Editor, FlashDialog, MenuBu
             "</td></tr>" +
             "</table>" +
             "</div>",
-        footHtml = "<div style='padding:10px 0 35px 20px;'><a " +
+        footHTML = "<div style='padding:10px 0 35px 20px;'><a " +
             "class='{prefixCls}editor-video-ok {prefixCls}editor-button ks-inline-block' " +
             "style='margin-left:40px;margin-right:20px;'>确定</button> " +
             "<a class='{prefixCls}editor-video-cancel {prefixCls}editor-button ks-inline-block'>取消</a></div>";
@@ -78,45 +78,43 @@ KISSY.add("editor/plugin/video/dialog", function (S, Editor, FlashDialog, MenuBu
     }
 
     S.extend(VideoDialog, FlashDialog, {
-        _config:function () {
+        _config: function () {
             var self = this,
-                editor=self.editor,
-                prefixCls=editor.get('prefixCls'),
+                editor = self.editor,
+                prefixCls = editor.get('prefixCls'),
                 cfg = self.config;
             self._cls = CLS_VIDEO;
             self._type = TYPE_VIDEO;
             self._title = "视频";//属性";
-            self._bodyHtml = S.substitute(bodyHtml,{
-                prefixCls:prefixCls
+            self._bodyHTML = S.substitute(bodyHTML, {
+                prefixCls: prefixCls
             });
-            self._footHtml = S.substitute(footHtml,{
-                prefixCls:prefixCls
+            self._footHTML = S.substitute(footHTML, {
+                prefixCls: prefixCls
             });
-            self.urlCfg = cfg["video"] &&
-                cfg["video"].urlCfg;
-            self._urlTip = (cfg["video"] &&
-                cfg["video"]['urlTip']) || "请输入视频播放链接...";
+            self.urlCfg = cfg.urlCfg;
+            self._urlTip = cfg.urlTip || "请输入视频播放链接...";
         },
-        _initD:function () {
+        _initD: function () {
             var self = this,
                 d = self.dialog,
-                editor=self.editor,
-                prefixCls=editor.get('prefixCls'),
+                editor = self.editor,
+                prefixCls = editor.get('prefixCls'),
                 el = d.get("el");
-            self.dUrl = el.one("."+prefixCls+"editor-video-url");
-            self.dAlign = MenuButton.Select.decorate(el.one("."+prefixCls+"editor-video-align"), {
-                prefixCls:prefixCls+'editor-big-',
-                width:80,
-                menuCfg:{
-                    prefixCls:prefixCls+'editor-',
-                    render:el
+            self.dUrl = el.one("." + prefixCls + "editor-video-url");
+            self.dAlign = MenuButton.Select.decorate(el.one("." + prefixCls + "editor-video-align"), {
+                prefixCls: prefixCls + 'editor-big-',
+                width: 80,
+                menuCfg: {
+                    prefixCls: prefixCls + 'editor-',
+                    render: el
                 }
             });
-            self.dMargin = el.one("."+prefixCls+"editor-video-margin");
-            self.dWidth = el.one("."+prefixCls+"editor-video-width");
-            self.dHeight = el.one("."+prefixCls+"editor-video-height");
-            var action = el.one("."+prefixCls+"editor-video-ok"),
-                cancel = el.one("."+prefixCls+"editor-video-cancel");
+            self.dMargin = el.one("." + prefixCls + "editor-video-margin");
+            self.dWidth = el.one("." + prefixCls + "editor-video-width");
+            self.dHeight = el.one("." + prefixCls + "editor-video-height");
+            var action = el.one("." + prefixCls + "editor-video-ok"),
+                cancel = el.one("." + prefixCls + "editor-video-cancel");
             action.on("click", self._gen, self);
             cancel.on("click", function (ev) {
                 d.hide();
@@ -128,7 +126,7 @@ KISSY.add("editor/plugin/video/dialog", function (S, Editor, FlashDialog, MenuBu
             self.addRes(self.dAlign);
         },
 
-        _getDInfo:function () {
+        _getDInfo: function () {
             var self = this,
                 url = self.dUrl.val();
             var videoCfg = self.config,
@@ -139,21 +137,22 @@ KISSY.add("editor/plugin/video/dialog", function (S, Editor, FlashDialog, MenuBu
                 var re = p['detect'](url);
                 if (!re) {
                     alert("不支持该链接，请直接输入该视频提供的分享链接");
-                    return;
+                    return undefined;
                 }
                 return {
-                    url:re,
-                    attrs:{
-                        height:parseInt(self.dHeight.val()) || p.height,
-                        width:parseInt(self.dWidth.val()) || p.width,
-                        style:"margin:" + (parseInt(self.dMargin.val()) || 0) + "px;" +
+                    url: re,
+                    attrs: {
+                        height: parseInt(self.dHeight.val()) || p.height,
+                        width: parseInt(self.dWidth.val()) || p.width,
+                        style: "margin:" + (parseInt(self.dMargin.val()) || 0) + "px;" +
                             "float:" + self.dAlign.get("value") + ";"
                     }
                 };
             }
+            return undefined;
         },
 
-        _gen:function (ev) {
+        _gen: function (ev) {
             var self = this,
                 url = self.dUrl.val(),
                 urlCfg = self.urlCfg;
@@ -168,10 +167,10 @@ KISSY.add("editor/plugin/video/dialog", function (S, Editor, FlashDialog, MenuBu
                         data[c['paramName'] || "url"] = url;
 
                         S.io({
-                            url:c.url,
-                            data:data,
-                            dataType:'jsonp',
-                            success:function (data) {
+                            url: c.url,
+                            data: data,
+                            dataType: 'jsonp',
+                            success: function (data) {
                                 self._dynamicUrlPrepare(data[1]);
                             }
                         });
@@ -184,14 +183,14 @@ KISSY.add("editor/plugin/video/dialog", function (S, Editor, FlashDialog, MenuBu
             ev && ev.halt();
         },
 
-        _dynamicUrlPrepare:function (re) {
+        _dynamicUrlPrepare: function (re) {
             var self = this;
             self.dUrl.val(re);
             self.dialog.unloading();
             VideoDialog.superclass._gen.call(self);
         },
 
-        _updateD:function () {
+        _updateD: function () {
             var self = this,
                 editor = self.editor,
                 f = self.selectedFlash;
@@ -214,5 +213,5 @@ KISSY.add("editor/plugin/video/dialog", function (S, Editor, FlashDialog, MenuBu
 
     return VideoDialog;
 }, {
-    requires:['editor', '../flash/dialog', '../menubutton/']
+    requires: ['editor', '../flash/dialog', '../menubutton']
 });

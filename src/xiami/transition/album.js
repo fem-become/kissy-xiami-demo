@@ -77,6 +77,15 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
                         _this.getAlbumDescPopup(data);
                     });
 
+                    // 整张专辑加入播放列表
+                    el.all('.J_album_add_list_all').on(Event.Gesture.tap, function(e){
+                        var songs = [];
+                        for(var i = 0; i < list_songs.length; i++){
+                            songs.push(list_songs[i]['id']);
+                        }
+                        suspender.addToList(songs);
+                    });
+
                     header.setTitle( data['title']);   
              
                 }
@@ -92,7 +101,7 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
                         '<div class="album-desc J_album_desc">{{desc}}</div>',
                         '<div class="album-control">',
                             '<button class="play inline">&nbsp;</button>',
-                            '<button class="list inline">&nbsp;</button>',
+                            '<button class="list inline J_album_add_list_all">&nbsp;</button>',
                         '</div>',
                     '</div>',
                     '<div class="album-list-count">{{list_count}}首歌曲</div>',
@@ -117,11 +126,11 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
         getAlbumDescPopup: function(data){
             var _html = [
                 '<dl class="desc-container">',
-                    '<dt>',
+                    '<dt class="desc-header">',
                         '<h4 class="title">{{title}}</h4>',
                         '<h4 class="article">{{author}}</h4>',
                     '</dt>',
-                    '<dd class="desc">{{desc}}</dd>',
+                    '<dd class="desc"><div class="ks-scrollview-content ks-content">{{desc}}</div></dd>',
                 '</dl>',
                 '<i class="J_close album-close">×</i>'
             ].join('');
@@ -145,35 +154,38 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
             };
 
             var pop = new Overlay(cfg);
+            pop.on('afterRenderUI',function(){
+                (function(){
+                    var _descHeight     = pop.get('el').all('.desc').height();
+                        _titleHeight    = pop.get('el').all('dt').height();
+                        _contentHeight  = pop.get('el').height();
+                    
+                        if(_descHeight > _contentHeight - 80 - _titleHeight );
+                        pop.get('el').all('.desc').css('height', (_contentHeight - _titleHeight - 80) + 'px');
+
+                    var scrollview = new ScrollView({
+                            srcNode: pop.get('el').all('.desc'),
+                            plugins: [new ScrollbarPlugin({})]
+                        }).render();
+                })();
+
+                pop.get('el').all('.J_close').on('click', function(){
+                    pop.get('el').remove();
+
+                });
+            });
             pop.render().show();
 
             //pop.show();
 
             //console.log(pop.render());
-            (function(){
-                var _descHeight     = pop.get('el').all('.desc').height();
-                    _titleHeight    = pop.get('el').all('dt').height();
-                    _contentHeight  = pop.get('el').height();
-                
-                    if(_descHeight > _contentHeight - 50 - _titleHeight );
-                    pop.get('el').all('.desc').css('height', (_contentHeight - _titleHeight - 50) + 'px');
 
-                    window.scrollview = new ScrollView({
-                        srcNode: pop.get('el').all('.desc'),
-                        plugins: [new ScrollbarPlugin({})]
-                    }).render();
-            })();
-
-            pop.get('el').all('.J_close').on('click', function(){
-                pop.get('el').remove();
-
-            });
           
         }
 
     };
 
 }, {
-    requires: ["node", "./index", "event", "../header","../suspender", 'overlay', 'scrollview', 'scrollview/plugin/scrollbar']
+    requires: ["node", "./index", "event", "../header","../suspender", 'overlay', 'scrollview', 'scrollview/plugin/scrollbar','./album.css']
 });
 

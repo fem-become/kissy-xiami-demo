@@ -10,7 +10,7 @@
                     
     }
     .album-title{
-        padding: 20px;
+        padding: 20px 10px;
         font-size: 12px;
         background-color: #f4f4f4;
         overflow: hidden;
@@ -32,7 +32,7 @@
         }
 
     .album-info {
-        margin-left: 165px;
+        margin-left: 175px;
     }
         .album-info h3 {
             color: #828282;
@@ -151,7 +151,7 @@
                     
     }
     .album-title{
-        padding: 20px;
+        padding: 20px 10px;
         font-size: 12px;
         background-color: #f4f4f4;
     }
@@ -172,7 +172,7 @@
         }
 
     .album-info {
-        margin-left: 205px;
+        margin-left: 215px;
     }
         .album-info h3 {
             color: #828282;
@@ -305,14 +305,29 @@
     overflow: hidden;
     top: 2%!important;
     -webkit-border-radius: 10px;
+    border-radius: 10px;
     -webkit-box-shadow: 0px 0px 6px #333; 
+    box-shadow: 0px 0px 6px #333;
 }
 
     .album-popup .desc-container{
-        margin: 20px;
+        margin: 30px 20px;
     }
 
-    .album-popup .desc-container .desc{
+    .album-popup .desc-container .title {
+        color: #3162c3;
+    }
+
+    .album-popup .desc-container .desc {
+        overflow: hidden;
+        position: relative;
+    }
+
+    .album-popup .desc-container .desc-header {
+        margin-bottom: 20px;
+    }
+
+    .album-popup .desc-container .desc, .album-popup .desc-container .desc-header {
         margin-left: 0;
         padding: 0 10px;
         

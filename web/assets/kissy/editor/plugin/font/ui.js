@@ -1,7 +1,7 @@
 ﻿/*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 11 10:34
+build time: Apr 17 00:17
 */
 /**
  * font formatting for kissy editor
@@ -21,7 +21,7 @@ KISSY.add("editor/plugin/font/ui", function (S, Editor, Button, MenuButton) {
             });
 
             editor.on("selectionChange", function () {
-                if (editor.get("mode") == Editor.SOURCE_MODE) {
+                if (editor.get("mode") == Editor.Mode.SOURCE_MODE) {
                     return;
                 }
 
@@ -69,7 +69,7 @@ KISSY.add("editor/plugin/font/ui", function (S, Editor, Button, MenuButton) {
             });
             editor.on("selectionChange", function () {
 
-                if (editor.get("mode") == Editor.SOURCE_MODE) {
+                if (editor.get("mode") == Editor.Mode.SOURCE_MODE) {
                     return;
                 }
                 var cmdType = self.get("cmdType");
@@ -86,7 +86,7 @@ KISSY.add("editor/plugin/font/ui", function (S, Editor, Button, MenuButton) {
                 value:true
             },
             mode:{
-                value:Editor.WYSIWYG_MODE
+                value:Editor.Mode.WYSIWYG_MODE
             }
         }
     });
@@ -96,5 +96,5 @@ KISSY.add("editor/plugin/font/ui", function (S, Editor, Button, MenuButton) {
         Select:FontSelect
     };
 }, {
-    requires:['editor', '../button/', '../menubutton/']
+    requires:['editor', '../button', '../menubutton']
 });

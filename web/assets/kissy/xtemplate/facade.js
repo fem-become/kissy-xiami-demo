@@ -1,7 +1,7 @@
 ﻿/*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Feb 28 18:29
+build time: Apr 17 16:13
 */
 /**
  * @ignore
@@ -146,3 +146,15 @@ KISSY.add('xtemplate/facade', function (S, XTemplateRuntime, compiler) {
 }, {
     requires: ['./runtime', './compiler']
 });
+
+/*
+ It consists three modules:
+
+ -   xtemplate - Both compiler and runtime functionality.
+ -   xtemplate/compiler - Compiler string template to module functions.
+ -   xtemplate/runtime -  Runtime for string template( with xtemplate/compiler loaded)
+ or template functions.
+
+ xtemplate/compiler depends on xtemplate/runtime,
+ because compiler needs to know about runtime to generate corresponding codes.
+ */

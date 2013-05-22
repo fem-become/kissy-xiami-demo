@@ -1,7 +1,12 @@
 ﻿/*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 25 15:09
+build time: May 15 22:20
+*/
+/*
+Copyright 2013, KISSY UI Library v1.40dev
+MIT Licensed
+build time: May 15 22:20
 */
 /**
  * @ignore
@@ -39,11 +44,11 @@ var KISSY = (function (undefined) {
 
         /**
          * The build time of the library.
-         * NOTICE: '20130325150924' will replace with current timestamp when compressing.
+         * NOTICE: '20130515221951' will replace with current timestamp when compressing.
          * @private
          * @type {String}
          */
-        __BUILD_TIME: '20130325150924',
+        __BUILD_TIME: '20130515221951',
         /**
          * KISSY Environment.
          * @private
@@ -200,7 +205,7 @@ var KISSY = (function (undefined) {
         EMPTY = '',
         ObjectCreate = Object.create,
     // error in native ie678, not in simulated ie9
-        hasEnumBug = !({toString: 1}.propertyIsEnumerable('toString')),
+        hasEnumBug = !({toString: 1}['propertyIsEnumerable']('toString')),
         enumProperties = [
             'constructor',
             'hasOwnProperty',
@@ -221,9 +226,6 @@ var KISSY = (function (undefined) {
          * @member KISSY
          */
         stamp: function (o, readOnly, marker) {
-            if (!o) {
-                return o
-            }
             marker = marker || STAMP_MARKER;
             var guid = o[marker];
             if (guid) {
@@ -273,9 +275,9 @@ var KISSY = (function (undefined) {
          * @param {Object} s the object need to augment
          * @param {Boolean|Object} [ov=TRUE] whether overwrite existing property or config.
          * @param {Boolean} [ov.overwrite=TRUE] whether overwrite existing property.
-         * @param {String[]} [ov.whitelist] array of white-list properties
+         * @param {String[]|Function} [ov.whitelist] array of white-list properties
          * @param {Boolean}[ov.deep=false] whether recursive mix if encounter object.
-         * @param {String[]} [wl] array of white-list properties
+         * @param {String[]|Function} [wl] array of white-list properties
          * @param [deep=false] {Boolean} whether recursive mix if encounter object.
          * @return {Object} the augmented object
          * @member KISSY
@@ -289,10 +291,21 @@ var KISSY = (function (undefined) {
          */
         mix: function (r, s, ov, wl, deep) {
             if (typeof ov === 'object') {
-                wl = ov['whitelist'];
+                wl = /**
+                 @ignore
+                 @type {String[]|Function}
+                 */ov['whitelist'];
                 deep = ov['deep'];
                 ov = ov['overwrite'];
             }
+
+            if (wl && !S.isFunction(wl)) {
+                var originalWl = wl;
+                wl = function (name, val) {
+                    return S.inArray(name, originalWl) ? val : undefined;
+                };
+            }
+
             var cache = [],
                 c,
                 i = 0;
@@ -455,7 +468,7 @@ var KISSY = (function (undefined) {
             ov = TRUE;
         }
 
-        var i = 0, p, keys, len;
+        var i, p, keys, len;
 
         // 记录循环标志
         s[MIX_CIRCULAR_DETECTION] = r;
@@ -463,24 +476,14 @@ var KISSY = (function (undefined) {
         // 记录被记录了循环标志的对像
         cache.push(s);
 
-        if (wl) {
-            len = wl.length;
-            for (i = 0; i < len; i++) {
-                p = wl[i];
-                if (p in s) {
-                    _mix(p, r, s, ov, wl, deep, cache);
-                }
-            }
-        } else {
-            // mix all properties
-            keys = S.keys(s);
-            len = keys.length;
-            for (i = 0; i < len; i++) {
-                p = keys[i];
-                if (p != MIX_CIRCULAR_DETECTION) {
-                    // no hasOwnProperty judge!
-                    _mix(p, r, s, ov, wl, deep, cache);
-                }
+        // mix all properties
+        keys = S.keys(s);
+        len = keys.length;
+        for (i = 0; i < len; i++) {
+            p = keys[i];
+            if (p != MIX_CIRCULAR_DETECTION) {
+                // no hasOwnProperty judge!
+                _mix(p, r, s, ov, wl, deep, cache);
             }
         }
 
@@ -501,6 +504,9 @@ var KISSY = (function (undefined) {
                     r[p] = target;
                 }
                 return;
+            }
+            if (wl) {
+                src = wl.call(s, p, src);
             }
             // 来源是数组和对象，并且要求深度 mix
             if (deep && src && (S.isArray(src) || S.isPlainObject(src))) {
@@ -3104,12 +3110,21 @@ var KISSY = (function (undefined) {
         UA.core = core;
     }
 
+    function getIEVersion(ua) {
+        var m;
+        if ((m = ua.match(/MSIE\s([^;]*)/)) && m[1]) {
+            return numberify(m[1]);
+        }
+        return 0;
+    }
+
     function getDescriptorFromUserAgent(ua) {
         var EMPTY = '',
             os,
             core = EMPTY,
             shell = EMPTY, m,
             IE_DETECT_RANGE = [6, 9],
+            ieVersion,
             v,
             end,
             VERSION_PLACEHOLDER = '{{version}}',
@@ -3275,6 +3290,12 @@ var KISSY = (function (undefined) {
                 }
             }
 
+            // https://github.com/kissyteam/kissy/issues/321
+            // win8 embed app
+            if (!UA.ie && (ieVersion = getIEVersion(ua))) {
+                UA[shell = 'ie'] = ieVersion;
+            }
+
         } else {
             // WebKit
             if ((m = ua.match(/AppleWebKit\/([\d.]*)/)) && m[1]) {
@@ -3352,8 +3373,8 @@ var KISSY = (function (undefined) {
                     // MSIE
                     // 由于最开始已经使用了 IE 条件注释判断，因此落到这里的唯一可能性只有 IE10+
                     // and analysis tools in nodejs
-                    if ((m = ua.match(/MSIE\s([^;]*)/)) && m[1]) {
-                        UA[shell = 'ie'] = numberify(m[1]);
+                    if (ieVersion = getIEVersion(ua)) {
+                        UA[shell = 'ie'] = ieVersion;
                         setTridentVersion(ua, UA);
                         // NOT WebKit, Presto or IE
                     } else {
@@ -3468,6 +3489,7 @@ var KISSY = (function (undefined) {
         win = Env.host,
         UA = S.UA,
         VENDORS = [
+            '',
             'Webkit',
             'Moz',
             'O',
@@ -3476,28 +3498,40 @@ var KISSY = (function (undefined) {
     // nodejs
         doc = win.document || {},
         documentMode = doc.documentMode,
-        isTransitionSupported = false,
+        isTransitionSupportedState = false,
         transitionPrefix = '',
+        isTransformSupportedState = false,
+        transformPrefix = '',
         documentElement = doc.documentElement,
         documentElementStyle,
-        isClassListSupported = true,
+        isClassListSupportedState = true,
+        isQuerySelectorSupportedState = false,
     // phantomjs issue: http://code.google.com/p/phantomjs/issues/detail?id=375
-        isTouchSupported = ('ontouchstart' in doc) && !(UA.phantomjs),
+        isTouchSupportedState = ('ontouchstart' in doc) && !(UA.phantomjs),
         ie = documentMode || UA.ie;
 
     if (documentElement) {
-        documentElementStyle = documentElement.style;
-        if ('transition' in documentElementStyle) {
-            isTransitionSupported = true;
-        } else {
-            S.each(VENDORS, function (val) {
-                if ((val + 'Transition') in documentElementStyle) {
-                    transitionPrefix = val;
-                    isTransitionSupported = true;
-                }
-            });
+        if (documentElement.querySelector &&
+            // broken ie8
+            ie != 8) {
+            isQuerySelectorSupportedState = true;
         }
-        isClassListSupported = 'classList' in documentElement;
+        documentElementStyle = documentElement.style;
+
+        S.each(VENDORS, function (val) {
+            var transition = val ? val + 'Transition' : 'transition',
+                transform = val ? val + 'Transform' : 'transform';
+            if (transition in documentElementStyle) {
+                transitionPrefix = val;
+                isTransitionSupportedState = true;
+            }
+            if (transform in documentElementStyle) {
+                transformPrefix = val;
+                isTransformSupportedState = true;
+            }
+        });
+
+        isClassListSupportedState = 'classList' in documentElement;
     }
 
     /**
@@ -3520,7 +3554,7 @@ var KISSY = (function (undefined) {
          * @return {Boolean}
          */
         isTouchSupported: function () {
-            return isTouchSupported;
+            return isTouchSupportedState;
         },
 
         isDeviceMotionSupported: function () {
@@ -3535,15 +3569,32 @@ var KISSY = (function (undefined) {
         },
 
         'isTransitionSupported': function () {
-            return isTransitionSupported;
+            return isTransitionSupportedState;
+        },
+
+        'isTransformSupported': function () {
+            return isTransformSupportedState;
         },
 
         'isClassListSupported': function () {
-            return isClassListSupported
+            return isClassListSupportedState
         },
 
-        'getCss3Prefix': function () {
+        'isQuerySelectorSupported': function () {
+            // force to use js selector engine
+            return !S.config('dom/selector') &&
+                isQuerySelectorSupportedState;
+        },
+
+        'isIELessThan': function (v) {
+            return ie && ie < v;
+        },
+
+        'getTransitionPrefix': function () {
             return transitionPrefix;
+        },
+        'getTransformPrefix': function () {
+            return transformPrefix;
         }
     };
 })(KISSY);/**
@@ -4551,7 +4602,7 @@ var KISSY = (function (undefined) {
          * @param {Number} [success.timeout] timeout (s)
          * @param {String} [success.charset] charset of current resource
          * @param {String} [charset] charset of current resource
-         * @return {HTMLElement} script/style node
+         * @return {HTML} script/style node
          * @member KISSY
          */
         getScript: function (url, success, charset) {
@@ -4603,6 +4654,10 @@ var KISSY = (function (undefined) {
                 });
             }
 
+            if (charset) {
+                node.charset = charset;
+            }
+
             if (css) {
                 node.href = url;
                 node.rel = 'stylesheet';
@@ -4612,10 +4667,6 @@ var KISSY = (function (undefined) {
             }
 
             callbacks.node = node;
-
-            if (charset) {
-                node.charset = charset;
-            }
 
             var end = function (error) {
                     var index = error,
@@ -4628,37 +4679,37 @@ var KISSY = (function (undefined) {
                     });
                     delete jsCssCallbacks[url];
                 },
-                useNative = !css;
+                useNative = 'onload' in node;
 
-            if (css) {
-                if (isOldWebKit) {
-                    useNative = false;
-                } else {
-                    useNative = 'onload' in node;
+            if (css && isOldWebKit) {
+                useNative = false;
+            }
+
+            function onload() {
+                var readyState = node.readyState;
+                if (!readyState ||
+                    readyState == "loaded" ||
+                    readyState == "complete") {
+                    node.onreadystatechange = node.onload = null;
+                    end(0)
                 }
             }
 
             //标准浏览器 css and all script
             if (useNative) {
-                node.onload = node.onreadystatechange = function () {
-                    var readyState = node.readyState;
-                    if (!readyState ||
-                        readyState == "loaded" ||
-                        readyState == "complete") {
-                        node.onreadystatechange = node.onload = null;
-                        end(0)
-                    }
-                };
+                node.onload = onload;
                 node.onerror = function () {
                     node.onerror = null;
                     end(1);
                 };
             }
             // old chrome/firefox for css
-            else {
+            else if (css) {
                 utils.pollCss(node, function () {
                     end(0);
                 });
+            } else {
+                node.onreadystatechange = onload;
             }
 
             if (timeout) {
@@ -5015,6 +5066,7 @@ var KISSY = (function (undefined) {
 
     var Loader, data, utils, UA,
         remoteLoads = {},
+        win = S.Env.host,
         LOADING, LOADED, ERROR, ATTACHED;
 
     Loader = S.Loader;
@@ -5251,7 +5303,10 @@ var KISSY = (function (undefined) {
         }
 
         function _modError() {
-            S.log(modName + ' is not loaded! can not find module in path : ' + url, 'error');
+            if (win.console) {
+                win.console.error(modName +
+                    ' is not loaded! can not find module in path : ' + url);
+            }
             mod.status = ERROR;
         }
 
@@ -5287,6 +5342,7 @@ var KISSY = (function (undefined) {
     }
 
     var Loader = S.Loader,
+        win = S.Env.host,
         data = Loader.Status,
         utils = Loader.Utils;
 
@@ -5439,7 +5495,10 @@ var KISSY = (function (undefined) {
                         // fix #111
                         // https://github.com/kissyteam/kissy/issues/111
                         if (!mod.fn) {
-                            S.log(mod.name + ' is not loaded! can not find module in path : ' + jss[p], 'error');
+                            if (win.console) {
+                                win.console.error(mod.name +
+                                    ' is not loaded! can not find module in path : ' + jss[p]);
+                            }
                             mod.status = data.ERROR;
                             success = 0;
                             return false;
@@ -5889,7 +5948,7 @@ var KISSY = (function (undefined) {
             // file limit number for a single combo url
             comboMaxFileNum: 40,
             charset: 'utf-8',
-            tag: '20130325150924'
+            tag: '20130515221951'
         }, getBaseInfo()));
     }
 
@@ -6050,7 +6109,7 @@ var KISSY = (function (undefined) {
 
     function fireReady() {
         // nodejs
-        if (doc) {
+        if (doc && !UA.nodejs) {
             removeEventListener(win, LOAD_EVENT, fireReady);
         }
         readyDefer.resolve(S);
@@ -6149,15 +6208,19 @@ var KISSY = (function (undefined) {
  * @author yiminghe@gmail.com
  */
 (function (S) {
+    var parentUri = S.Config.baseUri.resolve('../').toString();
     S.config({
         packages: {
             gallery: {
-                base: S.Config.baseUri.resolve('../').toString()
+                base: parentUri
+            },
+            mobile: {
+                base: parentUri
             }
         },
         modules: {
             core: {
-                alias: ['dom', 'event', 'io', 'anim', 'base', 'node', 'json','ua']
+                alias: ['dom', 'event', 'io', 'anim', 'base', 'node', 'json', 'ua','cookie']
             }
         }
     });
@@ -6206,11 +6269,11 @@ config({
 });
 /*Generated by KISSY Module Compiler*/
 config({
-'component/base': {requires: ['rich-base','node','event']}
+'component/base': {requires: ['rich-base','node','xtemplate','event']}
 });
 /*Generated by KISSY Module Compiler*/
 config({
-'component/extension': {requires: ['dom','node']}
+'component/extension': {requires: ['event','component/base','dom','node']}
 });
 /*Generated by KISSY Module Compiler*/
 config({
@@ -6219,10 +6282,6 @@ config({
 /*Generated by KISSY Module Compiler*/
 config({
 'component/plugin/resize': {requires: ['resizable']}
-});
-/*Generated by KISSY Module Compiler*/
-config({
-'datalazyload': {requires: ['dom','event','base']}
 });
 config({
     'dd': {alias: ['dd/base', 'dd/droppable']}
@@ -6248,8 +6307,18 @@ config({
 'dd/plugin/scroll': {requires: ['dd/base','base','node','dom']}
 });
 config({
+    "dom/basic": {
+        "alias": [
+            'dom/base',
+            Features.isIELessThan(9) ? 'dom/ie' : '',
+            Features.isClassListSupported() ? '' : 'dom/class-list'
+        ]
+    },
     "dom": {
-        "alias": ['dom/base', UA.ie < 9 ? 'dom/ie' : '', Features.isClassListSupported() ? '' : 'dom/class-list']
+        "alias": [
+            'dom/basic',
+            !Features.isQuerySelectorSupported() ? 'dom/selector' : ''
+        ]
     }
 });/*Generated by KISSY Module Compiler*/
 config({
@@ -6259,12 +6328,16 @@ config({
 config({
 'dom/ie': {requires: ['dom/base']}
 });
+/*Generated by KISSY Module Compiler*/
 config({
-'editor/full': {requires: ['editor','menubutton','overlay','dd/base','swf']}
+'dom/selector': {requires: ['dom/basic']}
+});
+config({
+    'editor': {alias: ['editor/core']}
 });
 /*Generated by KISSY Module Compiler*/
 config({
-'editor': {requires: ['htmlparser','component/base','core']}
+'editor/core': {requires: ['htmlparser','component/base','core']}
 });
 config({
     "event": {
@@ -6281,7 +6354,7 @@ config({
             Features.isTouchSupported() ? 'event/dom/touch' : '',
             Features.isDeviceMotionSupported() ? 'event/dom/shake' : '',
             Features.isHashChangeSupported() ? '' : 'event/dom/hashchange',
-            UA.ie < 9 ? 'event/dom/ie' : '',
+            Features.isIELessThan(9) ? 'event/dom/ie' : '',
             UA.ie ? '' : 'event/dom/focusin'
         ]
     }
@@ -6330,7 +6403,7 @@ config({
 });
 /*Generated by KISSY Module Compiler*/
 config({
-'menubutton': {requires: ['node','menu','button','component/base']}
+'menubutton': {requires: ['node','menu','button','component/extension']}
 });
 /*Generated by KISSY Module Compiler*/
 config({
@@ -6342,7 +6415,7 @@ config({
 });
 /*Generated by KISSY Module Compiler*/
 config({
-'overlay': {requires: ['node','component/base','component/extension','event']}
+'overlay': {requires: ['component/base','component/extension','node','xtemplate','event']}
 });
 /*Generated by KISSY Module Compiler*/
 config({
@@ -6386,19 +6459,15 @@ config({
 });
 /*Generated by KISSY Module Compiler*/
 config({
-'switchable': {requires: ['dom','event','anim',KISSY.Features.isTouchSupported() ? "dd/base" : ""]}
+'tabs': {requires: ['button','toolbar','component/base','component/extension']}
 });
 /*Generated by KISSY Module Compiler*/
 config({
-'tabs': {requires: ['button','toolbar','component/base']}
+'toolbar': {requires: ['component/base','component/extension','node']}
 });
 /*Generated by KISSY Module Compiler*/
 config({
-'toolbar': {requires: ['component/base','node']}
-});
-/*Generated by KISSY Module Compiler*/
-config({
-'tree': {requires: ['node','component/base','event']}
+'tree': {requires: ['node','component/base','component/extension','event']}
 });
 /*Generated by KISSY Module Compiler*/
 config({
@@ -6503,7 +6572,7 @@ config({
 /*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 19 18:18
+build time: May 7 19:42
 */
 /**
  * @ignore
@@ -6668,7 +6737,7 @@ KISSY.add('dom/base/api', function (S) {
 
 /*
  2011-08
- - 添加键盘枚举值，方便依赖程序清晰
+ - 添加节点类型枚举值，方便依赖程序清晰
  */
 /**
  * @ignore
@@ -6680,8 +6749,6 @@ KISSY.add('dom/base/attr', function (S, DOM, undefined) {
     var doc = S.Env.host.document,
         NodeType = DOM.NodeType,
         docElement = doc && doc.documentElement,
-        TEXT = docElement && docElement.textContent === undefined ?
-            'innerText' : 'textContent',
         EMPTY = '',
         nodeName = DOM.nodeName,
         R_BOOLEAN = /^(?:autofocus|autoplay|async|checked|controls|defer|disabled|hidden|loop|multiple|open|readonly|required|scoped|selected)$/i,
@@ -6786,7 +6853,7 @@ KISSY.add('dom/base/attr', function (S, DOM, undefined) {
                         ret,
                         i,
                         len,
-                        one = elem.type === 'select-one';
+                        one = (String(elem.type) === 'select-one');
 
                     // Nothing was selected
                     if (index < 0) {
@@ -6836,6 +6903,7 @@ KISSY.add('dom/base/attr', function (S, DOM, undefined) {
                 if (S.isArray(value)) {
                     return elem.checked = S.inArray(DOM.val(elem), value);
                 }
+                return undefined;
             }
         };
     });
@@ -6973,7 +7041,8 @@ KISSY.add('dom/base/attr', function (S, DOM, undefined) {
              * @param {HTMLElement[]|HTMLElement|String} selector matched elements
              * @param {String|Object} name The name of the attribute to set. or A map of attribute-value pairs to set.
              * @param [val] A value to set for the attribute.
-             * @return {String}
+             * @param [pass] internal use by anim
+             * @return {String|undefined}
              */
             attr: function (selector, name, val, /*internal use by anim/fx*/pass) {
                 /*
@@ -7022,10 +7091,6 @@ KISSY.add('dom/base/attr', function (S, DOM, undefined) {
                     return undefined;
                 }
 
-                if (!(name = S.trim(name))) {
-                    return undefined;
-                }
-
                 // attr functions
                 if (pass && attrFn[name]) {
                     return DOM[name](selector, val);
@@ -7051,7 +7116,6 @@ KISSY.add('dom/base/attr', function (S, DOM, undefined) {
                     attrNormalizer = attrHooks[name];
                 }
 
-
                 if (val === undefined) {
                     if (el && el.nodeType === NodeType.ELEMENT_NODE) {
                         // browsers index elements by id/name on forms, give priority to attributes.
@@ -7063,6 +7127,13 @@ KISSY.add('dom/base/attr', function (S, DOM, undefined) {
                         }
 
                         ret = el.getAttribute(name);
+
+                        if (ret === "") {
+                            var attrNode = el.getAttributeNode(name);
+                            if (!attrNode || !attrNode.specified) {
+                                return undefined;
+                            }
+                        }
 
                         // standard browser non-existing attribute return null
                         // ie<8 will return undefined , because it return property
@@ -7223,35 +7294,31 @@ KISSY.add('dom/base/attr', function (S, DOM, undefined) {
              * @return {String|undefined}
              */
             text: function (selector, val) {
-                var el, els, i;
+                var el, els, i, nodeType;
                 // getter
                 if (val === undefined) {
                     // supports css selector/Node/NodeList
                     el = DOM.get(selector);
-
-                    // only gets value on supported nodes
-                    if (el.nodeType == NodeType.ELEMENT_NODE) {
-                        return el[TEXT] || EMPTY;
-                    }
-                    else if (el.nodeType == NodeType.TEXT_NODE) {
-                        return el.nodeValue;
-                    }
-                    return undefined;
-                }
-                // setter
-                else {
+                    return DOM._getText(el);
+                } else {
                     els = DOM.query(selector);
                     for (i = els.length - 1; i >= 0; i--) {
                         el = els[i];
-                        if (el.nodeType == NodeType.ELEMENT_NODE) {
-                            el[TEXT] = val;
+                        nodeType = el.nodeType;
+                        if (nodeType == NodeType.ELEMENT_NODE) {
+                            DOM.empty(el);
+                            el.appendChild(el.ownerDocument.createTextNode(val));
                         }
-                        else if (el.nodeType == NodeType.TEXT_NODE) {
+                        else if (nodeType == NodeType.TEXT_NODE || nodeType == NodeType.CDATA_SECTION_NODE) {
                             el.nodeValue = val;
                         }
                     }
                 }
                 return undefined;
+            },
+
+            _getText: function (el) {
+                return el.textContent;
             }
         });
 
@@ -7261,6 +7328,12 @@ KISSY.add('dom/base/attr', function (S, DOM, undefined) {
 });
 /*
  NOTES:
+ yiminghe@gmail.com: 2013-03-19
+ - boolean property 和 attribute ie 和其他浏览器不一致，统一为类似 ie8：
+ - attr('checked',string) == .checked=true setAttribute('checked','checked') // ie8 相同 setAttribute()
+ - attr('checked',false) == removeAttr('check') // ie8 不同, setAttribute ie8 相当于 .checked=true setAttribute('checked','checked')
+ - removeAttr('checked') == .checked=false removeAttribute('checked') // ie8 removeAttribute 相同
+
  yiminghe@gmail.com: 2012-11-27
  - 拆分 ie attr，条件加载
 
@@ -7319,7 +7392,16 @@ KISSY.add('dom/base/class', function (S, DOM) {
 
     function strToArray(str) {
         str = S.trim(str || '');
-        return str.split(RE_SPLIT);
+        var arr = str.split(RE_SPLIT),
+            newArr = [], v,
+            l = arr.length,
+            i = 0;
+        for (; i < l; i++) {
+            if (v = arr[i]) {
+                newArr.push(v);
+            }
+        }
+        return newArr;
     }
 
     function batchClassList(method) {
@@ -7459,7 +7541,6 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
 
     var doc = S.Env.host.document,
         NodeType = DOM.NodeType,
-        slice = Array.prototype.slice,
         UA = S.UA,
         ie = UA['ie'],
         DIV = 'div',
@@ -7468,7 +7549,8 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
         R_XHTML_TAG = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/ig,
         RE_TAG = /<([\w:]+)/,
         R_LEADING_WHITESPACE = /^\s+/,
-        lostLeadingWhitespace = ie && ie < 9,
+        R_TAIL_WHITESPACE = /\s+$/,
+        lostLeadingTailWhitespace = ie && ie < 9,
         R_HTML = /<|&#?\w+;/,
         supportOuterHTML = doc && 'outerHTML' in doc.documentElement,
         RE_SIMPLE_TAG = /^<(\w+)\s*\/?>(?:<\/\1>)?$/;
@@ -7508,6 +7590,7 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
              * @param {String} html A string of HTML to create on the fly. Note that this parses HTML, not XML.
              * @param {Object} [props] An map of attributes on the newly-created element.
              * @param {HTMLDocument} [ownerDoc] A document in which the new elements will be created
+             * @param {Boolean} [_trim]
              * @return {DocumentFragment|HTMLElement}
              */
             create: function (html, props, ownerDoc, _trim/*internal*/) {
@@ -7562,10 +7645,14 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
 
                     holder = (creators[tag] || defaultCreator)(html, context);
                     // ie 把前缀空白吃掉了
-                    if (lostLeadingWhitespace &&
+                    if (lostLeadingTailWhitespace &&
                         (whitespaceMatch = html.match(R_LEADING_WHITESPACE))) {
                         holder.insertBefore(context.createTextNode(whitespaceMatch[0]),
                             holder.firstChild);
+                    }
+                    if (lostLeadingTailWhitespace && /\S/.test(html) &&
+                        (whitespaceMatch = html.match(R_TAIL_WHITESPACE))) {
+                        holder.appendChild(context.createTextNode(whitespaceMatch[0]));
                     }
 
                     nodes = holder.childNodes;
@@ -7584,7 +7671,13 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
                 return attachProps(ret, props);
             },
 
-            _fixCloneAttributes: null,
+            _fixCloneAttributes: function (src, dest) {
+                // value of textarea can not be clone in chrome/firefox??
+                if (DOM.nodeName(src) === 'textarea') {
+                    dest.defaultValue = src.defaultValue;
+                    dest.value = src.value;
+                }
+            },
 
             _creators: {
                 div: defaultCreator
@@ -7597,21 +7690,19 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
              * or
              * Set the HTML contents of each element in the set of matched elements.
              * @param {HTMLElement|String|HTMLElement[]} selector matched elements
-             * @param {String} htmlString  A string of HTML to set as the content of each matched element.
+             * @param {String} [htmlString]  A string of HTML to set as the content of each matched element.
              * @param {Boolean} [loadScripts=false] True to look for and process scripts
              */
-            html: function (selector, htmlString, loadScripts, callback) {
+            html: function (selector, htmlString, loadScripts) {
                 // supports css selector/Node/NodeList
                 var els = DOM.query(selector),
                     el = els[0],
                     success = false,
                     valNode,
                     i, elem;
-
                 if (!el) {
-                    return
+                    return null;
                 }
-
                 // getter
                 if (htmlString === undefined) {
                     // only gets value on the first of element nodes
@@ -7628,7 +7719,7 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
                     // faster
                     // fix #103,some html element can not be set through innerHTML
                     if (!htmlString.match(/<(?:script|style|link)/i) &&
-                        (!lostLeadingWhitespace || !htmlString.match(R_LEADING_WHITESPACE)) && !creatorsMap[ (htmlString.match(RE_TAG) || ['', ''])[1].toLowerCase() ]) {
+                        (!lostLeadingTailWhitespace || !htmlString.match(R_LEADING_WHITESPACE)) && !creatorsMap[ (htmlString.match(RE_TAG) || ['', ''])[1].toLowerCase() ]) {
 
                         try {
                             for (i = els.length - 1; i >= 0; i--) {
@@ -7651,8 +7742,8 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
                         DOM.empty(els);
                         DOM.append(valNode, els, loadScripts);
                     }
-                    callback && callback();
                 }
+                return undefined;
             },
 
             /**
@@ -7660,7 +7751,7 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
              * or
              * Set the outerHTML of each element in the set of matched elements.
              * @param {HTMLElement|String|HTMLElement[]} selector matched elements
-             * @param {String} htmlString  A string of HTML to set as outerHTML of each matched element.
+             * @param {String} [htmlString]  A string of HTML to set as outerHTML of each matched element.
              * @param {Boolean} [loadScripts=false] True to look for and process scripts
              */
             outerHTML: function (selector, htmlString, loadScripts) {
@@ -7672,7 +7763,7 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
                     length = els.length,
                     el = els[0];
                 if (!el) {
-                    return
+                    return null;
                 }
                 // getter
                 if (htmlString === undefined) {
@@ -7705,6 +7796,7 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
                         DOM.remove(els);
                     }
                 }
+                return undefined;
             },
 
             /**
@@ -7755,7 +7847,6 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
              * @member KISSY.DOM
              */
             clone: function (selector, deep, withDataAndEvent, deepWithDataAndEvent) {
-
                 if (typeof deep === 'object') {
                     deepWithDataAndEvent = deep['deepWithDataAndEvent'];
                     withDataAndEvent = deep['withDataAndEvent'];
@@ -7777,7 +7868,9 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
                 // ie bug :
                 // 1. ie<9 <script>xx</script> => <script></script>
                 // 2. ie will execute external script
-                clone = elem.cloneNode(deep);
+                clone = /**
+                 @type HTMLElement
+                 @ignore*/elem.cloneNode(deep);
 
                 if (elemNodeType == NodeType.ELEMENT_NODE ||
                     elemNodeType == NodeType.DOCUMENT_FRAGMENT_NODE) {
@@ -7867,7 +7960,7 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
             // remove event data (but without dom attached listener) which is copied from above DOM.data
             Event._DOMUtils.removeData(dest);
             // attach src 's event data and dom attached listener to dest
-            Event._clone(src, dest);
+            Event['_clone'](src, dest);
         }
     }
 
@@ -7960,7 +8053,7 @@ KISSY.add('dom/base/create', function (S, DOM, undefined) {
 KISSY.add('dom/base/data', function (S, DOM, undefined) {
 
     var win = S.Env.host,
-        EXPANDO = '__ks_data_' + S.now(), // 让每一份 kissy 的 expando 都不同
+        EXPANDO = '_ks_data_' + S.now(), // 让每一份 kissy 的 expando 都不同
         dataCache = { }, // 存储 node 节点的 data
         winDataCache = { }, // 避免污染全局
 
@@ -8510,457 +8603,462 @@ KISSY.add('dom/base/insertion', function (S, DOM) {
  */
 KISSY.add('dom/base/offset', function (S, DOM, undefined) {
 
-    var win = S.Env.host,
-        doc = win.document,
-        NodeType = DOM.NodeType,
-        docElem = doc && doc.documentElement,
-        getWin = DOM.getWindow,
-        CSS1Compat = 'CSS1Compat',
-        compatMode = 'compatMode',
-        MAX = Math.max,
-        myParseInt = parseInt,
-        POSITION = 'position',
-        RELATIVE = 'relative',
-        DOCUMENT = 'document',
-        BODY = 'body',
-        DOC_ELEMENT = 'documentElement',
-        OWNER_DOCUMENT = 'ownerDocument',
-        VIEWPORT = 'viewport',
-        SCROLL = 'scroll',
-        CLIENT = 'client',
-        LEFT = 'left',
-        TOP = 'top',
-        isNumber = S.isNumber,
-        SCROLL_LEFT = SCROLL + 'Left',
-        SCROLL_TOP = SCROLL + 'Top';
+        var win = S.Env.host,
+            doc = win.document,
+            NodeType = DOM.NodeType,
+            docElem = doc && doc.documentElement,
+            getWin = DOM.getWindow,
+            CSS1Compat = 'CSS1Compat',
+            compatMode = 'compatMode',
+            MAX = Math.max,
+            myParseInt = parseInt,
+            POSITION = 'position',
+            RELATIVE = 'relative',
+            DOCUMENT = 'document',
+            BODY = 'body',
+            DOC_ELEMENT = 'documentElement',
+            OWNER_DOCUMENT = 'ownerDocument',
+            VIEWPORT = 'viewport',
+            SCROLL = 'scroll',
+            CLIENT = 'client',
+            LEFT = 'left',
+            TOP = 'top',
+            isNumber = S.isNumber,
+            SCROLL_LEFT = SCROLL + 'Left',
+            SCROLL_TOP = SCROLL + 'Top';
 
-    S.mix(DOM,
-        /**
-         * @override KISSY.DOM
-         * @class
-         * @singleton
-         */
-        {
-
+        S.mix(DOM,
             /**
-             * Get the current coordinates of the first element in the set of matched elements, relative to the document.
-             * or
-             * Set the current coordinates of every element in the set of matched elements, relative to the document.
-             * @param {HTMLElement[]|String|HTMLElement} selector Matched elements
-             * @param {Object} [coordinates ] An object containing the properties top and left,
-             * which are integers indicating the new top and left coordinates for the elements.
-             * @param {Number} [coordinates.left ] the new top and left coordinates for the elements.
-             * @param {Number} [coordinates.top ] the new top and top coordinates for the elements.
-             * @param {window} [relativeWin] The window to measure relative to. If relativeWin
-             *     is not in the ancestor frame chain of the element, we measure relative to
-             *     the top-most window.
-             * @return {Object|undefined} if Get, the format of returned value is same with coordinates.
+             * @override KISSY.DOM
+             * @class
+             * @singleton
              */
-            offset: function (selector, coordinates, relativeWin) {
-                // getter
-                if (coordinates === undefined) {
-                    var elem = DOM.get(selector), ret;
-                    if (elem) {
-                        ret = getOffset(elem, relativeWin);
-                    }
-                    return ret;
-                }
-                // setter
-                var els = DOM.query(selector), i;
-                for (i = els.length - 1; i >= 0; i--) {
-                    elem = els[i];
-                    setOffset(elem, coordinates);
-                }
-                return undefined;
-            },
+            {
 
-            /**
-             * scrolls the first of matched elements into container view
-             * @param {HTMLElement[]|String|HTMLElement} selector Matched elements
-             * @param {String|HTMLElement|HTMLDocument} [container=window] Container element
-             * @param {Boolean|Object} [alignWithTop=true]If true, the scrolled element is aligned with the top of the scroll area.
-             * If false, it is aligned with the bottom.
-             * @param {Boolean} [alignWithTop.allowHorizontalScroll=true] Whether trigger horizontal scroll.
-             * @param {Boolean} [alignWithTop.onlyScrollIfNeeded=false] scrollIntoView when element is out of view
-             * and set top to false or true automatically if top is undefined
-             * @param {Boolean} [allowHorizontalScroll=true] Whether trigger horizontal scroll.
-             * refer: http://www.w3.org/TR/2009/WD-html5-20090423/editing.html#scrollIntoView
-             *        http://www.sencha.com/deploy/dev/docs/source/Element.scroll-more.html#scrollIntoView
-             *        http://yiminghe.javaeye.com/blog/390732
-             */
-            scrollIntoView: function (selector, container, alignWithTop, allowHorizontalScroll) {
-                var elem,
-                    onlyScrollIfNeeded;
-
-                if (!(elem = DOM.get(selector))) {
-                    return;
-                }
-
-                if (container) {
-                    container = DOM.get(container);
-                }
-
-                if (!container) {
-                    container = elem.ownerDocument;
-                }
-
-                // document 归一化到 window
-                if (container.nodeType == NodeType.DOCUMENT_NODE) {
-                    container = getWin(container);
-                }
-
-                if (S.isPlainObject(alignWithTop)) {
-                    allowHorizontalScroll = alignWithTop.allowHorizontalScroll;
-                    onlyScrollIfNeeded = alignWithTop.onlyScrollIfNeeded;
-                    alignWithTop = alignWithTop.alignWithTop;
-                }
-
-                allowHorizontalScroll = allowHorizontalScroll === undefined ? true : allowHorizontalScroll;
-
-                var isWin = !!getWin(container),
-                    elemOffset = DOM.offset(elem),
-                    eh = DOM.outerHeight(elem),
-                    ew = DOM.outerWidth(elem),
-                    containerOffset,
-                    ch,
-                    cw,
-                    containerScroll,
-                    diffTop,
-                    diffBottom,
-                    win,
-                    winScroll,
-                    ww,
-                    wh;
-
-                if (isWin) {
-                    win = container;
-                    wh = DOM.height(win);
-                    ww = DOM.width(win);
-                    winScroll = {
-                        left: DOM.scrollLeft(win),
-                        top: DOM.scrollTop(win)
-                    };
-                    // elem 相对 container 可视视窗的距离
-                    diffTop = {
-                        left: elemOffset[LEFT] - winScroll[LEFT],
-                        top: elemOffset[TOP] - winScroll[TOP]
-                    };
-                    diffBottom = {
-                        left: elemOffset[LEFT] + ew - (winScroll[LEFT] + ww),
-                        top: elemOffset[TOP] + eh - (winScroll[TOP] + wh)
-                    };
-                    containerScroll = winScroll;
-                }
-                else {
-                    containerOffset = DOM.offset(container);
-                    ch = container.clientHeight;
-                    cw = container.clientWidth;
-                    containerScroll = {
-                        left: DOM.scrollLeft(container),
-                        top: DOM.scrollTop(container)
-                    };
-                    // elem 相对 container 可视视窗的距离
-                    // 注意边框 , offset 是边框到根节点
-                    diffTop = {
-                        left: elemOffset[LEFT] - (containerOffset[LEFT] +
-                            (myParseInt(DOM.css(container, 'borderLeftWidth')) || 0)),
-                        top: elemOffset[TOP] - (containerOffset[TOP] +
-                            (myParseInt(DOM.css(container, 'borderTopWidth')) || 0))
-                    };
-                    diffBottom = {
-                        left: elemOffset[LEFT] + ew -
-                            (containerOffset[LEFT] + cw +
-                                (myParseInt(DOM.css(container, 'borderRightWidth')) || 0)),
-                        top: elemOffset[TOP] + eh -
-                            (containerOffset[TOP] + ch +
-                                (myParseInt(DOM.css(container, 'borderBottomWidth')) || 0))
-                    };
-                }
-
-                if (onlyScrollIfNeeded) {
-                    if (diffTop.top < 0 || diffBottom.top > 0) {
-                        // 强制向上
-                        if (alignWithTop === true) {
-                            DOM.scrollTop(container, containerScroll.top + diffTop.top);
-                        } else if (alignWithTop === false) {
-                            DOM.scrollTop(container, containerScroll.top + diffBottom.top);
-                        } else {
-                            // 自动调整
-                            if (diffTop.top < 0) {
-                                DOM.scrollTop(container, containerScroll.top + diffTop.top);
-                            } else {
-                                DOM.scrollTop(container, containerScroll.top + diffBottom.top);
-                            }
+                /**
+                 * Get the current coordinates of the first element in the set of matched elements, relative to the document.
+                 * or
+                 * Set the current coordinates of every element in the set of matched elements, relative to the document.
+                 * @param {HTMLElement[]|String|HTMLElement} selector Matched elements
+                 * @param {Object} [coordinates ] An object containing the properties top and left,
+                 * which are integers indicating the new top and left coordinates for the elements.
+                 * @param {Number} [coordinates.left ] the new top and left coordinates for the elements.
+                 * @param {Number} [coordinates.top ] the new top and top coordinates for the elements.
+                 * @param {window} [relativeWin] The window to measure relative to. If relativeWin
+                 *     is not in the ancestor frame chain of the element, we measure relative to
+                 *     the top-most window.
+                 * @return {Object|undefined} if Get, the format of returned value is same with coordinates.
+                 */
+                offset: function (selector, coordinates, relativeWin) {
+                    // getter
+                    if (coordinates === undefined) {
+                        var elem = DOM.get(selector),
+                            ret;
+                        if (elem) {
+                            ret = getOffset(elem, relativeWin);
                         }
+                        return ret;
                     }
-                } else {
-                    alignWithTop = alignWithTop === undefined ? true : !!alignWithTop;
-                    if (alignWithTop) {
-                        DOM.scrollTop(container, containerScroll.top + diffTop.top);
-                    } else {
-                        DOM.scrollTop(container, containerScroll.top + diffBottom.top);
+                    // setter
+                    var els = DOM.query(selector), i;
+                    for (i = els.length - 1; i >= 0; i--) {
+                        elem = els[i];
+                        setOffset(elem, coordinates);
                     }
-                }
+                    return undefined;
+                },
 
-                if (allowHorizontalScroll) {
+                /**
+                 * scrolls the first of matched elements into container view
+                 * @param {HTMLElement[]|String|HTMLElement} selector Matched elements
+                 * @param {String|HTMLElement|HTMLDocument} [container=window] Container element
+                 * @param {Boolean|Object} [alignWithTop=true]If true, the scrolled element is aligned with the top of the scroll area.
+                 * If false, it is aligned with the bottom.
+                 * @param {Boolean} [alignWithTop.allowHorizontalScroll=true] Whether trigger horizontal scroll.
+                 * @param {Boolean} [alignWithTop.onlyScrollIfNeeded=false] scrollIntoView when element is out of view
+                 * and set top to false or true automatically if top is undefined
+                 * @param {Boolean} [allowHorizontalScroll=true] Whether trigger horizontal scroll.
+                 * refer: http://www.w3.org/TR/2009/WD-html5-20090423/editing.html#scrollIntoView
+                 *        http://www.sencha.com/deploy/dev/docs/source/Element.scroll-more.html#scrollIntoView
+                 *        http://yiminghe.javaeye.com/blog/390732
+                 */
+                scrollIntoView: function (selector, container, alignWithTop, allowHorizontalScroll) {
+                    var elem,
+                        onlyScrollIfNeeded;
+
+                    if (!(elem = DOM.get(selector))) {
+                        return;
+                    }
+
+                    if (container) {
+                        container = DOM.get(container);
+                    }
+
+                    if (!container) {
+                        container = elem.ownerDocument;
+                    }
+
+                    // document 归一化到 window
+                    if (container.nodeType == NodeType.DOCUMENT_NODE) {
+                        container = getWin(container);
+                    }
+
+                    if (S.isPlainObject(alignWithTop)) {
+                        allowHorizontalScroll = alignWithTop.allowHorizontalScroll;
+                        onlyScrollIfNeeded = alignWithTop.onlyScrollIfNeeded;
+                        alignWithTop = alignWithTop.alignWithTop;
+                    }
+
+                    allowHorizontalScroll = allowHorizontalScroll === undefined ? true : allowHorizontalScroll;
+
+                    var isWin = !!getWin(container),
+                        elemOffset = DOM.offset(elem),
+                        eh = DOM.outerHeight(elem),
+                        ew = DOM.outerWidth(elem),
+                        containerOffset,
+                        ch,
+                        cw,
+                        containerScroll,
+                        diffTop,
+                        diffBottom,
+                        win,
+                        winScroll,
+                        ww,
+                        wh;
+
+                    if (isWin) {
+                        win = container;
+                        wh = DOM.height(win);
+                        ww = DOM.width(win);
+                        winScroll = {
+                            left: DOM.scrollLeft(win),
+                            top: DOM.scrollTop(win)
+                        };
+                        // elem 相对 container 可视视窗的距离
+                        diffTop = {
+                            left: elemOffset[LEFT] - winScroll[LEFT],
+                            top: elemOffset[TOP] - winScroll[TOP]
+                        };
+                        diffBottom = {
+                            left: elemOffset[LEFT] + ew - (winScroll[LEFT] + ww),
+                            top: elemOffset[TOP] + eh - (winScroll[TOP] + wh)
+                        };
+                        containerScroll = winScroll;
+                    }
+                    else {
+                        containerOffset = DOM.offset(container);
+                        ch = container.clientHeight;
+                        cw = container.clientWidth;
+                        containerScroll = {
+                            left: DOM.scrollLeft(container),
+                            top: DOM.scrollTop(container)
+                        };
+                        // elem 相对 container 可视视窗的距离
+                        // 注意边框 , offset 是边框到根节点
+                        diffTop = {
+                            left: elemOffset[LEFT] - (containerOffset[LEFT] +
+                                (myParseInt(DOM.css(container, 'borderLeftWidth')) || 0)),
+                            top: elemOffset[TOP] - (containerOffset[TOP] +
+                                (myParseInt(DOM.css(container, 'borderTopWidth')) || 0))
+                        };
+                        diffBottom = {
+                            left: elemOffset[LEFT] + ew -
+                                (containerOffset[LEFT] + cw +
+                                    (myParseInt(DOM.css(container, 'borderRightWidth')) || 0)),
+                            top: elemOffset[TOP] + eh -
+                                (containerOffset[TOP] + ch +
+                                    (myParseInt(DOM.css(container, 'borderBottomWidth')) || 0))
+                        };
+                    }
+
                     if (onlyScrollIfNeeded) {
-                        if (diffTop.left < 0 || diffBottom.left > 0) {
+                        if (diffTop.top < 0 || diffBottom.top > 0) {
                             // 强制向上
                             if (alignWithTop === true) {
-                                DOM.scrollLeft(container, containerScroll.left + diffTop.left);
+                                DOM.scrollTop(container, containerScroll.top + diffTop.top);
                             } else if (alignWithTop === false) {
-                                DOM.scrollLeft(container, containerScroll.left + diffBottom.left);
+                                DOM.scrollTop(container, containerScroll.top + diffBottom.top);
                             } else {
                                 // 自动调整
-                                if (diffTop.left < 0) {
-                                    DOM.scrollLeft(container, containerScroll.left + diffTop.left);
+                                if (diffTop.top < 0) {
+                                    DOM.scrollTop(container, containerScroll.top + diffTop.top);
                                 } else {
-                                    DOM.scrollLeft(container, containerScroll.left + diffBottom.left);
+                                    DOM.scrollTop(container, containerScroll.top + diffBottom.top);
                                 }
                             }
                         }
                     } else {
                         alignWithTop = alignWithTop === undefined ? true : !!alignWithTop;
                         if (alignWithTop) {
-                            DOM.scrollLeft(container, containerScroll.left + diffTop.left);
+                            DOM.scrollTop(container, containerScroll.top + diffTop.top);
                         } else {
-                            DOM.scrollLeft(container, containerScroll.left + diffBottom.left);
+                            DOM.scrollTop(container, containerScroll.top + diffBottom.top);
                         }
                     }
+
+                    if (allowHorizontalScroll) {
+                        if (onlyScrollIfNeeded) {
+                            if (diffTop.left < 0 || diffBottom.left > 0) {
+                                // 强制向上
+                                if (alignWithTop === true) {
+                                    DOM.scrollLeft(container, containerScroll.left + diffTop.left);
+                                } else if (alignWithTop === false) {
+                                    DOM.scrollLeft(container, containerScroll.left + diffBottom.left);
+                                } else {
+                                    // 自动调整
+                                    if (diffTop.left < 0) {
+                                        DOM.scrollLeft(container, containerScroll.left + diffTop.left);
+                                    } else {
+                                        DOM.scrollLeft(container, containerScroll.left + diffBottom.left);
+                                    }
+                                }
+                            }
+                        } else {
+                            alignWithTop = alignWithTop === undefined ? true : !!alignWithTop;
+                            if (alignWithTop) {
+                                DOM.scrollLeft(container, containerScroll.left + diffTop.left);
+                            } else {
+                                DOM.scrollLeft(container, containerScroll.left + diffBottom.left);
+                            }
+                        }
+                    }
+                },
+
+                /**
+                 * Get the width of document
+                 * @param {window} [win=window] Window to be referred.
+                 * @method
+                 */
+                docWidth: 0,
+                /**
+                 * Get the height of document
+                 * @param {window} [win=window] Window to be referred.
+                 * @method
+                 */
+                docHeight: 0,
+                /**
+                 * Get the height of window
+                 * @param {window} [win=window] Window to be referred.
+                 * @method
+                 */
+                viewportHeight: 0,
+                /**
+                 * Get the width of document
+                 * @param {window} [win=window] Window to be referred.
+                 * @method
+                 */
+                viewportWidth: 0,
+                /**
+                 * Get the current vertical position of the scroll bar for the first element in the set of matched elements.
+                 * or
+                 * Set the current vertical position of the scroll bar for each of the set of matched elements.
+                 * @param {HTMLElement[]|String|HTMLElement|window} selector matched elements
+                 * @param {Number} value An integer indicating the new position to set the scroll bar to.
+                 * @method
+                 */
+                scrollTop: 0,
+                /**
+                 * Get the current horizontal position of the scroll bar for the first element in the set of matched elements.
+                 * or
+                 * Set the current horizontal position of the scroll bar for each of the set of matched elements.
+                 * @param {HTMLElement[]|String|HTMLElement|window} selector matched elements
+                 * @param {Number} value An integer indicating the new position to set the scroll bar to.
+                 * @method
+                 */
+                scrollLeft: 0
+            });
+
+// http://old.jr.pl/www.quirksmode.org/viewport/compatibility.html
+// http://www.quirksmode.org/dom/w3c_cssom.html
+// add ScrollLeft/ScrollTop getter/setter methods
+        S.each(['Left', 'Top'], function (name, i) {
+            var method = SCROLL + name;
+
+            DOM[method] = function (elem, v) {
+                if (isNumber(elem)) {
+                    return arguments.callee(win, elem);
                 }
-            },
-            /**
-             * Get the width of document
-             * @param {window} [win=window] Window to be referred.
-             * @method
-             */
-            docWidth: 0,
-            /**
-             * Get the height of document
-             * @param {window} [win=window] Window to be referred.
-             * @method
-             */
-            docHeight: 0,
-            /**
-             * Get the height of window
-             * @param {window} [win=window] Window to be referred.
-             * @method
-             */
-            viewportHeight: 0,
-            /**
-             * Get the width of document
-             * @param {window} [win=window] Window to be referred.
-             * @method
-             */
-            viewportWidth: 0,
-            /**
-             * Get the current vertical position of the scroll bar for the first element in the set of matched elements.
-             * or
-             * Set the current vertical position of the scroll bar for each of the set of matched elements.
-             * @param {HTMLElement[]|String|HTMLElement|window} selector matched elements
-             * @param {Number} value An integer indicating the new position to set the scroll bar to.
-             * @method
-             */
-            scrollTop: 0,
-            /**
-             * Get the current horizontal position of the scroll bar for the first element in the set of matched elements.
-             * or
-             * Set the current horizontal position of the scroll bar for each of the set of matched elements.
-             * @param {HTMLElement[]|String|HTMLElement|window} selector matched elements
-             * @param {Number} value An integer indicating the new position to set the scroll bar to.
-             * @method
-             */
-            scrollLeft: 0
+                elem = DOM.get(elem);
+                var ret,
+                    left,
+                    top,
+                    w = getWin(elem),
+                    d;
+                if (w) {
+                    if (v !== undefined) {
+                        v = parseFloat(v);
+                        // 注意多 window 情况，不能简单取 win
+                        left = name == 'Left' ? v : DOM.scrollLeft(w);
+                        top = name == 'Top' ? v : DOM.scrollTop(w);
+                        w['scrollTo'](left, top);
+                    } else {
+                        //标准
+                        //chrome == body.scrollTop
+                        //firefox/ie9 == documentElement.scrollTop
+                        ret = w[ 'page' + (i ? 'Y' : 'X') + 'Offset'];
+                        if (!isNumber(ret)) {
+                            d = w[DOCUMENT];
+                            //ie6,7,8 standard mode
+                            ret = d[DOC_ELEMENT][method];
+                            if (!isNumber(ret)) {
+                                //quirks mode
+                                ret = d[BODY][method];
+                            }
+                        }
+                    }
+                } else if (elem.nodeType == NodeType.ELEMENT_NODE) {
+                    if (v !== undefined) {
+                        elem[method] = parseFloat(v)
+                    } else {
+                        ret = elem[method];
+                    }
+                }
+                return ret;
+            }
         });
 
-    // http://old.jr.pl/www.quirksmode.org/viewport/compatibility.html
-    // http://www.quirksmode.org/dom/w3c_cssom.html
-    // add ScrollLeft/ScrollTop getter/setter methods
-    S.each(['Left', 'Top'], function (name, i) {
-        var method = SCROLL + name;
-
-        DOM[method] = function (elem, v) {
-            if (isNumber(elem)) {
-                return arguments.callee(win, elem);
-            }
-            elem = DOM.get(elem);
-            var ret,
-                left,
-                top,
-                w = getWin(elem),
-                d;
-            if (w) {
-                if (v !== undefined) {
-                    v = parseFloat(v);
-                    // 注意多 window 情况，不能简单取 win
-                    left = name == 'Left' ? v : DOM.scrollLeft(w);
-                    top = name == 'Top' ? v : DOM.scrollTop(w);
-                    w['scrollTo'](left, top);
-                } else {
-                    //标准
-                    //chrome == body.scrollTop
-                    //firefox/ie9 == documentElement.scrollTop
-                    ret = w[ 'page' + (i ? 'Y' : 'X') + 'Offset'];
-                    if (!isNumber(ret)) {
-                        d = w[DOCUMENT];
-                        //ie6,7,8 standard mode
-                        ret = d[DOC_ELEMENT][method];
-                        if (!isNumber(ret)) {
-                            //quirks mode
-                            ret = d[BODY][method];
-                        }
-                    }
-                }
-            } else if (elem.nodeType == NodeType.ELEMENT_NODE) {
-                if (v !== undefined) {
-                    elem[method] = parseFloat(v)
-                } else {
-                    ret = elem[method];
-                }
-            }
-            return ret;
-        }
-    });
-
-    // add docWidth/Height, viewportWidth/Height getter methods
-    S.each(['Width', 'Height'], function (name) {
-        DOM['doc' + name] = function (refWin) {
-            refWin = DOM.get(refWin);
-            var w = getWin(refWin),
-                d = w[DOCUMENT];
-            return MAX(
-                //firefox chrome documentElement.scrollHeight< body.scrollHeight
-                //ie standard mode : documentElement.scrollHeight> body.scrollHeight
-                d[DOC_ELEMENT][SCROLL + name],
-                //quirks : documentElement.scrollHeight 最大等于可视窗口多一点？
-                d[BODY][SCROLL + name],
-                DOM[VIEWPORT + name](d));
-        };
-
-        DOM[VIEWPORT + name] = function (refWin) {
-            refWin = DOM.get(refWin);
-            var prop = CLIENT + name,
-                win = getWin(refWin),
-                doc = win[DOCUMENT],
-                body = doc[BODY],
-                documentElement = doc[DOC_ELEMENT],
-                documentElementProp = documentElement[prop];
-            // 标准模式取 documentElement
-            // backcompat 取 body
-            return doc[compatMode] === CSS1Compat
-                && documentElementProp ||
-                body && body[ prop ] || documentElementProp;
-        }
-    });
-
-    function getClientPosition(elem) {
-        var box, x , y ,
-            doc = elem.ownerDocument,
-            body = doc.body;
-
-        if (!elem.getBoundingClientRect) {
-            return {
-                left: 0,
-                top: 0
+// add docWidth/Height, viewportWidth/Height getter methods
+        S.each(['Width', 'Height'], function (name) {
+            DOM['doc' + name] = function (refWin) {
+                refWin = DOM.get(refWin);
+                var w = getWin(refWin),
+                    d = w[DOCUMENT];
+                return MAX(
+                    //firefox chrome documentElement.scrollHeight< body.scrollHeight
+                    //ie standard mode : documentElement.scrollHeight> body.scrollHeight
+                    d[DOC_ELEMENT][SCROLL + name],
+                    //quirks : documentElement.scrollHeight 最大等于可视窗口多一点？
+                    d[BODY][SCROLL + name],
+                    DOM[VIEWPORT + name](d));
             };
+
+            DOM[VIEWPORT + name] = function (refWin) {
+                refWin = DOM.get(refWin);
+                var prop = CLIENT + name,
+                    win = getWin(refWin),
+                    doc = win[DOCUMENT],
+                    body = doc[BODY],
+                    documentElement = doc[DOC_ELEMENT],
+                    documentElementProp = documentElement[prop];
+                // 标准模式取 documentElement
+                // backcompat 取 body
+                return doc[compatMode] === CSS1Compat
+                    && documentElementProp ||
+                    body && body[ prop ] || documentElementProp;
+            }
+        });
+
+        function getClientPosition(elem) {
+            var box, x , y ,
+                doc = elem.ownerDocument,
+                body = doc.body;
+
+            if (!elem.getBoundingClientRect) {
+                return {
+                    left: 0,
+                    top: 0
+                };
+            }
+
+            // 根据 GBS 最新数据，A-Grade Browsers 都已支持 getBoundingClientRect 方法，不用再考虑传统的实现方式
+            box = elem.getBoundingClientRect();
+
+            // 注：jQuery 还考虑减去 docElem.clientLeft/clientTop
+            // 但测试发现，这样反而会导致当 html 和 body 有边距/边框样式时，获取的值不正确
+            // 此外，ie6 会忽略 html 的 margin 值，幸运地是没有谁会去设置 html 的 margin
+
+            x = box[LEFT];
+            y = box[TOP];
+
+            // In IE, most of the time, 2 extra pixels are added to the top and left
+            // due to the implicit 2-pixel inset border.  In IE6/7 quirks mode and
+            // IE6 standards mode, this border can be overridden by setting the
+            // document element's border to zero -- thus, we cannot rely on the
+            // offset always being 2 pixels.
+
+            // In quirks mode, the offset can be determined by querying the body's
+            // clientLeft/clientTop, but in standards mode, it is found by querying
+            // the document element's clientLeft/clientTop.  Since we already called
+            // getClientBoundingRect we have already forced a reflow, so it is not
+            // too expensive just to query them all.
+
+            // ie 下应该减去窗口的边框吧，毕竟默认 absolute 都是相对窗口定位的
+            // 窗口边框标准是设 documentElement ,quirks 时设置 body
+            // 最好禁止在 body 和 html 上边框 ，但 ie < 9 html 默认有 2px ，减去
+            // 但是非 ie 不可能设置窗口边框，body html 也不是窗口 ,ie 可以通过 html,body 设置
+            // 标准 ie 下 docElem.clientTop 就是 border-top
+            // ie7 html 即窗口边框改变不了。永远为 2
+            // 但标准 firefox/chrome/ie9 下 docElem.clientTop 是窗口边框，即使设了 border-top 也为 0
+
+            x -= docElem.clientLeft || body.clientLeft || 0;
+            y -= docElem.clientTop || body.clientTop || 0;
+
+            return { left: x, top: y };
         }
 
-        // 根据 GBS 最新数据，A-Grade Browsers 都已支持 getBoundingClientRect 方法，不用再考虑传统的实现方式
-        box = elem.getBoundingClientRect();
 
-        // 注：jQuery 还考虑减去 docElem.clientLeft/clientTop
-        // 但测试发现，这样反而会导致当 html 和 body 有边距/边框样式时，获取的值不正确
-        // 此外，ie6 会忽略 html 的 margin 值，幸运地是没有谁会去设置 html 的 margin
-
-        x = box[LEFT];
-        y = box[TOP];
-
-        // In IE, most of the time, 2 extra pixels are added to the top and left
-        // due to the implicit 2-pixel inset border.  In IE6/7 quirks mode and
-        // IE6 standards mode, this border can be overridden by setting the
-        // document element's border to zero -- thus, we cannot rely on the
-        // offset always being 2 pixels.
-
-        // In quirks mode, the offset can be determined by querying the body's
-        // clientLeft/clientTop, but in standards mode, it is found by querying
-        // the document element's clientLeft/clientTop.  Since we already called
-        // getClientBoundingRect we have already forced a reflow, so it is not
-        // too expensive just to query them all.
-
-        // ie 下应该减去窗口的边框吧，毕竟默认 absolute 都是相对窗口定位的
-        // 窗口边框标准是设 documentElement ,quirks 时设置 body
-        // 最好禁止在 body 和 html 上边框 ，但 ie < 9 html 默认有 2px ，减去
-        // 但是非 ie 不可能设置窗口边框，body html 也不是窗口 ,ie 可以通过 html,body 设置
-        // 标准 ie 下 docElem.clientTop 就是 border-top
-        // ie7 html 即窗口边框改变不了。永远为 2
-        // 但标准 firefox/chrome/ie9 下 docElem.clientTop 是窗口边框，即使设了 border-top 也为 0
-
-        x -= docElem.clientLeft || body.clientLeft || 0;
-        y -= docElem.clientTop || body.clientTop || 0;
-
-        return { left: x, top: y };
-    }
-
-
-    function getPageOffset(el) {
-        var pos = getClientPosition(el),
-            w = getWin(el[OWNER_DOCUMENT]);
-        pos.left += DOM[SCROLL_LEFT](w);
-        pos.top += DOM[SCROLL_TOP](w);
-        return pos;
-    }
-
-    // 获取 elem 相对 elem.ownerDocument 的坐标
-    function getOffset(el, relativeWin) {
-        var position = {left: 0, top: 0},
-
-        // Iterate up the ancestor frame chain, keeping track of the current window
-        // and the current element in that window.
-            currentWin = getWin(el[OWNER_DOCUMENT]),
-            offset,
-            currentEl = el;
-        relativeWin = relativeWin || currentWin;
-
-        do {
-            // if we're at the top window, we want to get the page offset.
-            // if we're at an inner frame, we only want to get the window position
-            // so that we can determine the actual page offset in the context of
-            // the outer window.
-            offset = currentWin == relativeWin ?
-                getPageOffset(currentEl) :
-                getClientPosition(currentEl);
-            position.left += offset.left;
-            position.top += offset.top;
-        } while (currentWin &&
-            currentWin != relativeWin &&
-            (currentEl = currentWin['frameElement']) &&
-            (currentWin = currentWin.parent));
-
-        return position;
-    }
-
-    // 设置 elem 相对 elem.ownerDocument 的坐标
-    function setOffset(elem, offset) {
-        // set position first, in-case top/left are set even on static elem
-        if (DOM.css(elem, POSITION) === 'static') {
-            elem.style[POSITION] = RELATIVE;
+        function getPageOffset(el) {
+            var pos = getClientPosition(el),
+                w = getWin(el[OWNER_DOCUMENT]);
+            pos.left += DOM[SCROLL_LEFT](w);
+            pos.top += DOM[SCROLL_TOP](w);
+            return pos;
         }
 
-        var old = getOffset(elem),
-            ret = { },
-            current, key;
+// 获取 elem 相对 elem.ownerDocument 的坐标
+        function getOffset(el, relativeWin) {
+            var position = {left: 0, top: 0},
 
-        for (key in offset) {
-            current = myParseInt(DOM.css(elem, key), 10) || 0;
-            ret[key] = current + offset[key] - old[key];
+            // Iterate up the ancestor frame chain, keeping track of the current window
+            // and the current element in that window.
+                currentWin = getWin(el[OWNER_DOCUMENT]),
+                offset,
+                currentEl = el;
+            relativeWin = relativeWin || currentWin;
+
+            do {
+                // if we're at the top window, we want to get the page offset.
+                // if we're at an inner frame, we only want to get the window position
+                // so that we can determine the actual page offset in the context of
+                // the outer window.
+                offset = currentWin == relativeWin ?
+                    getPageOffset(currentEl) :
+                    getClientPosition(currentEl);
+                position.left += offset.left;
+                position.top += offset.top;
+            } while (currentWin &&
+                currentWin != relativeWin &&
+                (currentEl = currentWin['frameElement']) &&
+                (currentWin = currentWin.parent));
+
+            return position;
         }
-        DOM.css(elem, ret);
-    }
 
-    return DOM;
-}, {
-    requires: ['./api']
-});
+// 设置 elem 相对 elem.ownerDocument 的坐标
+        function setOffset(elem, offset) {
+            // set position first, in-case top/left are set even on static elem
+            if (DOM.css(elem, POSITION) === 'static') {
+                elem.style[POSITION] = RELATIVE;
+            }
+
+            var old = getOffset(elem),
+                ret = { },
+                current, key;
+
+            for (key in offset) {
+                current = myParseInt(DOM.css(elem, key), 10) || 0;
+                ret[key] = current + offset[key] - old[key];
+            }
+            DOM.css(elem, ret);
+        }
+
+        return DOM;
+    },
+    {
+        requires: ['./api']
+    }
+)
+;
 
 /*
  2012-03-30
@@ -8984,63 +9082,64 @@ KISSY.add('dom/base/offset', function (S, DOM, undefined) {
  * selector
  * @author yiminghe@gmail.com, lifesinger@gmail.com
  */
-KISSY.add('dom/base/selector', function (S, DOM, undefined) {
+KISSY.add('dom/base/selector', function (S, DOM) {
 
     var doc = S.Env.host.document,
-        NodeType = DOM.NodeType,
-        filter = S.filter,
-        require = function (selector) {
-            return S.require(selector);
-        },
+        docElem = doc.documentElement,
+        matches = docElem.matches ||
+            docElem.webkitMatchesSelector ||
+            docElem.mozMatchesSelector ||
+            docElem.oMatchesSelector ||
+            docElem.msMatchesSelector,
         isArray = S.isArray,
         makeArray = S.makeArray,
         isNodeList = DOM._isNodeList,
-        getNodeName = DOM.nodeName,
-        push = Array.prototype.push,
         SPACE = ' ',
-        COMMA = ',',
-        trim = S.trim,
-        RE_ID = /^#[\w-]+$/,
-        RE_QUERY = /^(?:#([\w-]+))?\s*([\w-]+|\*)?\.?([\w-]+)?$/;
+        push = Array.prototype.push,
+        RE_QUERY = /^(?:#([\w-]+))?\s*([\w-]+|\*)?\.?([\w-]+)?$/,
+        trim = S.trim;
 
     function query_each(f) {
-        var self = this,
-            el, i;
-        for (i = 0; i < self.length; i++) {
-            el = self[i];
-            if (f(el, i) === false) {
+        var els = this,
+            l = els.length,
+            i;
+        for (i = 0; i < l; i++) {
+            if (f(els[i], i) === false) {
                 break;
             }
         }
     }
 
     function query(selector, context) {
+
         var ret,
             i,
             simpleContext,
             isSelectorString = typeof selector == 'string',
-        // optimize common usage
-        // consider context == null
-            contexts = (context == undefined && (simpleContext = 1)) ?
-                [doc] :
-                query(context);
+            contexts = context ? query(context) : (simpleContext = 1) && [doc],
+            contextsLen = contexts.length;
+
         // 常见的空
         if (!selector) {
             ret = [];
-        }
-        // 常见的选择器
-        // DOM.query('#x')
-        else if (isSelectorString) {
+        } else if (isSelectorString) {
             selector = trim(selector);
             // shortcut
             if (simpleContext && selector == 'body') {
-                ret = [doc.body]
-            } else if (contexts.length == 1 && selector) {
-                ret = quickFindBySelectorStr(selector, contexts[0]);
+                ret = [ doc.body ]
+            } else {
+                ret = [];
+                for (i = 0; i < contextsLen; i++) {
+                    push.apply(ret, DOM._selectInternal(selector, contexts[i]));
+                }
+                // multiple contexts unique
+                if (ret.length > 1 && contextsLen > 1) {
+                    DOM.unique(ret);
+                }
             }
         }
         // 不写 context，就是包装一下
-        else if (simpleContext) {
+        else {
             // 1.常见的单个元素
             // DOM.query(document.getElementById('xx'))
             if (selector['nodeType'] || selector['setTimeout']) {
@@ -9062,26 +9161,23 @@ KISSY.add('dom/base/selector', function (S, DOM, undefined) {
             // document.createElement('select').item 已经在 1 处理了
             // S.all().item 已经在 2 处理了
             else if (isNodeList(selector)) {
-                ret = S.makeArray(selector);
+                ret = makeArray(selector);
             } else {
                 ret = [ selector ];
             }
-        }
 
-        if (!ret) {
-            ret = [];
-            if (selector) {
-                for (i = 0; i < contexts.length; i++) {
-                    push.apply(ret, queryByContexts(selector, contexts[i]));
-                }
-                //必要时去重排序
-                if (ret.length > 1 &&
-                    // multiple contexts
-                    (contexts.length > 1 ||
-                        (isSelectorString &&
-                            // multiple selector
-                            selector.indexOf(COMMA) > -1))) {
-                    DOM.unique(ret);
+            if (!simpleContext) {
+                var tmp = ret,
+                    ci,
+                    len = tmp.length;
+                ret = [];
+                for (i = 0; i < len; i++) {
+                    for (ci = 0; ci < contextsLen; ci++) {
+                        if (DOM._contains(contexts[ci], tmp[i])) {
+                            ret.push(tmp[i]);
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -9092,155 +9188,22 @@ KISSY.add('dom/base/selector', function (S, DOM, undefined) {
         return ret;
     }
 
-    function queryByContexts(selector, context) {
-        var ret = [],
-            isSelectorString = typeof selector == 'string';
-        if (isSelectorString && selector.match(RE_QUERY) || !isSelectorString) {
-            // 简单选择器自己处理
-            ret = queryBySimple(selector, context);
-        }
-        // 如果选择器有, 分开递归一部分一部分来
-        else if (isSelectorString &&
-            // #255
-            // [data-key='a,b']
-            selector
-                .replace(/"(?:(?:\\.)|[^"])*"/g, '')
-                .replace(/'(?:(?:\\.)|[^'])*'/g, '').indexOf(COMMA) > -1) {
-            ret = queryBySelectors(selector, context);
-        }
-        else {
-            // 复杂了，交给 sizzle
-            ret = queryBySizzle(selector, context);
-        }
-        return ret;
-    }
-
-    // 交给 sizzle 模块处理
-    function queryBySizzle(selector, context) {
-        var ret = [],
-            sizzle = require('sizzle');
-        if (sizzle) {
-            sizzle(selector, context, ret);
-        } else {
-            // 原生不支持
-            error(selector);
-        }
-        return ret;
-    }
-
-    // 处理 selector 的每个部分
-    function queryBySelectors(selector, context) {
-        var ret = [],
-            i,
-            selectors = selector.split(/\s*,\s*/);
-        for (i = 0; i < selectors.length; i++) {
-            push.apply(ret, queryByContexts(selectors[i], context));
-        }
-        // 多部分选择器可能得到重复结果
-        return ret;
-    }
-
-    function quickFindBySelectorStr(selector, context) {
-        var ret, t, match, id, tag, cls;
-        // selector 为 #id 是最常见的情况，特殊优化处理
-        if (RE_ID.test(selector)) {
-            t = getElementById(selector.slice(1), context);
-            // #id 无效时，返回空数组
-            ret = t ? [t] : [];
-        }
-        // selector 为支持列表中的其它 6 种
-        else {
-            match = RE_QUERY.exec(selector);
-            if (match) {
-                // 获取匹配出的信息
-                id = match[1];
-                tag = match[2];
-                cls = match[3];
-                // 空白前只能有 id ，取出来作为 context
-                context = (id ? getElementById(id, context) : context);
-                if (context) {
-                    // #id .cls | #id tag.cls | .cls | tag.cls | #id.cls
-                    if (cls) {
-                        if (!id || selector.indexOf(SPACE) != -1) { // 排除 #id.cls
-                            ret = [].concat(DOM._getElementsByClassName(cls, tag, context));
-                        }
-                        // 处理 #id.cls
-                        else {
-                            t = getElementById(id, context);
-                            if (hasSingleClass(t, cls)) {
-                                ret = [t];
-                            }
-                        }
-                    }
-                    // #id tag | tag
-                    else if (tag) { // 排除空白字符串
-                        ret = makeArray(DOM._getElementsByTagName(tag, context));
-                    }
-                }
-
-                ret = ret || [];
-            }
-        }
-        return ret;
-    }
-
-    // 最简单情况了，单个选择器部分，单个上下文
-    function queryBySimple(selector, context) {
-        var ret,
-            isSelectorString = typeof selector == 'string';
-        if (isSelectorString) {
-            ret = quickFindBySelectorStr(selector, context) || [];
-        }
-        // 传入的 selector 是 NodeList 或已是 Array
-        else if (isArray(selector) || isNodeList(selector)) {
-            // 只能包含在 context 里面
-            // filter 会转换为 nodelist 为数组
-            ret = filter(selector, function (s) {
-                return testByContext(s, context);
-            });
-        }
-        // 传入的 selector 是 HTMLNode 查看约束
-        // 否则 window/document，原样返回
-        else if (testByContext(selector, context)) {
-            ret = [selector];
-        }
-        return ret;
-    }
-
-    function testByContext(element, context) {
-        if (!element) {
-            return false;
-        }
-        // 防止 element 节点还没添加到 document ，但是也可以获取到 query(element) => [element]
-        // document 的上下文一律放行
-        // context == doc 意味着没有提供第二个参数，到这里只是想单纯包装原生节点，则不检测
-        if (context == doc) {
-            return true;
-        }
-        // 节点受上下文约束
-        return DOM._contains(context, element);
-    }
-
-    // throw exception
-    function error(msg) {
-        S.error('Unsupported selector: ' + msg);
-    }
-
-    // query #id
-    function getElementById(id, context) {
-        var contextIsDocument = context.nodeType == NodeType.DOCUMENT_NODE,
-            doc = contextIsDocument ? context : context.ownerDocument;
-        return DOM._getElementById(id, context, doc, contextIsDocument);
-    }
-
     function hasSingleClass(el, cls) {
-        var className = el && el.className;
+        // consider xml
+        var className = el && (el.className || getAttr(el, 'class'));
         return className && (SPACE + className + SPACE).indexOf(SPACE + cls + SPACE) > -1;
     }
 
     function getAttr(el, name) {
         var ret = el && el.getAttributeNode(name);
-        return ret && ret.nodeValue;
+        if (ret && ret.specified) {
+            return ret.nodeValue;
+        }
+        return undefined;
+    }
+
+    function isTag(el, value) {
+        return value == '*' || el.nodeName.toLowerCase() === value.toLowerCase();
     }
 
     S.mix(DOM,
@@ -9250,53 +9213,36 @@ KISSY.add('dom/base/selector', function (S, DOM, undefined) {
          * @singleton
          */
         {
-            _hasSingleClass: hasSingleClass,
-
-            _getElementById: function (id, context, doc, contextIsDocument) {
-                var el = doc.getElementById(id),
-                // ie confuse name with id
-                // https://github.com/kissyteam/kissy/issues/67
-                // 不能直接 el.id ，否则 input shadow form attribute
-                    elId = getAttr(el, 'id');
-
-                // 1. context is not document and context is not in document,
-                // so el is null and context must not be document
-                // so filter inside context
-
-                // 2. ie confuse name with id, so if el 's id is not with parameter
-                // filter inside context
-
-                // 3. context is document, return getElementById directly
-
-                // 4. context is not document and context contains document.getElementById
-                // return getElementById
-
-                // return null
-                if (!el && !contextIsDocument && !DOM._contains(doc, context) ||
-                    el && elId != id) {
-                    return DOM.filter('*', '#' + id, context)[0] || null;
-                } else if (contextIsDocument || el && DOM._contains(context, el)) {
-                    return el;
-                }
-                return null;
-            },
-
-            _getElementsByTagName: function (tag, context) {
-                return context.getElementsByTagName(tag);
-            },
-
-            _getElementsByClassName: function (cls, tag, context) {
-                // ie8 return staticNodeList 对象,[].concat 会形成 [ staticNodeList ] ，手动转化为普通数组
-                return  makeArray(context.querySelectorAll((tag || '') + '.' + cls));
-            },
-
-            // 貌似除了 ie 都有了...
             _compareNodeOrder: function (a, b) {
                 if (!a.compareDocumentPosition || !b.compareDocumentPosition) {
                     return a.compareDocumentPosition ? -1 : 1;
                 }
 
                 return a.compareDocumentPosition(b) & 4 ? -1 : 1;
+            },
+
+            _getSimpleAttr: getAttr,
+
+            _isTag: isTag,
+
+            _hasSingleClass: hasSingleClass,
+
+            _matchesInternal: function (str, seeds) {
+                var ret = [],
+                    i = 0,
+                    n,
+                    len = seeds.length;
+                for (; i < len; i++) {
+                    n = seeds[i];
+                    if (matches.call(n, str)) {
+                        ret.push(n);
+                    }
+                }
+                return ret;
+            },
+
+            _selectInternal: function (str, context) {
+                return makeArray(context.querySelectorAll(str));
             },
 
             /**
@@ -9365,6 +9311,7 @@ KISSY.add('dom/base/selector', function (S, DOM, undefined) {
                         while (i < len) {
                             if (elements[i] === elements[ i - 1 ]) {
                                 elements.splice(i, 1);
+                                --len;
                             } else {
                                 i++;
                             }
@@ -9385,27 +9332,25 @@ KISSY.add('dom/base/selector', function (S, DOM, undefined) {
              */
             filter: function (selector, filter, context) {
                 var elems = query(selector, context),
-                    sizzle = require('sizzle'),
-                    match,
-                    tag,
                     id,
+                    tag,
+                    match,
                     cls,
                     ret = [];
 
-                // 默认仅支持最简单的 tag.cls 或 #id 形式
-                if (typeof filter == 'string' &&
-                    (filter = trim(filter)) &&
+                if (typeof filter == 'string' && (filter = trim(filter)) &&
                     (match = RE_QUERY.exec(filter))) {
                     id = match[1];
                     tag = match[2];
                     cls = match[3];
                     if (!id) {
                         filter = function (elem) {
-                            var tagRe = true, clsRe = true;
+                            var tagRe = true,
+                                clsRe = true;
 
                             // 指定 tag 才进行判断
                             if (tag) {
-                                tagRe = getNodeName(elem) == tag.toLowerCase();
+                                tagRe = isTag(elem, tag);
                             }
 
                             // 指定 cls 才进行判断
@@ -9424,14 +9369,8 @@ KISSY.add('dom/base/selector', function (S, DOM, undefined) {
 
                 if (S.isFunction(filter)) {
                     ret = S.filter(elems, filter);
-                }
-                // 其它复杂 filter, 采用外部选择器
-                else if (filter && sizzle) {
-                    ret = sizzle.matches(filter, elems);
-                }
-                // filter 为空或不支持的 selector
-                else {
-                    error(filter);
+                } else {
+                    ret = DOM._matchesInternal(filter, elems);
                 }
 
                 return ret;
@@ -9455,101 +9394,22 @@ KISSY.add('dom/base/selector', function (S, DOM, undefined) {
 }, {
     requires: ['./api']
 });
-
-/*
- NOTES:
-
- 2012.12.26
- - 尽量用原生方法提高性能
-
- 2011.08.02
- - 利用 sizzle 重构选择器
- - 1.1.6 修正，原来 context 只支持 #id 以及 document
- 1.2 context 支持任意，和 selector 格式一致
- - 简单选择器也和 jquery 保持一致 DOM.query('xx','yy') 支持
- - context 不提供则为当前 document ，否则通过 query 递归取得
- - 保证选择出来的节点（除了 document window）都是位于 context 范围内
-
-
- 2010.01
- - 对 reg exec 的结果(id, tag, className)做 cache, 发现对性能影响很小，去掉。
- - getElementById 使用频率最高，使用直达通道优化。
- - getElementsByClassName 性能优于 querySelectorAll, 但 IE 系列不支持。
- - instanceof 对性能有影响。
- - 内部方法的参数，比如 cls, context 等的异常情况，已经在 query 方法中有保证，无需冗余“防卫”。
- - query 方法中的条件判断考虑了“频率优先”原则。最有可能出现的情况放在前面。
- - Array 的 push 方法可以用 j++ 来替代，性能有提升。
- - 返回值策略和 Sizzle 一致，正常时，返回数组；其它所有情况，返回空数组。
-
- - 从压缩角度考虑，还可以将 getElementsByTagName 和 getElementsByClassName 定义为常量，
- 不过感觉这样做太“压缩控”，还是保留不替换的好。
-
- - 调整 getElementsByClassName 的降级写法，性能最差的放最后。
-
- 2010.02
- - 添加对分组选择器的支持（主要参考 Sizzle 的代码，代去除了对非 Grade A 级浏览器的支持）
-
- 2010.03
- - 基于原生 dom 的两个 api: S.query 返回数组; S.get 返回第一个。
- 基于 Node 的 api: S.one, 在 Node 中实现。
- 基于 NodeList 的 api: S.all, 在 NodeList 中实现。
- 通过 api 的分层，同时满足初级用户和高级用户的需求。
-
- 2010.05
- - 去掉给 S.query 返回值默认添加的 each 方法，保持纯净。
- - 对于不支持的 selector, 采用外部耦合进来的 Selector.
-
- 2010.06
- - 增加 filter 和 test 方法
-
- 2010.07
- - 取消对 , 分组的支持，group 直接用 Sizzle
-
- 2010.08
- - 给 S.query 的结果 attach each 方法
-
- 2011.05
- - yiminghe@gmail.com：恢复对简单分组支持
-
- Ref: http://ejohn.org/blog/selectors-that-people-actually-use/
- 考虑 2/8 原则，仅支持以下选择器：
- #id
- tag
- .cls
- #id tag
- #id .cls
- tag.cls
- #id tag.cls
- 注 1：RE_QUERY 还会匹配 #id.cls
- 注 2：tag 可以为 * 字符
- 注 3: 支持 , 号分组
-
-
- Bugs:
- - S.query('#test-data *') 等带 * 号的选择器，在 IE6 下返回的值不对。jQuery 等类库也有此 bug, 诡异。
-
- References:
- - http://ejohn.org/blog/selectors-that-people-actually-use/
- - http://ejohn.org/blog/thoughts-on-queryselectorall/
- - MDC: querySelector, querySelectorAll, getElementsByClassName
- - Sizzle: http://github.com/jeresig/sizzle
- - MINI: http://james.padolsey.com/javascript/mini/
- - Peppy: http://jamesdonaghue.com/?p=40
- - Sly: http://github.com/digitarald/sly
- - XPath, TreeWalker：http://www.cnblogs.com/rubylouvre/archive/2009/07/24/1529640.html
-
- - http://www.quirksmode.org/blog/archives/2006/01/contains_for_mo.html
- - http://www.quirksmode.org/dom/getElementsByTagNames.html
- - http://ejohn.org/blog/comparing-document-position/
- - http://github.com/jeresig/sizzle/blob/master/sizzle.js
+/**
+ * yiminghe@gmail.com - 2013-03-26
+ * - refactor to use own css3 selector engine
  */
+
 /**
  * @ignore
  * dom/style
  * @author yiminghe@gmail.com, lifesinger@gmail.com
  */
 KISSY.add('dom/base/style', function (S, DOM, undefined) {
-    var WINDOW = S.Env.host,
+    var
+        WINDOW = /**
+         @ignore
+         @type window
+         */S.Env.host,
         UA = S.UA,
         getNodeName = DOM.nodeName,
         doc = WINDOW.document,
@@ -9557,11 +9417,9 @@ KISSY.add('dom/base/style', function (S, DOM, undefined) {
         RE_MARGIN = /^margin/,
         WIDTH = 'width',
         HEIGHT = 'height',
-        AUTO = 'auto',
         DISPLAY = 'display',
         OLD_DISPLAY = DISPLAY + S.now(),
         NONE = 'none',
-        myParseInt = parseInt,
         cssNumber = {
             'fillOpacity': 1,
             'fontWeight': 1,
@@ -9573,23 +9431,25 @@ KISSY.add('dom/base/style', function (S, DOM, undefined) {
             'zoom': 1
         },
         rmsPrefix = /^-ms-/,
-    // 考虑 ie9 ...
+    // ie9+
         R_UPPER = /([A-Z]|^ms)/g,
         EMPTY = '',
         DEFAULT_UNIT = 'px',
+        NO_PX_REG = /\d(?!px)[a-z%]+$/i,
         CUSTOM_STYLES = {},
         cssProps = {
             'float': 'cssFloat'
         },
         defaultDisplay = {},
-        RE_DASH = /-([a-z])/ig,
-        CAMEL_CASE_FN = function (all, letter) {
-            return letter.toUpperCase();
-        };
+        RE_DASH = /-([a-z])/ig;
+
+    function upperCase() {
+        return arguments[1].toUpperCase();
+    }
 
     function camelCase(name) {
         // fix #92, ms!
-        return name.replace(rmsPrefix, 'ms-').replace(RE_DASH, CAMEL_CASE_FN);
+        return name.replace(rmsPrefix, 'ms-').replace(RE_DASH, upperCase);
     }
 
     function getDefaultDisplay(tagName) {
@@ -9738,7 +9598,7 @@ KISSY.add('dom/base/style', function (S, DOM, undefined) {
                             ret = DOM._getComputedStyle(elem, name);
                         }
                     }
-                    return (ret === undefined) ? '' : ret;
+                    return (typeof ret == 'undefined') ? '' : ret;
                 }
                 // setter
                 else {
@@ -9975,47 +9835,36 @@ KISSY.add('dom/base/style', function (S, DOM, undefined) {
              * @ignore
              */
             get: function (elem, computed) {
+                var val;
                 if (computed) {
-                    return getWHIgnoreDisplay(elem, name) + 'px';
+                    val = getWHIgnoreDisplay(elem, name) + 'px';
                 }
+                return val;
             }
         };
     });
 
     S.each(['left', 'top'], function (name) {
-
         CUSTOM_STYLES[ name ] = {
-            get: function (elem, computed) {
+            get: function (el, computed) {
+                var val,
+                    isAutoPosition,
+                    position;
                 if (computed) {
-                    var val = DOM._getComputedStyle(elem, name), offset;
-
-                    // 1. 当没有设置 style.left 时，getComputedStyle 在不同浏览器下，返回值不同
-                    //    比如：firefox 返回 0, webkit/ie 返回 auto
-                    // 2. style.left 设置为百分比时，返回值为百分比
-                    // 对于第一种情况，如果是 relative 元素，值为 0. 如果是 absolute 元素，值为 offsetLeft - marginLeft
-                    // 对于第二种情况，大部分类库都未做处理，属于“明之而不 fix”的保留 bug
-                    if (val === AUTO) {
-                        val = 0;
-                        if (S.inArray(DOM.css(elem, 'position'), ['absolute', 'fixed'])) {
-                            offset = elem[name === 'left' ? 'offsetLeft' : 'offsetTop'];
-
-                            // old-ie 下，elem.offsetLeft 包含 offsetParent 的 border 宽度，需要减掉
-                            if (UA.ie && (doc['documentMode'] || 0) < 9 || UA['opera']) {
-                                // 类似 offset ie 下的边框处理
-                                // 如果 offsetParent 为 html ，需要减去默认 2 px == documentElement.clientTop
-                                // 否则减去 borderTop 其实也是 clientTop
-                                // http://msdn.microsoft.com/en-us/library/aa752288%28v=vs.85%29.aspx
-                                // ie<9 注意有时候 elem.offsetParent 为 null ...
-                                // 比如 DOM.append(DOM.create('<div class='position:absolute'></div>'),document.body)
-                                offset -= elem.offsetParent && elem.offsetParent['client' + (name == 'left' ? 'Left' : 'Top')]
-                                    || 0;
-                            }
-                            val = offset - (myParseInt(DOM.css(elem, 'margin-' + name)) || 0);
-                        }
-                        val += 'px';
+                    position = DOM.css(el, 'position');
+                    if (position === "static") {
+                        return "auto";
                     }
-                    return val;
+                    val = DOM._getComputedStyle(el, name);
+                    isAutoPosition = val === "auto";
+                    if (isAutoPosition && position === "relative") {
+                        return "0px";
+                    }
+                    if (isAutoPosition || NO_PX_REG.test(val)) {
+                        val = getPosition(el)[name] + 'px';
+                    }
                 }
+                return val;
             }
         };
     });
@@ -10166,6 +10015,43 @@ KISSY.add('dom/base/style', function (S, DOM, undefined) {
         }
 
         return val;
+    }
+
+    var ROOT_REG = /^(?:body|html)$/i;
+
+    function getPosition(el) {
+        var offsetParent ,
+            offset ,
+            parentOffset = {top: 0, left: 0};
+
+        if (DOM.css(el, 'position') == 'fixed') {
+            offset = el.getBoundingClientRect();
+        } else {
+            offsetParent = getOffsetParent(el);
+            offset = DOM.offset(el);
+            parentOffset = DOM.offset(offsetParent);
+            parentOffset.top += parseFloat(DOM.css(offsetParent, "borderTopWidth")) || 0;
+            parentOffset.left += parseFloat(DOM.css(offsetParent, "borderLeftWidth")) || 0;
+        }
+
+        offset.top -= parseFloat(DOM.css(el, "marginTop")) || 0;
+        offset.left -= parseFloat(DOM.css(el, "marginLeft")) || 0;
+
+        // known bug: if el is relative && offsetParent is document.body, left %
+        // should - document.body.paddingLeft
+        return {
+            top: offset.top - parentOffset.top,
+            left: offset.left - parentOffset.left
+        };
+    }
+
+    function getOffsetParent(el) {
+        var offsetParent = el.offsetParent || ( el.ownerDocument || doc).body;
+        while (offsetParent && !ROOT_REG.test(offsetParent.nodeName) &&
+            DOM.css(offsetParent, "position") === "static") {
+            offsetParent = offsetParent.offsetParent;
+        }
+        return offsetParent;
     }
 
     return DOM;
@@ -10531,7 +10417,7 @@ KISSY.add('dom/base/traversal', function (S, DOM, undefined) {
 /*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 12 21:51
+build time: Apr 17 00:15
 */
 /**
  * implement class-list for ie<10
@@ -10640,7 +10526,7 @@ KISSY.add('dom/class-list', function (S, DOM) {
 /*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Jan 31 22:56
+build time: Apr 17 00:15
 */
 /**
  * attr ie hack
@@ -10757,6 +10643,23 @@ KISSY.add('dom/ie/attr', function (S, DOM) {
         }
     };
 
+
+    function getText(el) {
+        var ret = "",
+            nodeType = el.nodeType;
+
+        if (nodeType === DOM.NodeType.ELEMENT_NODE) {
+            for (el = el.firstChild; el; el = el.nextSibling) {
+                ret += getText(el);
+            }
+        } else if (nodeType == NodeType.TEXT_NODE || nodeType == NodeType.CDATA_SECTION_NODE) {
+            ret += el.nodeValue;
+        }
+        return ret;
+    }
+
+    DOM._getText = getText;
+
     return DOM;
 }, {
     requires: ['dom/base']
@@ -10818,6 +10721,8 @@ KISSY.add('dom/ie/create', function (S, DOM) {
             // cloning other types of input fields
         } else if (nodeName === 'input' || nodeName === 'textarea') {
             dest.defaultValue = src.defaultValue;
+            // textarea will not keep value if not deep clone
+            dest.value = src.value;
         }
 
         // Event data gets referenced instead of copied if the expando
@@ -10863,7 +10768,6 @@ KISSY.add('dom/ie', function (S, DOM) {
         './ie/attr',
         './ie/create',
         './ie/insertion',
-        './ie/selector',
         './ie/style',
         './ie/traversal',
         './ie/input-selection'
@@ -11040,72 +10944,6 @@ KISSY.add('dom/ie/insertion', function (S, DOM) {
 }, {
     requires: ['dom/base']
 });/**
- * ie selector hack
- * @author yiminghe@gmail.com
- */
-KISSY.add('dom/ie/selector', function (S, DOM) {
-
-    var doc = S.Env.host.document;
-
-    DOM._compareNodeOrder = function (a, b) {
-        return a.sourceIndex - b.sourceIndex;
-    };
-
-    if (!doc.querySelectorAll) {
-
-        DOM._getElementsByClassName = function (cls, tag, context) {
-            if (!context) {
-                return [];
-            }
-            var els = context.getElementsByTagName(tag || '*'),
-                ret = [],
-                i = 0,
-                j = 0,
-                len = els.length,
-                el;
-            for (; i < len; ++i) {
-                el = els[i];
-                if (DOM._hasSingleClass(el, cls)) {
-                    ret[j++] = el;
-                }
-            }
-            return ret;
-        };
-
-    }
-
-    // ie<9
-    // Check to see if the browser returns only elements
-    // when doing getElementsByTagName('*')
-    DOM._getElementsByTagName = function (tag, context) {
-        var ret = S.makeArray(context.getElementsByTagName(tag)),
-            t, i, j, node;
-        if (tag === '*') {
-            t = [];
-            i = 0;
-            j = 0;
-            while ((node = ret[i++])) {
-                // Filter out possible comments
-                if (node.nodeType === 1) {
-                    t[j++] = node;
-                }
-            }
-            ret = t;
-        }
-        return ret;
-    };
-
-}, {
-    requires: ['dom/base']
-});
-
-/**
- * @ignore
- *
- * 2012.12.26
- * - 尽量用原生方法提高性能
- *
- *//**
  * style hack for ie
  * @author yiminghe@gmail.com
  */
@@ -11200,7 +11038,7 @@ KISSY.add('dom/ie/style', function (S, DOM) {
         }
     }
     catch (ex) {
-        S.log('IE filters ActiveX is disabled. ex = ' + ex);
+
     }
 
     /*
@@ -11330,7 +11168,1857 @@ KISSY.add('dom/ie/traversal', function (S, DOM) {
 /*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 19 11:12
+build time: May 7 20:07
+*/
+/*
+  Generated by kissy-kison.*/
+KISSY.add("dom/selector/parser", function () {
+    /* Generated by kison from KISSY */
+    var parser = {}, S = KISSY,
+        GrammarConst = {
+            'SHIFT_TYPE': 1,
+            'REDUCE_TYPE': 2,
+            'ACCEPT_TYPE': 0,
+            'TYPE_INDEX': 0,
+            'PRODUCTION_INDEX': 1,
+            'TO_INDEX': 2
+        };
+    var Lexer = function (cfg) {
+
+        var self = this;
+
+        /*
+             lex rules.
+             @type {Object[]}
+             @example
+             [
+             {
+             regexp:'\\w+',
+             state:['xx'],
+             token:'c',
+             // this => lex
+             action:function(){}
+             }
+             ]
+             */
+        self.rules = [];
+
+        S.mix(self, cfg);
+
+        /*
+             Input languages
+             @type {String}
+             */
+
+        self.resetInput(self.input);
+
+    };
+    Lexer.prototype = {
+        'constructor': function (cfg) {
+
+            var self = this;
+
+            /*
+             lex rules.
+             @type {Object[]}
+             @example
+             [
+             {
+             regexp:'\\w+',
+             state:['xx'],
+             token:'c',
+             // this => lex
+             action:function(){}
+             }
+             ]
+             */
+            self.rules = [];
+
+            S.mix(self, cfg);
+
+            /*
+             Input languages
+             @type {String}
+             */
+
+            self.resetInput(self.input);
+
+        },
+        'resetInput': function (input) {
+            S.mix(this, {
+                input: input,
+                matched: "",
+                stateStack: [Lexer.STATIC.INITIAL],
+                match: "",
+                text: "",
+                firstLine: 1,
+                lineNumber: 1,
+                lastLine: 1,
+                firstColumn: 1,
+                lastColumn: 1
+            });
+        },
+        'getCurrentRules': function () {
+            var self = this,
+                currentState = self.stateStack[self.stateStack.length - 1],
+                rules = [];
+            currentState = self.mapState(currentState);
+            S.each(self.rules, function (r) {
+                var state = r.state || r[3];
+                if (!state) {
+                    if (currentState == Lexer.STATIC.INITIAL) {
+                        rules.push(r);
+                    }
+                } else if (S.inArray(currentState, state)) {
+                    rules.push(r);
+                }
+            });
+            return rules;
+        },
+        'pushState': function (state) {
+            this.stateStack.push(state);
+        },
+        'popState': function () {
+            return this.stateStack.pop();
+        },
+        'getStateStack': function () {
+            return this.stateStack;
+        },
+        'showDebugInfo': function () {
+            var self = this,
+                DEBUG_CONTEXT_LIMIT = Lexer.STATIC.DEBUG_CONTEXT_LIMIT,
+                matched = self.matched,
+                match = self.match,
+                input = self.input;
+            matched = matched.slice(0, matched.length - match.length);
+            var past = (matched.length > DEBUG_CONTEXT_LIMIT ? "..." : "") + matched.slice(-DEBUG_CONTEXT_LIMIT).replace(/\n/, " "),
+                next = match + input;
+            next = next.slice(0, DEBUG_CONTEXT_LIMIT) + (next.length > DEBUG_CONTEXT_LIMIT ? "..." : "");
+            return past + next + "\n" + new Array(past.length + 1).join("-") + "^";
+        },
+        'mapSymbol': function (t) {
+            var self = this,
+                symbolMap = self.symbolMap;
+            if (!symbolMap) {
+                return t;
+            }
+            return symbolMap[t] || (symbolMap[t] = (++self.symbolId));
+        },
+        'mapReverseSymbol': function (rs) {
+            var self = this,
+                symbolMap = self.symbolMap,
+                i,
+                reverseSymbolMap = self.reverseSymbolMap;
+            if (!reverseSymbolMap && symbolMap) {
+                reverseSymbolMap = self.reverseSymbolMap = {};
+                for (i in symbolMap) {
+                    reverseSymbolMap[symbolMap[i]] = i;
+                }
+            }
+            if (reverseSymbolMap) {
+                return reverseSymbolMap[rs];
+            } else {
+                return rs;
+            }
+        },
+        'mapState': function (s) {
+            var self = this,
+                stateMap = self.stateMap;
+            if (!stateMap) {
+                return s;
+            }
+            return stateMap[s] || (stateMap[s] = (++self.stateId));
+        },
+        'lex': function () {
+            var self = this,
+                input = self.input,
+                i,
+                rule,
+                m,
+                ret,
+                lines,
+                rules = self.getCurrentRules();
+
+            self.match = self.text = "";
+
+            if (!input) {
+                return self.mapSymbol(Lexer.STATIC.END_TAG);
+            }
+
+            for (i = 0; i < rules.length; i++) {
+                rule = rules[i];
+                var regexp = rule.regexp || rule[1],
+                    token = rule.token || rule[0],
+                    action = rule.action || rule[2] || undefined;
+                if (m = input.match(regexp)) {
+                    lines = m[0].match(/\n.*/g);
+                    if (lines) {
+                        self.lineNumber += lines.length;
+                    }
+                    S.mix(self, {
+                        firstLine: self.lastLine,
+                        lastLine: self.lineNumber + 1,
+                        firstColumn: self.lastColumn,
+                        lastColumn: lines ? lines[lines.length - 1].length - 1 : self.lastColumn + m[0].length
+                    });
+                    var match;
+                    // for error report
+                    match = self.match = m[0];
+
+                    // all matches
+                    self.matches = m;
+                    // may change by user
+                    self.text = match;
+                    // matched content utils now
+                    self.matched += match;
+                    ret = action && action.call(self);
+                    if (ret == undefined) {
+                        ret = token;
+                    } else {
+                        ret = self.mapSymbol(ret);
+                    }
+                    input = input.slice(match.length);
+                    self.input = input;
+
+                    if (ret) {
+                        return ret;
+                    } else {
+                        // ignore
+                        return self.lex();
+                    }
+                }
+            }
+
+            S.error("lex error at line " + self.lineNumber + ":\n" + self.showDebugInfo());
+            return undefined;
+        }
+    };
+    Lexer.STATIC = {
+        'INITIAL': 'I',
+        'DEBUG_CONTEXT_LIMIT': 20,
+        'END_TAG': '$EOF'
+    };
+    var lexer = new Lexer({
+        'rules': [
+            [2, /^\[(?:[\t\r\n\f\x20]*)/, function () {
+                this.text = KISSY.trim(this.text);
+            }],
+            [3, /^(?:[\t\r\n\f\x20]*)\]/, function () {
+                this.text = KISSY.trim(this.text);
+            }],
+            [4, /^(?:[\t\r\n\f\x20]*)~=(?:[\t\r\n\f\x20]*)/, function () {
+                this.text = KISSY.trim(this.text);
+            }],
+            [5, /^(?:[\t\r\n\f\x20]*)\|=(?:[\t\r\n\f\x20]*)/, function () {
+                this.text = KISSY.trim(this.text);
+            }],
+            [6, /^(?:[\t\r\n\f\x20]*)\^=(?:[\t\r\n\f\x20]*)/, function () {
+                this.text = KISSY.trim(this.text);
+            }],
+            [7, /^(?:[\t\r\n\f\x20]*)\$=(?:[\t\r\n\f\x20]*)/, function () {
+                this.text = KISSY.trim(this.text);
+            }],
+            [8, /^(?:[\t\r\n\f\x20]*)\*=(?:[\t\r\n\f\x20]*)/, function () {
+                this.text = KISSY.trim(this.text);
+            }],
+            [9, /^(?:[\t\r\n\f\x20]*)\=(?:[\t\r\n\f\x20]*)/, function () {
+                this.text = KISSY.trim(this.text);
+            }],
+            [10, /^(?:(?:[\w]|[^\x00-\xa0]|(?:\\[^\n\r\f0-9a-f]))(?:[\w\d-]|[^\x00-\xa0]|(?:\\[^\n\r\f0-9a-f]))*)\(/, function () {
+                this.text = KISSY.trim(this.text).slice(0, - 1);
+                this.pushState('fn');
+            }],
+            [11, /^[^\)]*/, function () {
+                this.popState();
+            }, ['fn']],
+            [12, /^(?:[\t\r\n\f\x20]*)\)/, function () {
+                this.text = KISSY.trim(this.text);
+            }],
+            [13, /^:not\((?:[\t\r\n\f\x20]*)/, function () {
+                this.text = KISSY.trim(this.text);
+            }],
+            [14, /^(?:(?:[\w]|[^\x00-\xa0]|(?:\\[^\n\r\f0-9a-f]))(?:[\w\d-]|[^\x00-\xa0]|(?:\\[^\n\r\f0-9a-f]))*)/, function () {
+                this.text = this.yy.unEscape(this.text);
+            }],
+            [15, /^"(\\"|[^"])*"/, function () {
+                this.text = this.yy.unEscapeStr(this.text);
+            }],
+            [15, /^'(\\'|[^'])*'/, function () {
+                this.text = this.yy.unEscapeStr(this.text);
+            }],
+            [16, /^#(?:(?:[\w\d-]|[^\x00-\xa0]|(?:\\[^\n\r\f0-9a-f]))+)/, function () {
+                this.text = this.yy.unEscape(this.text.slice(1));
+            }],
+            [17, /^\.(?:(?:[\w]|[^\x00-\xa0]|(?:\\[^\n\r\f0-9a-f]))(?:[\w\d-]|[^\x00-\xa0]|(?:\\[^\n\r\f0-9a-f]))*)/, function () {
+                this.text = this.yy.unEscape(this.text.slice(1));
+            }],
+            [18, /^(?:[\t\r\n\f\x20]*),(?:[\t\r\n\f\x20]*)/, function () {
+                this.text = KISSY.trim(this.text);
+            }],
+            [19, /^::?/, 0],
+            [20, /^(?:[\t\r\n\f\x20]*)\+(?:[\t\r\n\f\x20]*)/, function () {
+                this.text = KISSY.trim(this.text);
+            }],
+            [21, /^(?:[\t\r\n\f\x20]*)>(?:[\t\r\n\f\x20]*)/, function () {
+                this.text = KISSY.trim(this.text);
+            }],
+            [22, /^(?:[\t\r\n\f\x20]*)~(?:[\t\r\n\f\x20]*)/, function () {
+                this.text = KISSY.trim(this.text);
+            }],
+            [23, /^\*/, 0],
+            [24, /^(?:[\t\r\n\f\x20]+)/, 0],
+            [25, /^./, 0]
+        ]
+    });
+    parser.lexer = lexer;
+    lexer.symbolMap = {
+        '$EOF': 1,
+        'LEFT_BRACKET': 2,
+        'RIGHT_BRACKET': 3,
+        'INCLUDES': 4,
+        'DASH_MATCH': 5,
+        'PREFIX_MATCH': 6,
+        'SUFFIX_MATCH': 7,
+        'SUBSTRING_MATCH': 8,
+        'ALL_MATCH': 9,
+        'FUNCTION': 10,
+        'PARAMETER': 11,
+        'RIGHT_PARENTHESES': 12,
+        'NOT': 13,
+        'IDENT': 14,
+        'STRING': 15,
+        'HASH': 16,
+        'CLASS': 17,
+        'COMMA': 18,
+        'COLON': 19,
+        'PLUS': 20,
+        'GREATER': 21,
+        'TILDE': 22,
+        'UNIVERSAL': 23,
+        'S': 24,
+        'INVALID': 25,
+        '$START': 26,
+        'selectors_group': 27,
+        'selector': 28,
+        'simple_selector_sequence': 29,
+        'combinator': 30,
+        'type_selector': 31,
+        'id_selector': 32,
+        'class_selector': 33,
+        'attrib_match': 34,
+        'attrib': 35,
+        'attrib_val': 36,
+        'pseudo': 37,
+        'negation': 38,
+        'negation_arg': 39,
+        'suffix_selector': 40,
+        'suffix_selectors': 41
+    };
+    parser.productions = [
+        [26, [27]],
+        [27, [28], function () {
+            return [this.$1];
+        }],
+        [27, [27, 18, 28], function () {
+            this.$1.push(this.$3);
+        }],
+        [28, [29]],
+        [28, [28, 30, 29], function () {
+            // LinkedList
+
+            this.$1.nextCombinator = this.$3.prevCombinator = this.$2;
+            var order;
+            order = this.$1.order = this.$1.order || 0;
+            this.$3.order = order + 1;
+            this.$3.prev = this.$1;
+            this.$1.next = this.$3;
+            return this.$3;
+        }],
+        [30, [20]],
+        [30, [21]],
+        [30, [22]],
+        [30, [24], function () {
+            return ' ';
+        }],
+        [31, [14], function () {
+            return {
+                t: 'tag',
+                value: this.$1
+            };
+        }],
+        [31, [23], function () {
+            return {
+                t: 'tag',
+                value: this.$1
+            };
+        }],
+        [32, [16], function () {
+            return {
+                t: 'id',
+                value: this.$1
+            };
+        }],
+        [33, [17], function () {
+            return {
+                t: 'cls',
+                value: this.$1
+            };
+        }],
+        [34, [6]],
+        [34, [7]],
+        [34, [8]],
+        [34, [9]],
+        [34, [4]],
+        [34, [5]],
+        [35, [2, 14, 3], function () {
+            return {
+                t: 'attrib',
+                value: {
+                    ident: this.$2
+                }
+            };
+        }],
+        [36, [14]],
+        [36, [15]],
+        [35, [2, 14, 34, 36, 3], function () {
+            return {
+                t: 'attrib',
+                value: {
+                    ident: this.$2,
+                    match: this.$3,
+                    value: this.$4
+                }
+            };
+        }],
+        [37, [19, 10, 11, 12], function () {
+            return {
+                t: 'pseudo',
+                value: {
+                    fn: this.$2.toLowerCase(),
+                    param: this.$3
+                }
+            };
+        }],
+        [37, [19, 14], function () {
+            return {
+                t: 'pseudo',
+                value: {
+                    ident: this.$2.toLowerCase()
+                }
+            };
+        }],
+        [38, [13, 39, 12], function () {
+            return {
+                t: 'pseudo',
+                value: {
+                    fn: 'not',
+                    param: this.$2
+                }
+            };
+        }],
+        [39, [31]],
+        [39, [32]],
+        [39, [33]],
+        [39, [35]],
+        [39, [37]],
+        [40, [32]],
+        [40, [33]],
+        [40, [35]],
+        [40, [37]],
+        [40, [38]],
+        [41, [40], function () {
+            return [this.$1];
+        }],
+        [41, [41, 40], function () {
+            this.$1.push(this.$2);
+        }],
+        [29, [31]],
+        [29, [41], function () {
+            return {
+                suffix: this.$1
+            };
+        }],
+        [29, [31, 41], function () {
+            return {
+                t: 'tag',
+                value: this.$1.value,
+                suffix: this.$2
+            };
+        }]
+    ];
+    parser.table = {
+        'gotos': {
+            '0': {
+                '27': 8,
+                '28': 9,
+                '29': 10,
+                '31': 11,
+                '32': 12,
+                '33': 13,
+                '35': 14,
+                '37': 15,
+                '38': 16,
+                '40': 17,
+                '41': 18
+            },
+            '2': {
+                '31': 20,
+                '32': 21,
+                '33': 22,
+                '35': 23,
+                '37': 24,
+                '39': 25
+            },
+            '9': {
+                '30': 33
+            },
+            '11': {
+                '32': 12,
+                '33': 13,
+                '35': 14,
+                '37': 15,
+                '38': 16,
+                '40': 17,
+                '41': 34
+            },
+            '18': {
+                '32': 12,
+                '33': 13,
+                '35': 14,
+                '37': 15,
+                '38': 16,
+                '40': 35
+            },
+            '19': {
+                '34': 43
+            },
+            '28': {
+                '28': 46,
+                '29': 10,
+                '31': 11,
+                '32': 12,
+                '33': 13,
+                '35': 14,
+                '37': 15,
+                '38': 16,
+                '40': 17,
+                '41': 18
+            },
+            '33': {
+                '29': 47,
+                '31': 11,
+                '32': 12,
+                '33': 13,
+                '35': 14,
+                '37': 15,
+                '38': 16,
+                '40': 17,
+                '41': 18
+            },
+            '34': {
+                '32': 12,
+                '33': 13,
+                '35': 14,
+                '37': 15,
+                '38': 16,
+                '40': 35
+            },
+            '43': {
+                '36': 50
+            },
+            '46': {
+                '30': 33
+            }
+        },
+        'action': {
+            '0': {
+                '2': [1, 0, 1],
+                '13': [1, 0, 2],
+                '14': [1, 0, 3],
+                '16': [1, 0, 4],
+                '17': [1, 0, 5],
+                '19': [1, 0, 6],
+                '23': [1, 0, 7]
+            },
+            '1': {
+                '14': [1, 0, 19]
+            },
+            '2': {
+                '2': [1, 0, 1],
+                '14': [1, 0, 3],
+                '16': [1, 0, 4],
+                '17': [1, 0, 5],
+                '19': [1, 0, 6],
+                '23': [1, 0, 7]
+            },
+            '3': {
+                '1': [2, 9, 0],
+                '2': [2, 9, 0],
+                '12': [2, 9, 0],
+                '13': [2, 9, 0],
+                '16': [2, 9, 0],
+                '17': [2, 9, 0],
+                '18': [2, 9, 0],
+                '19': [2, 9, 0],
+                '20': [2, 9, 0],
+                '21': [2, 9, 0],
+                '22': [2, 9, 0],
+                '24': [2, 9, 0]
+            },
+            '4': {
+                '1': [2, 11, 0],
+                '2': [2, 11, 0],
+                '12': [2, 11, 0],
+                '13': [2, 11, 0],
+                '16': [2, 11, 0],
+                '17': [2, 11, 0],
+                '18': [2, 11, 0],
+                '19': [2, 11, 0],
+                '20': [2, 11, 0],
+                '21': [2, 11, 0],
+                '22': [2, 11, 0],
+                '24': [2, 11, 0]
+            },
+            '5': {
+                '1': [2, 12, 0],
+                '2': [2, 12, 0],
+                '12': [2, 12, 0],
+                '13': [2, 12, 0],
+                '16': [2, 12, 0],
+                '17': [2, 12, 0],
+                '18': [2, 12, 0],
+                '19': [2, 12, 0],
+                '20': [2, 12, 0],
+                '21': [2, 12, 0],
+                '22': [2, 12, 0],
+                '24': [2, 12, 0]
+            },
+            '6': {
+                '10': [1, 0, 26],
+                '14': [1, 0, 27]
+            },
+            '7': {
+                '1': [2, 10, 0],
+                '2': [2, 10, 0],
+                '12': [2, 10, 0],
+                '13': [2, 10, 0],
+                '16': [2, 10, 0],
+                '17': [2, 10, 0],
+                '18': [2, 10, 0],
+                '19': [2, 10, 0],
+                '20': [2, 10, 0],
+                '21': [2, 10, 0],
+                '22': [2, 10, 0],
+                '24': [2, 10, 0]
+            },
+            '8': {
+                '1': [0, 0, 0],
+                '18': [1, 0, 28]
+            },
+            '9': {
+                '1': [2, 1, 0],
+                '18': [2, 1, 0],
+                '20': [1, 0, 29],
+                '21': [1, 0, 30],
+                '22': [1, 0, 31],
+                '24': [1, 0, 32]
+            },
+            '10': {
+                '1': [2, 3, 0],
+                '18': [2, 3, 0],
+                '20': [2, 3, 0],
+                '21': [2, 3, 0],
+                '22': [2, 3, 0],
+                '24': [2, 3, 0]
+            },
+            '11': {
+                '1': [2, 38, 0],
+                '2': [1, 0, 1],
+                '13': [1, 0, 2],
+                '16': [1, 0, 4],
+                '17': [1, 0, 5],
+                '18': [2, 38, 0],
+                '19': [1, 0, 6],
+                '20': [2, 38, 0],
+                '21': [2, 38, 0],
+                '22': [2, 38, 0],
+                '24': [2, 38, 0]
+            },
+            '12': {
+                '1': [2, 31, 0],
+                '2': [2, 31, 0],
+                '13': [2, 31, 0],
+                '16': [2, 31, 0],
+                '17': [2, 31, 0],
+                '18': [2, 31, 0],
+                '19': [2, 31, 0],
+                '20': [2, 31, 0],
+                '21': [2, 31, 0],
+                '22': [2, 31, 0],
+                '24': [2, 31, 0]
+            },
+            '13': {
+                '1': [2, 32, 0],
+                '2': [2, 32, 0],
+                '13': [2, 32, 0],
+                '16': [2, 32, 0],
+                '17': [2, 32, 0],
+                '18': [2, 32, 0],
+                '19': [2, 32, 0],
+                '20': [2, 32, 0],
+                '21': [2, 32, 0],
+                '22': [2, 32, 0],
+                '24': [2, 32, 0]
+            },
+            '14': {
+                '1': [2, 33, 0],
+                '2': [2, 33, 0],
+                '13': [2, 33, 0],
+                '16': [2, 33, 0],
+                '17': [2, 33, 0],
+                '18': [2, 33, 0],
+                '19': [2, 33, 0],
+                '20': [2, 33, 0],
+                '21': [2, 33, 0],
+                '22': [2, 33, 0],
+                '24': [2, 33, 0]
+            },
+            '15': {
+                '1': [2, 34, 0],
+                '2': [2, 34, 0],
+                '13': [2, 34, 0],
+                '16': [2, 34, 0],
+                '17': [2, 34, 0],
+                '18': [2, 34, 0],
+                '19': [2, 34, 0],
+                '20': [2, 34, 0],
+                '21': [2, 34, 0],
+                '22': [2, 34, 0],
+                '24': [2, 34, 0]
+            },
+            '16': {
+                '1': [2, 35, 0],
+                '2': [2, 35, 0],
+                '13': [2, 35, 0],
+                '16': [2, 35, 0],
+                '17': [2, 35, 0],
+                '18': [2, 35, 0],
+                '19': [2, 35, 0],
+                '20': [2, 35, 0],
+                '21': [2, 35, 0],
+                '22': [2, 35, 0],
+                '24': [2, 35, 0]
+            },
+            '17': {
+                '1': [2, 36, 0],
+                '2': [2, 36, 0],
+                '13': [2, 36, 0],
+                '16': [2, 36, 0],
+                '17': [2, 36, 0],
+                '18': [2, 36, 0],
+                '19': [2, 36, 0],
+                '20': [2, 36, 0],
+                '21': [2, 36, 0],
+                '22': [2, 36, 0],
+                '24': [2, 36, 0]
+            },
+            '18': {
+                '1': [2, 39, 0],
+                '2': [1, 0, 1],
+                '13': [1, 0, 2],
+                '16': [1, 0, 4],
+                '17': [1, 0, 5],
+                '18': [2, 39, 0],
+                '19': [1, 0, 6],
+                '20': [2, 39, 0],
+                '21': [2, 39, 0],
+                '22': [2, 39, 0],
+                '24': [2, 39, 0]
+            },
+            '19': {
+                '3': [1, 0, 36],
+                '4': [1, 0, 37],
+                '5': [1, 0, 38],
+                '6': [1, 0, 39],
+                '7': [1, 0, 40],
+                '8': [1, 0, 41],
+                '9': [1, 0, 42]
+            },
+            '20': {
+                '12': [2, 26, 0]
+            },
+            '21': {
+                '12': [2, 27, 0]
+            },
+            '22': {
+                '12': [2, 28, 0]
+            },
+            '23': {
+                '12': [2, 29, 0]
+            },
+            '24': {
+                '12': [2, 30, 0]
+            },
+            '25': {
+                '12': [1, 0, 44]
+            },
+            '26': {
+                '11': [1, 0, 45]
+            },
+            '27': {
+                '1': [2, 24, 0],
+                '2': [2, 24, 0],
+                '12': [2, 24, 0],
+                '13': [2, 24, 0],
+                '16': [2, 24, 0],
+                '17': [2, 24, 0],
+                '18': [2, 24, 0],
+                '19': [2, 24, 0],
+                '20': [2, 24, 0],
+                '21': [2, 24, 0],
+                '22': [2, 24, 0],
+                '24': [2, 24, 0]
+            },
+            '28': {
+                '2': [1, 0, 1],
+                '13': [1, 0, 2],
+                '14': [1, 0, 3],
+                '16': [1, 0, 4],
+                '17': [1, 0, 5],
+                '19': [1, 0, 6],
+                '23': [1, 0, 7]
+            },
+            '29': {
+                '2': [2, 5, 0],
+                '13': [2, 5, 0],
+                '14': [2, 5, 0],
+                '16': [2, 5, 0],
+                '17': [2, 5, 0],
+                '19': [2, 5, 0],
+                '23': [2, 5, 0]
+            },
+            '30': {
+                '2': [2, 6, 0],
+                '13': [2, 6, 0],
+                '14': [2, 6, 0],
+                '16': [2, 6, 0],
+                '17': [2, 6, 0],
+                '19': [2, 6, 0],
+                '23': [2, 6, 0]
+            },
+            '31': {
+                '2': [2, 7, 0],
+                '13': [2, 7, 0],
+                '14': [2, 7, 0],
+                '16': [2, 7, 0],
+                '17': [2, 7, 0],
+                '19': [2, 7, 0],
+                '23': [2, 7, 0]
+            },
+            '32': {
+                '2': [2, 8, 0],
+                '13': [2, 8, 0],
+                '14': [2, 8, 0],
+                '16': [2, 8, 0],
+                '17': [2, 8, 0],
+                '19': [2, 8, 0],
+                '23': [2, 8, 0]
+            },
+            '33': {
+                '2': [1, 0, 1],
+                '13': [1, 0, 2],
+                '14': [1, 0, 3],
+                '16': [1, 0, 4],
+                '17': [1, 0, 5],
+                '19': [1, 0, 6],
+                '23': [1, 0, 7]
+            },
+            '34': {
+                '1': [2, 40, 0],
+                '2': [1, 0, 1],
+                '13': [1, 0, 2],
+                '16': [1, 0, 4],
+                '17': [1, 0, 5],
+                '18': [2, 40, 0],
+                '19': [1, 0, 6],
+                '20': [2, 40, 0],
+                '21': [2, 40, 0],
+                '22': [2, 40, 0],
+                '24': [2, 40, 0]
+            },
+            '35': {
+                '1': [2, 37, 0],
+                '2': [2, 37, 0],
+                '13': [2, 37, 0],
+                '16': [2, 37, 0],
+                '17': [2, 37, 0],
+                '18': [2, 37, 0],
+                '19': [2, 37, 0],
+                '20': [2, 37, 0],
+                '21': [2, 37, 0],
+                '22': [2, 37, 0],
+                '24': [2, 37, 0]
+            },
+            '36': {
+                '1': [2, 19, 0],
+                '2': [2, 19, 0],
+                '12': [2, 19, 0],
+                '13': [2, 19, 0],
+                '16': [2, 19, 0],
+                '17': [2, 19, 0],
+                '18': [2, 19, 0],
+                '19': [2, 19, 0],
+                '20': [2, 19, 0],
+                '21': [2, 19, 0],
+                '22': [2, 19, 0],
+                '24': [2, 19, 0]
+            },
+            '37': {
+                '14': [2, 17, 0],
+                '15': [2, 17, 0]
+            },
+            '38': {
+                '14': [2, 18, 0],
+                '15': [2, 18, 0]
+            },
+            '39': {
+                '14': [2, 13, 0],
+                '15': [2, 13, 0]
+            },
+            '40': {
+                '14': [2, 14, 0],
+                '15': [2, 14, 0]
+            },
+            '41': {
+                '14': [2, 15, 0],
+                '15': [2, 15, 0]
+            },
+            '42': {
+                '14': [2, 16, 0],
+                '15': [2, 16, 0]
+            },
+            '43': {
+                '14': [1, 0, 48],
+                '15': [1, 0, 49]
+            },
+            '44': {
+                '1': [2, 25, 0],
+                '2': [2, 25, 0],
+                '13': [2, 25, 0],
+                '16': [2, 25, 0],
+                '17': [2, 25, 0],
+                '18': [2, 25, 0],
+                '19': [2, 25, 0],
+                '20': [2, 25, 0],
+                '21': [2, 25, 0],
+                '22': [2, 25, 0],
+                '24': [2, 25, 0]
+            },
+            '45': {
+                '12': [1, 0, 51]
+            },
+            '46': {
+                '1': [2, 2, 0],
+                '18': [2, 2, 0],
+                '20': [1, 0, 29],
+                '21': [1, 0, 30],
+                '22': [1, 0, 31],
+                '24': [1, 0, 32]
+            },
+            '47': {
+                '1': [2, 4, 0],
+                '18': [2, 4, 0],
+                '20': [2, 4, 0],
+                '21': [2, 4, 0],
+                '22': [2, 4, 0],
+                '24': [2, 4, 0]
+            },
+            '48': {
+                '3': [2, 20, 0]
+            },
+            '49': {
+                '3': [2, 21, 0]
+            },
+            '50': {
+                '3': [1, 0, 52]
+            },
+            '51': {
+                '1': [2, 23, 0],
+                '2': [2, 23, 0],
+                '12': [2, 23, 0],
+                '13': [2, 23, 0],
+                '16': [2, 23, 0],
+                '17': [2, 23, 0],
+                '18': [2, 23, 0],
+                '19': [2, 23, 0],
+                '20': [2, 23, 0],
+                '21': [2, 23, 0],
+                '22': [2, 23, 0],
+                '24': [2, 23, 0]
+            },
+            '52': {
+                '1': [2, 22, 0],
+                '2': [2, 22, 0],
+                '12': [2, 22, 0],
+                '13': [2, 22, 0],
+                '16': [2, 22, 0],
+                '17': [2, 22, 0],
+                '18': [2, 22, 0],
+                '19': [2, 22, 0],
+                '20': [2, 22, 0],
+                '21': [2, 22, 0],
+                '22': [2, 22, 0],
+                '24': [2, 22, 0]
+            }
+        }
+    };
+    parser.parse = function parse(input) {
+
+        var self = this,
+            lexer = self.lexer,
+            state,
+            symbol,
+            action,
+            table = self.table,
+            gotos = table.gotos,
+            tableAction = table.action,
+            productions = self.productions,
+            valueStack = [null],
+            stack = [0];
+
+        lexer.resetInput(input);
+
+        while (1) {
+            // retrieve state number from top of stack
+            state = stack[stack.length - 1];
+
+            if (!symbol) {
+                symbol = lexer.lex();
+            }
+
+            if (!symbol) {
+                S.log("it is not a valid input: " + input, "error");
+                return false;
+            }
+
+            // read action for current state and first input
+            action = tableAction[state] && tableAction[state][symbol];
+
+            if (!action) {
+                var expected = [],
+                    error;
+                if (tableAction[state]) {
+                    S.each(tableAction[state], function (_, symbol) {
+                        expected.push(self.lexer.mapReverseSymbol(symbol));
+                    });
+                }
+                error = "Syntax error at line " + lexer.lineNumber + ":\n" + lexer.showDebugInfo() + "\n" + "expect " + expected.join(", ");
+                S.error(error);
+                return false;
+            }
+
+            switch (action[GrammarConst.TYPE_INDEX]) {
+
+            case GrammarConst.SHIFT_TYPE:
+
+                stack.push(symbol);
+
+                valueStack.push(lexer.text);
+
+                // push state
+                stack.push(action[GrammarConst.TO_INDEX]);
+
+                // allow to read more
+                symbol = null;
+
+                break;
+
+            case GrammarConst.REDUCE_TYPE:
+
+                var production = productions[action[GrammarConst.PRODUCTION_INDEX]],
+                    reducedSymbol = production.symbol || production[0],
+                    reducedAction = production.action || production[2],
+                    reducedRhs = production.rhs || production[1],
+                    len = reducedRhs.length,
+                    i = 0,
+                    ret = undefined,
+                    $$ = valueStack[valueStack.length - len]; // default to $$ = $1
+
+                self.$$ = $$;
+
+                for (; i < len; i++) {
+                    self["$" + (len - i)] = valueStack[valueStack.length - 1 - i];
+                }
+
+                if (reducedAction) {
+                    ret = reducedAction.call(self);
+                }
+
+                if (ret !== undefined) {
+                    $$ = ret;
+                } else {
+                    $$ = self.$$;
+                }
+
+                if (len) {
+                    stack = stack.slice(0, - 1 * len * 2);
+                    valueStack = valueStack.slice(0, - 1 * len);
+                }
+
+                stack.push(reducedSymbol);
+
+                valueStack.push($$);
+
+                var newState = gotos[stack[stack.length - 2]][stack[stack.length - 1]];
+
+                stack.push(newState);
+
+                break;
+
+            case GrammarConst.ACCEPT_TYPE:
+
+                return $$;
+            }
+
+        }
+
+        return undefined;
+
+    };
+    return parser;
+});/**
+ * css3 selector engine for ie6-8
+ * @author yiminghe@gmail.com
+ */
+KISSY.add('dom/selector', function (S, parser, DOM) {
+
+    S.log('use KISSY css3 selector');
+
+    // ident === identifier
+
+    var document = S.Env.host.document,
+        undefined = undefined,
+        EXPANDO_SELECTOR_KEY = '_ks_data_selector_id_',
+        caches = {},
+        isContextXML,
+        uuid = 0,
+        subMatchesCache = {},
+        getAttr = function (el, name) {
+            if (isContextXML) {
+                return DOM._getSimpleAttr(el, name);
+            } else {
+                return  DOM.attr(el, name);
+            }
+        },
+        hasSingleClass = DOM._hasSingleClass,
+        isTag = DOM._isTag,
+        aNPlusB = /^(([+-]?(?:\d+)?)?n)?([+-]?\d+)?$/;
+
+    // CSS escapes http://www.w3.org/TR/CSS21/syndata.html#escaped-characters
+    var unescape = /\\([\da-fA-F]{1,6}[\x20\t\r\n\f]?|.)/g,
+        unescapeFn = function (_, escaped) {
+            var high = "0x" + escaped - 0x10000;
+            // NaN means non-codepoint
+            return isNaN(high) ?
+                escaped :
+                // BMP codepoint
+                high < 0 ?
+                    String.fromCharCode(high + 0x10000) :
+                    // Supplemental Plane codepoint (surrogate pair)
+                    String.fromCharCode(high >> 10 | 0xD800, high & 0x3FF | 0xDC00);
+        };
+
+    function unEscape(str) {
+        return str.replace(unescape, unescapeFn);
+    }
+
+    parser.lexer.yy = {
+        unEscape: unEscape,
+        unEscapeStr: function (str) {
+            return this.unEscape(str.slice(1, -1));
+        }
+    };
+
+    function resetStatus() {
+        subMatchesCache = {};
+    }
+
+    function dir(el, dir) {
+        do {
+            el = el[dir];
+        } while (el && el.nodeType != 1);
+        return el;
+    }
+
+    var getElementsByTagName = function (name, context) {
+        return context.getElementsByTagName(name);
+    };
+
+    (function () {
+        var div = document.createElement("div");
+        div.appendChild(document.createComment(""));
+        if (div.getElementsByTagName("*").length) {
+            getElementsByTagName = function (name, context) {
+                var nodes = context.getElementsByTagName(name),
+                    needsFilter = name == '*';
+                // <input id='length'>
+                if (needsFilter || typeof nodes.length != 'number') {
+                    var ret = [],
+                        i = 0,
+                        el;
+                    while (el = nodes[i++]) {
+                        if (!needsFilter || el.nodeType === 1) {
+                            ret.push(el);
+                        }
+                    }
+                    return ret;
+                } else {
+                    return nodes;
+                }
+            };
+        }
+    })();
+
+    function getAb(param) {
+        var a = 0,
+            match,
+            b = 0;
+        if (typeof param == 'number') {
+            b = param;
+        }
+        else if (param == 'odd') {
+            a = 2;
+            b = 1;
+        } else if (param == 'even') {
+            a = 2;
+            b = 0;
+        } else if (match = param.replace(/\s/g, '').match(aNPlusB)) {
+            if (match[1]) {
+                a = parseInt(match[2]);
+                if (isNaN(a)) {
+                    if (match[2] == '-') {
+                        a = -1;
+                    } else {
+                        a = 1;
+                    }
+                }
+            } else {
+                a = 0;
+            }
+            b = parseInt(match[3]) || 0;
+        }
+        return {
+            a: a,
+            b: b
+        };
+    }
+
+    function matchIndexByAb(index, a, b, eq) {
+        if (a == 0) {
+            if (index == b) {
+                return eq;
+            }
+        } else {
+            if ((index - b) / a >= 0 && (index - b) % a == 0 && eq) {
+                return 1;
+            }
+        }
+        return undefined;
+    }
+
+    function isXML(elem) {
+        var documentElement = elem && (elem.ownerDocument || elem).documentElement;
+        return documentElement ? documentElement.nodeName.toLowerCase() !== "html" : false;
+    }
+
+    var pseudoFnExpr = {
+        'nth-child': function (el, param) {
+            var ab = getAb(param),
+                a = ab.a,
+                b = ab.b;
+            if (a == 0 && b == 0) {
+                return 0;
+            }
+            var index = 0,
+                parent = el.parentNode;
+            if (parent) {
+                var childNodes = parent.childNodes,
+                    count = 0,
+                    child,
+                    ret,
+                    len = childNodes.length;
+                for (; count < len; count++) {
+                    child = childNodes[count];
+                    if (child.nodeType == 1) {
+                        index++;
+                        ret = matchIndexByAb(index, a, b, child === el);
+                        if (ret !== undefined) {
+                            return ret;
+                        }
+                    }
+                }
+            }
+            return 0;
+        },
+        'nth-last-child': function (el, param) {
+            var ab = getAb(param),
+                a = ab.a,
+                b = ab.b;
+            if (a == 0 && b == 0) {
+                return 0;
+            }
+            var index = 0,
+                parent = el.parentNode;
+            if (parent) {
+                var childNodes = parent.childNodes,
+                    len = childNodes.length,
+                    count = len - 1,
+                    child,
+                    ret;
+                for (; count >= 0; count--) {
+                    child = childNodes[count];
+                    if (child.nodeType == 1) {
+                        index++;
+                        ret = matchIndexByAb(index, a, b, child === el);
+                        if (ret !== undefined) {
+                            return ret;
+                        }
+                    }
+                }
+            }
+            return 0;
+        },
+        'nth-of-type': function (el, param) {
+            var ab = getAb(param),
+                a = ab.a,
+                b = ab.b;
+            if (a == 0 && b == 0) {
+                return 0;
+            }
+            var index = 0,
+                parent = el.parentNode;
+            if (parent) {
+                var childNodes = parent.childNodes,
+                    elType = el.tagName,
+                    count = 0,
+                    child,
+                    ret,
+                    len = childNodes.length;
+                for (; count < len; count++) {
+                    child = childNodes[count];
+                    if (child.tagName == elType) {
+                        index++;
+                        ret = matchIndexByAb(index, a, b, child === el);
+                        if (ret !== undefined) {
+                            return ret;
+                        }
+                    }
+                }
+            }
+            return 0;
+        },
+        'nth-last-of-type': function (el, param) {
+            var ab = getAb(param),
+                a = ab.a,
+                b = ab.b;
+            if (a == 0 && b == 0) {
+                return 0;
+            }
+            var index = 0,
+                parent = el.parentNode;
+            if (parent) {
+                var childNodes = parent.childNodes,
+                    len = childNodes.length,
+                    elType = el.tagName,
+                    count = len - 1,
+                    child,
+                    ret;
+                for (; count >= 0; count--) {
+                    child = childNodes[count];
+                    if (child.tagName == elType) {
+                        index++;
+                        ret = matchIndexByAb(index, a, b, child === el);
+                        if (ret !== undefined) {
+                            return ret;
+                        }
+                    }
+                }
+            }
+            return 0;
+        },
+        'lang': function (el, lang) {
+            var elLang;
+            lang = unEscape(lang.toLowerCase());
+            do {
+                if (elLang = (isContextXML ?
+                    el.getAttribute("xml:lang") || el.getAttribute("lang") :
+                    el.lang)) {
+                    elLang = elLang.toLowerCase();
+                    return elLang === lang || elLang.indexOf(lang + "-") === 0;
+                }
+            } while ((el = el.parentNode) && el.nodeType === 1);
+            return false;
+        },
+        'not': function (el, negation_arg) {
+            return !matchExpr[negation_arg.t](el, negation_arg.value);
+        }
+    };
+
+    var pseudoIdentExpr = {
+        'empty': function (el) {
+            var childNodes = el.childNodes,
+                index = 0,
+                len = childNodes.length - 1,
+                child,
+                nodeType;
+            for (; index < len; index++) {
+                child = childNodes[index];
+                nodeType = child.nodeType;
+                // only element nodes and content nodes
+                // (such as DOM [DOM-LEVEL-3-CORE] text nodes,
+                // CDATA nodes, and entity references
+                if (nodeType == 1 || nodeType == 3 || nodeType == 4 || nodeType == 5) {
+                    return 0;
+                }
+            }
+            return 1;
+        },
+        'root': function (el) {
+            return el.ownerDocument &&
+                el === el.ownerDocument.documentElement;
+        },
+        'first-child': function (el) {
+            return pseudoFnExpr['nth-child'](el, 1);
+        },
+        'last-child': function (el) {
+            return pseudoFnExpr['nth-last-child'](el, 1);
+        },
+        'first-of-type': function (el) {
+            return pseudoFnExpr['nth-of-type'](el, 1);
+        },
+        'last-of-type': function (el) {
+            return pseudoFnExpr['nth-last-of-type'](el, 1);
+        },
+        'only-child': function (el) {
+            return pseudoIdentExpr['first-child'](el) &&
+                pseudoIdentExpr['last-child'](el);
+        },
+        'only-of-type': function (el) {
+            return pseudoIdentExpr['first-of-type'](el) &&
+                pseudoIdentExpr['last-of-type'](el);
+        },
+        'focus': function (el) {
+            var doc = el.ownerDocument;
+            return doc && el === doc.activeElement &&
+                (!doc['hasFocus'] || doc['hasFocus']()) && !!(el.type || el.href || el.tabIndex >= 0);
+        },
+        'target': function (el) {
+            var hash = location.hash;
+            return hash && hash.slice(1) === getAttr(el, 'id');
+        },
+        'enabled': function (el) {
+            return !el.disabled;
+        },
+        'disabled': function (el) {
+            return el.disabled;
+        },
+        'checked': function (el) {
+            var nodeName = el.nodeName.toLowerCase();
+            return (nodeName === "input" && el.checked) ||
+                (nodeName === "option" && el.selected);
+        }
+    };
+
+    var attribExpr = {
+        '~=': function (elValue, value) {
+            if (!value || value.indexOf(' ') > -1) {
+                return 0;
+            }
+            return (' ' + elValue + ' ').indexOf(' ' + value + ' ') != -1;
+        },
+        '|=': function (elValue, value) {
+            return (' ' + elValue).indexOf(' ' + value + '-') != -1;
+        },
+        '^=': function (elValue, value) {
+            return value && S.startsWith(elValue, value);
+        },
+        '$=': function (elValue, value) {
+            return value && S.endsWith(elValue, value);
+        },
+        '*=': function (elValue, value) {
+            return value && elValue.indexOf(value) != -1;
+        },
+        '=': function (elValue, value) {
+            return elValue === value;
+        }
+    };
+
+    var matchExpr = {
+        'tag': isTag,
+        'cls': hasSingleClass,
+        'id': function (el, value) {
+            return getAttr(el, 'id') === value;
+        },
+        'attrib': function (el, value) {
+            var name = value.ident;
+            if (!isContextXML) {
+                name = name.toLowerCase();
+            }
+            var elValue = getAttr(el, name);
+            var match = value.match;
+            if (!match && elValue !== undefined) {
+                return 1;
+            } else if (match) {
+                if (elValue === undefined) {
+                    return 0;
+                }
+                var matchFn = attribExpr[match];
+                if (matchFn) {
+                    return matchFn(elValue + '', value.value + '');
+                }
+            }
+            return 0;
+        },
+        'pseudo': function (el, value) {
+            var fn, fnStr, ident;
+            if (fnStr = value.fn) {
+                if (!(fn = pseudoFnExpr[fnStr])) {
+                    throw new SyntaxError('Syntax error: not support pseudo: ' + fnStr);
+                }
+                return fn(el, value.param)
+            }
+            if (ident = value.ident) {
+                if (!pseudoIdentExpr[ident]) {
+                    throw new SyntaxError('Syntax error: not support pseudo: ' + ident);
+                }
+                return pseudoIdentExpr[ident](el);
+            }
+            return 0;
+        }
+    };
+
+    var relativeExpr = {
+        '>': {
+            dir: 'parentNode',
+            immediate: 1
+        },
+        ' ': {
+            dir: 'parentNode'
+        },
+        '+': {
+            dir: 'previousSibling',
+            immediate: 1
+        },
+        '~': {
+            dir: 'previousSibling'
+        }
+    };
+
+    if ('sourceIndex' in document.documentElement) {
+        DOM._compareNodeOrder = function (a, b) {
+            return a.sourceIndex - b.sourceIndex;
+        };
+    }
+
+    function matches(str, seeds) {
+        return DOM._selectInternal(str, null, seeds);
+    }
+
+    DOM._matchesInternal = matches;
+
+    function singleMatch(el, match) {
+        if (!match) {
+            return true;
+        }
+        if (!el) {
+            return false;
+        }
+
+        if (el.nodeType === 9) {
+            return false;
+        }
+
+        var matched = 1,
+            matchSuffix = match.suffix,
+            matchSuffixLen,
+            matchSuffixIndex;
+
+        if (match.t == 'tag') {
+            matched &= matchExpr['tag'](el, match.value);
+        }
+
+        if (matched && matchSuffix) {
+            matchSuffixLen = matchSuffix.length;
+            matchSuffixIndex = 0;
+            for (; matched && matchSuffixIndex < matchSuffixLen; matchSuffixIndex++) {
+                var singleMatchSuffix = matchSuffix[matchSuffixIndex],
+                    singleMatchSuffixType = singleMatchSuffix.t;
+                if (matchExpr[singleMatchSuffixType]) {
+                    matched &= matchExpr[singleMatchSuffixType](el, singleMatchSuffix.value);
+                }
+            }
+        }
+
+        return matched;
+    }
+
+    // match by adjacent immediate single selector match
+    function matchImmediate(el, match) {
+        var matched = 1,
+            startEl = el,
+            relativeOp,
+            startMatch = match;
+
+        do {
+            matched &= singleMatch(el, match);
+            if (matched) {
+                // advance
+                match = match && match.prev;
+                if (!match) {
+                    return true;
+                }
+                relativeOp = relativeExpr[match.nextCombinator];
+                el = dir(el, relativeOp.dir);
+                if (!relativeOp.immediate) {
+                    return {
+                        // advance for non-immediate
+                        el: el,
+                        match: match
+                    }
+                }
+            } else {
+                relativeOp = relativeExpr[match.nextCombinator];
+                if (relativeOp.immediate) {
+                    // retreat but advance startEl
+                    return {
+                        el: dir(startEl, relativeExpr[startMatch.nextCombinator].dir),
+                        match: startMatch
+                    };
+                } else {
+                    // advance (before immediate match + jump unmatched)
+                    return {
+                        el: el && dir(el, relativeOp.dir),
+                        match: match
+                    }
+                }
+            }
+        } while (el);
+
+        // only occur when match immediate
+        return {
+            el: dir(startEl, relativeExpr[startMatch.nextCombinator].dir),
+            match: startMatch
+        };
+    }
+
+    // find fixed part, fixed with seeds
+    function findFixedMatchFromHead(el, head) {
+        var relativeOp,
+            cur = head;
+
+        do {
+            if (!singleMatch(el, cur)) {
+                return null;
+            }
+            cur = cur.prev;
+            if (!cur) {
+                return true;
+            }
+            relativeOp = relativeExpr[cur.nextCombinator];
+            el = dir(el, relativeOp.dir);
+        } while (el && relativeOp.immediate);
+        if (!el) {
+            return null;
+        }
+        return {
+            el: el,
+            match: cur
+        };
+    }
+
+    function genId(el) {
+        var selectorId;
+
+        if (isContextXML) {
+            if (!(selectorId = el.getAttribute(EXPANDO_SELECTOR_KEY))) {
+                el.setAttribute(EXPANDO_SELECTOR_KEY, selectorId = (+new Date() + '_' + (++uuid)));
+            }
+        } else {
+            if (!(selectorId = el[EXPANDO_SELECTOR_KEY])) {
+                selectorId = el[EXPANDO_SELECTOR_KEY] = (+new Date()) + '_' + (++uuid);
+            }
+        }
+
+        return selectorId;
+    }
+
+    function matchSub(el, match) {
+        var selectorId = genId(el),
+            matchKey;
+        matchKey = selectorId + '_' + (match.order || 0);
+        if (matchKey in subMatchesCache) {
+            return subMatchesCache[matchKey];
+        }
+        return subMatchesCache[matchKey] = matchSubInternal(el, match);
+    }
+
+    // recursive match by sub selector string from right to left
+    // grouped by immediate selectors
+    function matchSubInternal(el, match) {
+        var matchImmediateRet = matchImmediate(el, match);
+        if (matchImmediateRet === true) {
+            return true;
+        } else {
+            el = matchImmediateRet.el;
+            match = matchImmediateRet.match;
+            while (el) {
+                if (matchSub(el, match)) {
+                    return true;
+                }
+                el = dir(el, relativeExpr[match.nextCombinator].dir);
+            }
+            return false;
+        }
+    }
+
+    function select(str, context, seeds) {
+        if (!caches[str]) {
+            caches[str] = parser.parse(str);
+        }
+
+        var selector = caches[str],
+            groupIndex = 0,
+            groupLen = selector.length,
+            contextDocument,
+            group,
+            ret = [];
+
+        if (seeds) {
+            context = context || seeds[0].ownerDocument;
+        }
+        context = context || document;
+
+        contextDocument = context.ownerDocument || context;
+
+        isContextXML = isXML(context);
+
+        for (; groupIndex < groupLen; groupIndex++) {
+            resetStatus();
+
+            group = selector[groupIndex];
+
+            var suffix = group.suffix,
+                suffixIndex,
+                suffixLen,
+                seedsIndex,
+                mySeeds = seeds,
+                seedsLen,
+                id = null;
+
+            if (!mySeeds) {
+                if (suffix && !isContextXML) {
+                    suffixIndex = 0;
+                    suffixLen = suffix.length;
+                    for (; suffixIndex < suffixLen; suffixIndex++) {
+                        var singleSuffix = suffix[suffixIndex];
+                        if (singleSuffix.t == 'id') {
+                            id = singleSuffix.value;
+                            break;
+                        }
+                    }
+                }
+
+                if (id) {
+                    // id bug
+                    // https://github.com/kissyteam/kissy/issues/67
+                    var contextNotInDom = (context != contextDocument && !DOM._contains(contextDocument, context)),
+                        tmp = contextNotInDom ? null : contextDocument.getElementById(id);
+                    if (contextNotInDom || getAttr(tmp, 'id') != id) {
+                        var tmps = getElementsByTagName('*', context),
+                            tmpLen = tmps.length,
+                            tmpI = 0;
+                        for (; tmpI < tmpLen; tmpI++) {
+                            tmp = tmps[tmpI];
+                            if (getAttr(tmp, 'id') == id) {
+                                mySeeds = [tmp];
+                                break;
+                            }
+                        }
+                        if (tmpI === tmpLen) {
+                            mySeeds = [];
+                        }
+                    } else {
+                        if (context !== contextDocument && tmp) {
+                            tmp = DOM._contains(context, tmp) ? tmp : null;
+                        }
+                        if (tmp) {
+                            mySeeds = [tmp];
+                        } else {
+                            mySeeds = [];
+                        }
+                    }
+                } else {
+                    mySeeds = getElementsByTagName(group.value || '*', context);
+                }
+            }
+
+            seedsIndex = 0;
+            seedsLen = mySeeds.length;
+
+            if (!seedsLen) {
+                continue;
+            }
+
+            for (; seedsIndex < seedsLen; seedsIndex++) {
+                var seed = mySeeds[seedsIndex];
+                var matchHead = findFixedMatchFromHead(seed, group);
+                if (matchHead === true) {
+                    ret.push(seed);
+                } else if (matchHead) {
+                    if (matchSub(matchHead.el, matchHead.match)) {
+                        ret.push(seed);
+                    }
+                }
+            }
+        }
+
+        if (groupLen > 1) {
+            ret = DOM.unique(ret);
+        }
+
+        return ret;
+    }
+
+    DOM._selectInternal = select;
+
+    return {
+        parse: function (str) {
+            return parser.parse(str);
+        },
+        select: select,
+        matches: matches
+    };
+
+}, {
+    requires: [
+        './selector/parser',
+        'dom/basic'
+    ]
+});
+/**
+ * note 2013-03-28
+ *  - use recursive call to replace backtracking algorithm
+ *
+ * refer
+ *  - http://www.w3.org/TR/selectors/
+ *  - http://www.impressivewebs.com/browser-support-css3-selectors/
+ *  - http://blogs.msdn.com/ie/archive/2010/05/13/the-css-corner-css3-selectors.aspx
+ *  - http://sizzlejs.com/
+ */
+/*
+Copyright 2013, KISSY UI Library v1.40dev
+MIT Licensed
+build time: Apr 17 00:21
 */
 /**
  * @ignore
@@ -11639,7 +13327,8 @@ KISSY.add('event/base/observer', function (S, undefined) {
          * @return {*} return value of current observer's user-defined function
          */
         simpleNotify: function (event, ce) {
-            var ret, self = this;
+            var ret,
+                self = this;
             ret = self.fn.call(self.context || ce.currentTarget, event, self.data);
             if (self.once) {
                 //noinspection JSUnresolvedFunction
@@ -11797,7 +13486,7 @@ KISSY.add('event/base/utils', function (S) {
 /*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 19 11:12
+build time: Apr 17 00:21
 */
 /**
  * @ignore
@@ -12168,20 +13857,6 @@ KISSY.add('event/custom/observable', function (S, api, CustomEventObserver, Cust
             }
         },
 
-        checkMemory: function () {
-            var self = this,
-                currentTarget = self.currentTarget,
-                events = ObservableCustomEvent.getCustomEvents(currentTarget);
-            if (events) {
-                if (!self.hasObserver()) {
-                    delete events[self.type];
-                }
-                if (S.isEmptyObject(events)) {
-                    delete currentTarget[KS_CUSTOM_EVENTS];
-                }
-            }
-        },
-
         /**
          * notify current custom event 's observers and then bubble up if this event can bubble.
          * @param {KISSY.Event.CustomEventObject} eventData
@@ -12261,7 +13936,8 @@ KISSY.add('event/custom/observable', function (S, api, CustomEventObserver, Cust
          * return last value of custom event 's observers 's return value.
          */
         notify: function (event) {
-            var observers = this.observers,
+            // duplicate,in case detach itself in one observer
+            var observers = [].concat(this.observers),
                 ret,
                 gRet,
                 len = observers.length,
@@ -12328,7 +14004,9 @@ KISSY.add('event/custom/observable', function (S, api, CustomEventObserver, Cust
                 self.reset();
             }
 
-            self.checkMemory();
+            // does not need to clear memory if customEvent has no observer
+            // customEvent has defaultFn .....!
+            // self.checkMemory();
         }
     });
 
@@ -12412,7 +14090,7 @@ KISSY.add('event/custom/observer', function (S, Event) {
 /*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 19 11:12
+build time: Apr 17 00:21
 */
 /**
  * @ignore
@@ -13452,6 +15130,7 @@ KISSY.add('event/dom/base/object', function (S, Event, undefined) {
             },
             {
                 reg: /^mousewheel$/,
+                props: [],
                 fix: function (event, originalEvent) {
                     var deltaX,
                         deltaY,
@@ -13523,7 +15202,7 @@ KISSY.add('event/dom/base/object', function (S, Event, undefined) {
                 }
             },
             {
-                reg: /^(?:mouse|contextmenu)|click/,
+                reg: /^mouse|contextmenu|click/,
                 props: [
                     'buttons', 'clientX', 'clientY', 'button',
                     'offsetX', 'relatedTarget', 'which',
@@ -13593,213 +15272,207 @@ KISSY.add('event/dom/base/object', function (S, Event, undefined) {
         var self = this,
             type = originalEvent.type;
 
-        if ('@DEBUG@') {
-            /**
-             * altKey
-             * @property altKey
-             */
-            self.altKey = undefined;
-            /**
-             * attrChange
-             * @property attrChange
-             */
-            self.attrChange = undefined;
-            /**
-             * attrName
-             * @property attrName
-             */
-            self.attrName = undefined;
-            /**
-             * bubbles
-             * @property bubbles
-             */
-            self.bubbles = undefined;
-            /**
-             * button
-             * @property button
-             */
-            self.button = undefined;
-            /**
-             * cancelable
-             * @property cancelable
-             */
-            self.cancelable = undefined;
-            /**
-             * charCode
-             * @property charCode
-             */
-            self.charCode = undefined;
-            /**
-             * clientX
-             * @property clientX
-             */
-            self.clientX = undefined;
-            /**
-             * clientY
-             * @property clientY
-             */
-            self.clientY = undefined;
-            /**
-             * ctrlKey
-             * @property ctrlKey
-             */
-            self.ctrlKey = undefined;
-            /**
-             * data
-             * @property data
-             */
-            self.data = undefined;
-            /**
-             * detail
-             * @property detail
-             */
-            self.detail = undefined;
-            /**
-             * eventPhase
-             * @property eventPhase
-             */
-            self.eventPhase = undefined;
-            /**
-             * fromElement
-             * @property fromElement
-             */
-            self.fromElement = undefined;
-            /**
-             * handler
-             * @property handler
-             */
-            self.handler = undefined;
-            /**
-             * keyCode
-             * @property keyCode
-             */
-            self.keyCode = undefined;
-            /**
-             * metaKey
-             * @property metaKey
-             */
-            self.metaKey = undefined;
-            /**
-             * newValue
-             * @property newValue
-             */
-            self.newValue = undefined;
-            /**
-             * offsetX
-             * @property offsetX
-             */
-            self.offsetX = undefined;
-            /**
-             * offsetY
-             * @property offsetY
-             */
-            self.offsetY = undefined;
-            /**
-             * pageX
-             * @property pageX
-             */
-            self.pageX = undefined;
-            /**
-             * pageY
-             * @property pageY
-             */
-            self.pageY = undefined;
-            /**
-             * prevValue
-             * @property prevValue
-             */
-            self.prevValue = undefined;
-            /**
-             * relatedNode
-             * @property relatedNode
-             */
-            self.relatedNode = undefined;
-            /**
-             * relatedTarget
-             * @property relatedTarget
-             */
-            self.relatedTarget = undefined;
-            /**
-             * screenX
-             * @property screenX
-             */
-            self.screenX = undefined;
-            /**
-             * screenY
-             * @property screenY
-             */
-            self.screenY = undefined;
-            /**
-             * shiftKey
-             * @property shiftKey
-             */
-            self.shiftKey = undefined;
-            /**
-             * srcElement
-             * @property srcElement
-             */
-            self.srcElement = undefined;
+        /**
+         * altKey
+         * @property altKey
+         */
 
-            /**
-             * toElement
-             * @property toElement
-             */
-            self.toElement = undefined;
-            /**
-             * view
-             * @property view
-             */
-            self.view = undefined;
-            /**
-             * wheelDelta
-             * @property wheelDelta
-             */
-            self.wheelDelta = undefined;
-            /**
-             * which
-             * @property which
-             */
-            self.which = undefined;
-            /**
-             * changedTouches
-             * @property changedTouches
-             */
-            self.changedTouches = undefined;
-            /**
-             * touches
-             * @property touches
-             */
-            self.touches = undefined;
-            /**
-             * targetTouches
-             * @property targetTouches
-             */
-            self.targetTouches = undefined;
-            /**
-             * rotation
-             * @property rotation
-             */
-            self.rotation = undefined;
-            /**
-             * scale
-             * @property scale
-             */
-            self.scale = undefined;
+        /**
+         * attrChange
+         * @property attrChange
+         */
 
-            /**
-             * source html node of current event
-             * @property target
-             * @type {HTMLElement}
-             */
-            self.target = null;
+        /**
+         * attrName
+         * @property attrName
+         */
 
-            /**
-             * current htm node which processes current event
-             * @property currentTarget
-             * @type {HTMLElement}
-             */
-            self.currentTarget = null;
-        }
+        /**
+         * bubbles
+         * @property bubbles
+         */
+
+        /**
+         * button
+         * @property button
+         */
+
+        /**
+         * cancelable
+         * @property cancelable
+         */
+
+        /**
+         * charCode
+         * @property charCode
+         */
+
+        /**
+         * clientX
+         * @property clientX
+         */
+
+        /**
+         * clientY
+         * @property clientY
+         */
+
+        /**
+         * ctrlKey
+         * @property ctrlKey
+         */
+
+        /**
+         * data
+         * @property data
+         */
+
+        /**
+         * detail
+         * @property detail
+         */
+
+        /**
+         * eventPhase
+         * @property eventPhase
+         */
+
+        /**
+         * fromElement
+         * @property fromElement
+         */
+
+        /**
+         * handler
+         * @property handler
+         */
+
+        /**
+         * keyCode
+         * @property keyCode
+         */
+
+        /**
+         * metaKey
+         * @property metaKey
+         */
+
+        /**
+         * newValue
+         * @property newValue
+         */
+
+        /**
+         * offsetX
+         * @property offsetX
+         */
+
+        /**
+         * offsetY
+         * @property offsetY
+         */
+
+        /**
+         * pageX
+         * @property pageX
+         */
+
+        /**
+         * pageY
+         * @property pageY
+         */
+
+        /**
+         * prevValue
+         * @property prevValue
+         */
+
+        /**
+         * relatedNode
+         * @property relatedNode
+         */
+
+        /**
+         * relatedTarget
+         * @property relatedTarget
+         */
+
+        /**
+         * screenX
+         * @property screenX
+         */
+
+        /**
+         * screenY
+         * @property screenY
+         */
+
+        /**
+         * shiftKey
+         * @property shiftKey
+         */
+
+        /**
+         * srcElement
+         * @property srcElement
+         */
+
+        /**
+         * toElement
+         * @property toElement
+         */
+
+        /**
+         * view
+         * @property view
+         */
+
+        /**
+         * wheelDelta
+         * @property wheelDelta
+         */
+
+        /**
+         * which
+         * @property which
+         */
+
+        /**
+         * changedTouches
+         * @property changedTouches
+         */
+
+        /**
+         * touches
+         * @property touches
+         */
+
+        /**
+         * targetTouches
+         * @property targetTouches
+         */
+
+        /**
+         * rotation
+         * @property rotation
+         */
+
+        /**
+         * scale
+         * @property scale
+         */
+
+        /**
+         * source html node of current event
+         * @property target
+         * @type {HTMLElement}
+         */
+
+        /**
+         * current htm node which processes current event
+         * @property currentTarget
+         * @type {HTMLElement}
+         */
 
         DOMEventObject.superclass.constructor.call(self);
 
@@ -13820,7 +15493,9 @@ KISSY.add('event/dom/base/object', function (S, Event, undefined) {
             if (type.match(normalizer.reg)) {
                 props = props.concat(normalizer.props);
                 fixFn = normalizer.fix;
+                return false;
             }
+            return undefined;
         });
 
         l = props.length;
@@ -13833,7 +15508,7 @@ KISSY.add('event/dom/base/object', function (S, Event, undefined) {
 
         // fix target property, if necessary
         if (!self.target) {
-            self.target = self.srcElement || DOCUMENT; // srcElement might not be defined either
+            self.target = originalEvent.srcElement || DOCUMENT; // srcElement might not be defined either
         }
 
         // check if target is a text node (safari)
@@ -13923,8 +15598,6 @@ KISSY.add('event/dom/base/observable', function (S, DOM, special, Utils, DOMEven
     // 再在浏览器通知的系统 eventHandler 中检查
     // 如果相同，那么证明已经 fire 过了，不要再次触发了
     var _Utils = Event._Utils;
-
-    var FOCUS_BLUR_REG = /^focus|blur$/;
 
     /**
      * custom event for dom
@@ -14154,8 +15827,8 @@ KISSY.add('event/dom/base/observable', function (S, DOM, special, Utils, DOMEven
                         currentTarget[ eventType ]();
                     }
                 } catch (eError) {
-                    S.log('trigger action error: ');
-                    S.log(eError);
+
+
                 }
 
                 ObservableDOMEvent.triggeredEvent = '';
@@ -14648,7 +16321,7 @@ KISSY.add('event/dom/base/valuechange', function (S, Event, DOM, special) {
 /*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 19 11:12
+build time: Apr 17 00:21
 */
 /**
  * @ignore
@@ -14710,7 +16383,7 @@ KISSY.add('event/dom/focusin', function (S, Event) {
 /*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 19 11:12
+build time: Apr 17 00:21
 */
 /**
  * @ignore
@@ -14800,7 +16473,7 @@ KISSY.add('event/dom/hashchange', function (S, Event, DOM) {
                     iframeDoc.open();
                 }
                 // 取时要用 innerText !!
-                // 否则取 innerHtml 会因为 escapeHtml 导置 body.innerHTMl != hash
+                // 否则取 innerHTML 会因为 escapeHTML 导置 body.innerHTMl != hash
                 iframeDoc.write(html);
                 iframeDoc.close();
                 // 立刻同步调用 onIframeLoad !!!!
@@ -14886,7 +16559,7 @@ KISSY.add('event/dom/hashchange', function (S, Event, DOM) {
                 function onIframeLoad() {
                     // S.log('iframe start load..');
 
-                    // 2011.11.02 note: 不能用 innerHtml 会自动转义！！
+                    // 2011.11.02 note: 不能用 innerHTML 会自动转义！！
                     // #/x?z=1&y=2 => #/x?z=1&amp;y=2
                     var c = S.trim(getIframeDoc(iframe).body.innerText),
                         ch = getHash();
@@ -14894,7 +16567,7 @@ KISSY.add('event/dom/hashchange', function (S, Event, DOM) {
                     // 后退时不等
                     // 定时器调用 hashChange() 修改 iframe 同步调用过来的(手动改变 location)则相等
                     if (c != ch) {
-                        S.log('set loc hash :' + c);
+
                         location.hash = c;
                         // 使 last hash 为 iframe 历史， 不然重新写iframe，
                         // 会导致最新状态（丢失前进状态）
@@ -14951,7 +16624,7 @@ KISSY.add('event/dom/hashchange', function (S, Event, DOM) {
 /*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 19 11:12
+build time: Apr 17 00:21
 */
 /**
  * @ignore
@@ -15148,7 +16821,7 @@ KISSY.add('event/dom/ie/submit', function (S, Event, DOM) {
 /*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 19 11:12
+build time: Apr 17 00:21
 */
 /**
  * @ignore
@@ -15242,7 +16915,7 @@ KISSY.add('event/dom/shake', function (S, EventDomBase, undefined) {
 /*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 19 11:12
+build time: Apr 17 00:21
 */
 /**
  * @ignore
@@ -15415,11 +17088,6 @@ KISSY.add('event/dom/touch/handle', function (S, DOM, eventHandleMap, Event, Ges
 
     }
 
-    // 一个应用 一个 document 只需要注册一个 move
-    var throttleTouchMove = S.throttle(function (e) {
-        this.callEventHandle('onTouchMove', e);
-    }, MOVE_DELAY);
-
     DocumentHandler.prototype = {
 
         constructor: DocumentHandler,
@@ -15455,7 +17123,8 @@ KISSY.add('event/dom/touch/handle', function (S, DOM, eventHandleMap, Event, Ges
         },
 
         onTouchMove: function (e) {
-            throttleTouchMove.call(this, e);
+            // no throttle! to allow preventDefault
+            this.callEventHandle('onTouchMove', e);
         },
 
         onTouchStart: function (event) {
@@ -15463,7 +17132,7 @@ KISSY.add('event/dom/touch/handle', function (S, DOM, eventHandleMap, Event, Ges
                 self = this,
                 eventHandle = self.eventHandle;
             for (e in eventHandle) {
-                h = eventHandle[e];
+                h = eventHandle[e].handle;
                 h.isActive = 1;
             }
             self.callEventHandle('onTouchStart', event);
@@ -15481,7 +17150,7 @@ KISSY.add('event/dom/touch/handle', function (S, DOM, eventHandleMap, Event, Ges
             if (event) {
                 for (e in eventHandle) {
                     // event processor shared by multiple events
-                    h = eventHandle[e];
+                    h = eventHandle[e].handle;
                     if (h.processed) {
                         continue;
                     }
@@ -15492,7 +17161,7 @@ KISSY.add('event/dom/touch/handle', function (S, DOM, eventHandleMap, Event, Ges
                 }
 
                 for (e in eventHandle) {
-                    h = eventHandle[e];
+                    h = eventHandle[e].handle;
                     h.processed = 0;
                 }
             }
@@ -15500,14 +17169,27 @@ KISSY.add('event/dom/touch/handle', function (S, DOM, eventHandleMap, Event, Ges
 
         addEventHandle: function (event) {
             var self = this,
+                eventHandle = self.eventHandle,
                 handle = eventHandleMap[event].handle;
-            if (!self.eventHandle[event]) {
-                self.eventHandle[event] = handle;
+            if (eventHandle[event]) {
+                eventHandle[event].count++;
+            } else {
+                eventHandle[event] = {
+                    count: 1,
+                    handle: handle
+                };
             }
         },
 
         'removeEventHandle': function (event) {
-            delete this.eventHandle[event];
+            var eventHandle = this.eventHandle;
+            if (eventHandle[event]) {
+                eventHandle[event].count--;
+                if (!eventHandle[event].count) {
+                    delete eventHandle[event];
+                }
+            }
+
         },
 
         destroy: function () {
@@ -15560,9 +17242,14 @@ KISSY.add('event/dom/touch/handle', function (S, DOM, eventHandleMap, Event, Ges
         './double-tap',
         './pinch',
         './tap-hold',
-        './rotate'
+        './rotate',
+        './single-touch-start'
     ]
-});/**
+});
+/**
+ * in order to make tap/doubleTap bubbling same with native event.
+ * register event on document and then bubble programmatically!
+ *//**
  * @ignore
  * multi-touch base
  * @author yiminghe@gmail.com
@@ -15623,7 +17310,7 @@ KISSY.add('event/dom/touch/multi-touch', function (S, DOM) {
                 }
                 t2 = t2.parentNode;
             }
-            S.error('getCommonTarget error!');
+
             return undefined;
         },
 
@@ -15723,17 +17410,11 @@ KISSY.add('event/dom/touch/pinch', function (S, eventHandleMap, Event, MultiTouc
 
     eventHandleMap[PINCH] = {
         handle: p,
-        add: function (observer) {
-            if (observer.preventDefaultMove !== false) {
-                Event.on(this, Gesture.move, observer.__preventPinchDefault = function (e) {
-                    prevent(e)
-                });
-            }
+        add: function () {
+            Event.on(this, Gesture.move, prevent);
         },
-        remove: function (observer) {
-            if (observer.__preventPinchDefault) {
-                Event.detach(this, Gesture.move, observer.__preventPinchDefault);
-            }
+        remove: function () {
+            Event.detach(this, Gesture.move, prevent);
         }
     };
 
@@ -15843,17 +17524,11 @@ KISSY.add('event/dom/touch/rotate', function (S, eventHandleMap, MultiTouch, Eve
 
     eventHandleMap[ROTATE] = {
         handle: r,
-        add: function (observer) {
-            if (observer.preventDefaultMove !== false) {
-                Event.on(this, Gesture.move, observer.__preventRotateDefault = function (e) {
-                    prevent(e)
-                });
-            }
+        add: function () {
+            Event.on(this, Gesture.move, prevent);
         },
-        remove: function (observer) {
-            if (observer.__preventRotateDefault) {
-                Event.detach(this, Gesture.move, observer.__preventRotateDefault);
-            }
+        remove: function () {
+            Event.detach(this, Gesture.move, prevent);
         }
     };
 
@@ -15862,6 +17537,46 @@ KISSY.add('event/dom/touch/rotate', function (S, eventHandleMap, MultiTouch, Eve
 }, {
     requires: ['./handle-map', './multi-touch', 'event/dom/base', './gesture']
 });/**
+ * @ignore
+ * singleTouchStart event
+ * @author yiminghe@gmail.com
+ */
+KISSY.add('event/dom/touch/single-touch-start', function (S, eventHandleMap, Event, SingleTouch) {
+
+    var event = 'singleTouchStart';
+
+    function SingleTouchStart() {
+    }
+
+    S.extend(SingleTouchStart, SingleTouch, {
+
+        onTouchStart: function (e) {
+            if (SingleTouchStart.superclass.onTouchStart.apply(this, arguments) !== false) {
+                Event.fire(e.target, event, {
+                    touch: e.touches[0],
+                    touches: e.touches
+                });
+                return undefined;
+            }
+            return false;
+        }
+
+    });
+
+    eventHandleMap[event] = {
+        handle: new SingleTouchStart()
+    };
+
+    return SingleTouchStart;
+
+}, {
+    requires: ['./handle-map', 'event/dom/base', './single-touch']
+});
+
+/**
+ * for draggable:
+ * listen singleTouchStart insteadof native touchstart in case inner element call stopPropagation
+ *//**
  * @ignore
  * touch count guard
  * @author yiminghe@gmail.com
@@ -15893,13 +17608,95 @@ KISSY.add('event/dom/touch/single-touch', function (S) {
  * gesture swipe inspired by sencha touch
  * @author yiminghe@gmail.com
  */
-KISSY.add('event/dom/touch/swipe', function (S, eventHandleMap, Event, SingleTouch, Gesture) {
+KISSY.add('event/dom/touch/swipe', function (S, eventHandleMap, Event, SingleTouch) {
 
-    var event = 'swipe';
+    var event = 'swipe', ingEvent = 'swiping';
 
     var MAX_DURATION = 1000,
         MAX_OFFSET = 35,
         MIN_DISTANCE = 50;
+
+    function fire(self, e, ing) {
+        var touches = e.changedTouches,
+            touch = touches[0],
+            x = touch.pageX,
+            y = touch.pageY,
+            deltaX = x - self.startX,
+            deltaY = y - self.startY,
+            absDeltaX = Math.abs(deltaX),
+            absDeltaY = Math.abs(deltaY),
+            distance,
+            direction;
+
+        if (ing) {
+            if (self.isVertical && self.isHorizontal) {
+                if (absDeltaY > absDeltaX) {
+                    self.isHorizontal = 0;
+                } else {
+                    self.isVertical = 0;
+                }
+            }
+        } else {
+            if (self.isVertical && absDeltaY < MIN_DISTANCE) {
+                self.isVertical = 0;
+            }
+
+            if (self.isHorizontal && absDeltaX < MIN_DISTANCE) {
+                self.isHorizontal = 0;
+            }
+        }
+
+        if (self.isHorizontal) {
+            direction = deltaX < 0 ? 'left' : 'right';
+            distance = absDeltaX;
+        } else if (self.isVertical) {
+            direction = deltaY < 0 ? 'up' : 'down';
+            distance = absDeltaY;
+        } else {
+            return false;
+        }
+
+        Event.fire(e.target, ing ? ingEvent : event, {
+            originalEvent: e.originalEvent,
+            /**
+             *
+             * native touch property **only for touch event**.
+             *
+             * @property touch
+             * @member KISSY.Event.DOMEventObject
+             */
+            touch: touch,
+            /**
+             *
+             * direction property **only for event swipe/singleTap/doubleTap**.
+             *
+             * can be one of 'up' 'down' 'left' 'right'
+             * @property {String} direction
+             * @member KISSY.Event.DOMEventObject
+             */
+            direction: direction,
+            /**
+             *
+             * distance property **only for event swipe**.
+             *
+             * the distance swipe gesture costs
+             * @property {Number} distance
+             * @member KISSY.Event.DOMEventObject
+             */
+            distance: distance,
+            /**
+             *
+             * duration property **only for touch event**.
+             *
+             * the duration swipe gesture costs
+             * @property {Number} duration
+             * @member KISSY.Event.DOMEventObject
+             */
+            duration: (e.timeStamp - self.startTime) / 1000
+        });
+
+        return undefined;
+    }
 
     function Swipe() {
     }
@@ -15923,6 +17720,7 @@ KISSY.add('event/dom/touch/swipe', function (S, eventHandleMap, Event, SingleTou
             if (e.type.indexOf('mouse') != -1) {
                 e.preventDefault();
             }
+            return undefined;
         },
 
         onTouchMove: function (e) {
@@ -15930,8 +17728,10 @@ KISSY.add('event/dom/touch/swipe', function (S, eventHandleMap, Event, SingleTou
                 touch = e.changedTouches[0],
                 x = touch.pageX,
                 y = touch.pageY,
-                absDeltaX = Math.abs(x - self.startX),
-                absDeltaY = Math.abs(y - self.startY),
+                deltaX = x - self.startX,
+                deltaY = y - self.startY,
+                absDeltaX = Math.abs(deltaX),
+                absDeltaY = Math.abs(deltaY),
                 time = e.timeStamp;
 
             if (time - self.startTime > MAX_DURATION) {
@@ -15946,9 +17746,7 @@ KISSY.add('event/dom/touch/swipe', function (S, eventHandleMap, Event, SingleTou
                 self.isHorizontal = 0;
             }
 
-            if (!self.isHorizontal && !self.isVertical) {
-                return false;
-            }
+            return fire(self, e, 1);
         },
 
         onTouchEnd: function (e) {
@@ -15957,103 +17755,19 @@ KISSY.add('event/dom/touch/swipe', function (S, eventHandleMap, Event, SingleTou
                 return false;
             }
 
-            var touches = e.changedTouches,
-                touch = touches[0],
-                x = touch.pageX,
-                y = touch.pageY,
-                deltaX = x - self.startX,
-                deltaY = y - self.startY,
-                absDeltaX = Math.abs(deltaX),
-                absDeltaY = Math.abs(deltaY),
-                distance,
-                direction;
-
-            if (self.isVertical && absDeltaY < MIN_DISTANCE) {
-                self.isVertical = 0;
-            }
-
-            if (self.isHorizontal && absDeltaX < MIN_DISTANCE) {
-                self.isHorizontal = 0;
-            }
-
-            if (self.isHorizontal) {
-                direction = deltaX < 0 ? 'left' : 'right';
-                distance = absDeltaX;
-            } else if (self.isVertical) {
-                direction = deltaY < 0 ? 'up' : 'down';
-                distance = absDeltaY;
-            } else {
-                return false;
-            }
-
-            Event.fire(e.target, event, {
-                /**
-                 *
-                 * native touch property **only for touch event**.
-                 *
-                 * @property touch
-                 * @member KISSY.Event.DOMEventObject
-                 */
-                touch: touch,
-                /**
-                 *
-                 * direction property **only for event swipe/singleTap/doubleTap**.
-                 *
-                 * can be one of 'up' 'down' 'left' 'right'
-                 * @property {String} direction
-                 * @member KISSY.Event.DOMEventObject
-                 */
-                direction: direction,
-                /**
-                 *
-                 * distance property **only for event swipe**.
-                 *
-                 * the distance swipe gesture costs
-                 * @property {Number} distance
-                 * @member KISSY.Event.DOMEventObject
-                 */
-                distance: distance,
-                /**
-                 *
-                 * duration property **only for touch event**.
-                 *
-                 * the duration swipe gesture costs
-                 * @property {Number} duration
-                 * @member KISSY.Event.DOMEventObject
-                 */
-                duration: (e.timeStamp - self.startTime) / 1000
-            });
+            return fire(self, e, 0);
         }
 
     });
 
-    function prevent(e) {
-        if (!e.touches || e.touches.length == 1) {
-            e.preventDefault();
-        }
-    }
-
-    eventHandleMap[event] = {
-        add: function (observer) {
-            // prevent native scroll
-            if (observer.preventDefaultMove !== false) {
-                Event.on(this, Gesture.move, observer.__preventSwipeDefault = function (e) {
-                    prevent(e)
-                });
-            }
-        },
-        remove: function (observer) {
-            if (observer.__preventSwipeDefault) {
-                Event.detach(this, Gesture.move, observer.__preventSwipeDefault);
-            }
-        },
+    eventHandleMap[event] = eventHandleMap[ingEvent] = {
         handle: new Swipe()
     };
 
     return Swipe;
 
 }, {
-    requires: ['./handle-map', 'event/dom/base', './single-touch', './gesture']
+    requires: ['./handle-map', 'event/dom/base', './single-touch']
 });/**
  * @ignore
  * fired when tap and hold for more than 1s
@@ -16174,7 +17888,7 @@ KISSY.add('event/dom/touch/tap', function (S, eventHandleMap, Event, SingleTouch
 KISSY.add('event/dom/touch', function (S, EventDomBase, eventHandleMap, eventHandle) {
 
     function setupExtra(event) {
-        setup.call(this,event);
+        setup.call(this, event);
         eventHandleMap[event].setup.apply(this, arguments);
     }
 
@@ -16183,7 +17897,7 @@ KISSY.add('event/dom/touch', function (S, EventDomBase, eventHandleMap, eventHan
     }
 
     function tearDownExtra(event) {
-        tearDown.call(this,event);
+        tearDown.call(this, event);
         eventHandleMap[event].tearDown.apply(this, arguments);
     }
 
@@ -16222,7 +17936,7 @@ KISSY.add('event/dom/touch', function (S, EventDomBase, eventHandleMap, eventHan
 /*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 8 22:18
+build time: Apr 17 00:22
 */
 /**
  * @ignore
@@ -16556,7 +18270,7 @@ KISSY.add("json/parser", function () {
                 }
             }
 
-            S.error("lex error at line " + self.lineNumber + ":\n" + self.showDebugInfo());
+
             return undefined;
         }
     };
@@ -16859,7 +18573,7 @@ KISSY.add("json/parser", function () {
             }
 
             if (!symbol) {
-                S.log("it is not a valid input: " + input, "error");
+
                 return false;
             }
 
@@ -16874,8 +18588,8 @@ KISSY.add("json/parser", function () {
                         expected.push(self.lexer.mapReverseSymbol(symbol));
                     });
                 }
-                error = "parse error at line " + lexer.lineNumber + ":\n" + lexer.showDebugInfo() + "\n" + "expect " + expected.join(", ");
-                S.error(error);
+                error = "Syntax error at line " + lexer.lineNumber + ":\n" + lexer.showDebugInfo() + "\n" + "expect " + expected.join(", ");
+
                 return false;
             }
 
@@ -16902,13 +18616,13 @@ KISSY.add("json/parser", function () {
                     reducedAction = production.action || production[2],
                     reducedRhs = production.rhs || production[1],
                     len = reducedRhs.length,
-                    i,
-                    ret,
+                    i = 0,
+                    ret = undefined,
                     $$ = valueStack[valueStack.length - len]; // default to $$ = $1
 
                 self.$$ = $$;
 
-                for (i = 0; i < len; i++) {
+                for (; i < len; i++) {
                     self["$" + (len - i)] = valueStack[valueStack.length - 1 - i];
                 }
 
@@ -17165,7 +18879,7 @@ KISSY.add('json/stringify', function (S,Quote) {
 /*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 13 14:53
+build time: Apr 17 00:22
 */
 /**
  * @ignore
@@ -17633,11 +19347,11 @@ KISSY.add('io/base', function (S, JSON, Event, undefined) {
         } catch (e) {
             // Propagate exception as error if not done
             if (self.state < 2) {
-                S.log(e.stack || e, 'error');
+
                 self._ioReady(-1, e.message);
                 // Simply rethrow otherwise
             } else {
-                S.error(e);
+
             }
         }
 
@@ -17982,7 +19696,7 @@ KISSY.add('io/iframe-transport', function (S, DOM, Event, IO) {
 
     function IframeTransport(io) {
         this.io = io;
-        S.log('use IframeTransport for: ' + io.config.url);
+
     }
 
     S.augment(IframeTransport, {
@@ -18384,7 +20098,7 @@ KISSY.add('io/jsonp', function (S, IO) {
             // and KISSY will notify user by error callback
             converters.script.json = function () {
                 if (!response) {
-                    S.error(' not call jsonpCallback: ' + jsonpCallback)
+
                 }
                 return response[0];
             };
@@ -18602,7 +20316,7 @@ KISSY.add('io/methods', function (S, IO, undefined) {
                             statusText = 'success';
                             isSuccess = true;
                         } catch (e) {
-                            S.log(e.stack || e, 'error');
+
                             statusText = 'parser error';
                         }
                     }
@@ -18686,7 +20400,7 @@ KISSY.add('io/script-transport', function (S, IO, _, undefined) {
             return new (IO['getTransport']('*'))(io);
         }
         this.io = io;
-        S.log('use ScriptTransport for: ' + config.url);
+
         return this;
     }
 
@@ -18793,7 +20507,7 @@ KISSY.add('io/sub-domain-transport', function (S, XhrTransportBase, Event, DOM) 
             c = io.config;
         self.io = io;
         c.crossDomain = false;
-        S.log('use SubDomainTransport for: ' + c.url);
+
     }
 
 
@@ -18820,7 +20534,7 @@ KISSY.add('io/sub-domain-transport', function (S, XhrTransportBase, Event, DOM) 
                 if (self.nativeXhr) {
                     self.sendInternal();
                 } else {
-                    S.error('document.domain not set correctly!');
+
                 }
                 return;
             }
@@ -18903,7 +20617,7 @@ KISSY.add('io/xdr-flash-transport', function (S, IO, DOM) {
     }
 
     function XdrFlashTransport(io) {
-        S.log('use XdrFlashTransport for: ' + io.config.url);
+
         this.io = io;
     }
 
@@ -18915,7 +20629,7 @@ KISSY.add('io/xdr-flash-transport', function (S, IO, DOM) {
                 c = io.config,
                 xdr = c['xdr'] || {};
             // 不提供则使用 cdn 默认的 flash
-            _swf(xdr.src || (S.Config.base + 'io/io.swf'), 1, 1);
+            _swf(xdr.src || (S.Config.base + 'io/assets/io.swf'), 1, 1);
             // 简便起见，用轮训
             if (!flash) {
                 // S.log('detect xdr flash');
@@ -19033,7 +20747,7 @@ KISSY.add('io/xhr-transport-base', function (S, IO) {
         try {
             return new (refWin || win)['XMLHttpRequest']();
         } catch (e) {
-            S.log('createStandardXHR error: ' + _);
+
         }
         return undefined;
     }
@@ -19042,7 +20756,7 @@ KISSY.add('io/xhr-transport-base', function (S, IO) {
         try {
             return new (refWin || win)['ActiveXObject']('Microsoft.XMLHTTP');
         } catch (e) {
-            S.log('createActiveXHR error: ' + _);
+
         }
         return undefined;
     }
@@ -19283,8 +20997,8 @@ KISSY.add('io/xhr-transport-base', function (S, IO) {
                         try {
                             statusText = nativeXhr.statusText;
                         } catch (e) {
-                            S.log('xhr statusText error: ');
-                            S.log(e);
+
+
                             // We normalize with Webkit giving an empty statusText
                             statusText = '';
                         }
@@ -19366,7 +21080,7 @@ KISSY.add('io/xhr-transport', function (S, IO, XhrTransportBase, SubDomainTransp
         }
 
         xhr = self.nativeXhr = XhrTransportBase.nativeXhr(crossDomain);
-        S.log('crossDomain: ' + crossDomain + ', use ' + (_XDomainRequest && (xhr instanceof _XDomainRequest) ? 'XDomainRequest' : 'XhrTransport') + ' for: ' + c.url);
+
 
         return self;
     }
@@ -19397,7 +21111,7 @@ KISSY.add('io/xhr-transport', function (S, IO, XhrTransportBase, SubDomainTransp
 /*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Jan 31 22:55
+build time: Apr 17 00:14
 */
 /**
  * @ignore
@@ -19507,7 +21221,7 @@ KISSY.add('cookie', function (S) {
 /*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 7 12:54
+build time: Apr 17 00:13
 */
 /**
  * @ignore
@@ -20196,7 +21910,7 @@ KISSY.add('base', function (S, Attribute, EventCustom) {
 /*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Jan 31 22:54
+build time: Apr 17 00:13
 */
 /**
  * base class for transition anim and timer anim
@@ -20289,6 +22003,32 @@ KISSY.add('anim/base', function (S, DOM, Utils, EventCustom, Q) {
             });
 
             if (el.nodeType == NodeType.ELEMENT_NODE) {
+
+                // 放在前面，设置 overflow hidden，否则后面 ie6  取 width/height 初值导致错误
+                // <div style='width:0'><div style='width:100px'></div></div>
+                if (props.width || props.height) {
+                    // Make sure that nothing sneaks out
+                    // Record all 3 overflow attributes because IE does not
+                    // change the overflow attribute when overflowX and
+                    // overflowY are set to the same value
+                    var elStyle = el.style;
+                    S.mix(_backupProps, {
+                        overflow: elStyle.overflow,
+                        'overflow-x': elStyle.overflowX,
+                        'overflow-y': elStyle.overflowY
+                    });
+                    elStyle.overflow = 'hidden';
+                    // inline element should has layout/inline-block
+                    if (DOM.css(el, 'display') === 'inline' &&
+                        DOM.css(el, 'float') === 'none') {
+                        if (S.UA['ie']) {
+                            elStyle.zoom = 1;
+                        } else {
+                            elStyle.display = 'inline-block';
+                        }
+                    }
+                }
+
                 var exit, hidden;
                 hidden = (DOM.css(el, 'display') === 'none');
                 S.each(_propsData, function (_propData, prop) {
@@ -20681,7 +22421,7 @@ KISSY.add('anim/base/utils', function (S, DOM, Q,undefined) {
 /*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Jan 31 22:54
+build time: Apr 17 00:13
 */
 /**
  * anim facade between native and timer
@@ -20778,6 +22518,51 @@ KISSY.add('anim/facade', function (S, DOM, AnimBase, TimerAnim, TransitionAnim) 
      * @static
      */
 
+
+    /**
+     * stop this animation
+     * @param {Boolean} [finish] whether jump to the last position of this animation
+     * @chainable
+     * @method stop
+     * @member KISSY.Anim
+     */
+
+    /**
+     * start this animation
+     * @chainable
+     * @method run
+     * @member KISSY.Anim
+     */
+
+    /**
+     * resume current anim
+     * @chainable
+     * @method resume
+     * @member KISSY.Anim
+     */
+
+    /**
+     * pause current anim
+     * @chainable
+     * @method pause
+     * @member KISSY.Anim
+     */
+
+    /**
+     * whether this animation is running
+     * @return {Boolean}
+     * @method isRunning
+     * @member KISSY.Anim
+     */
+
+
+    /**
+     * whether this animation is paused
+     * @return {Boolean}
+     * @method isPaused
+     * @member KISSY.Anim
+     */
+
     S.each(['pause', 'resume'], function (action) {
         Anim[action] = function (el, queue) {
             if (
@@ -20812,6 +22597,16 @@ KISSY.add('anim/facade', function (S, DOM, AnimBase, TimerAnim, TransitionAnim) 
      */
     Anim.isPaused = Utils.isElPaused;
 
+    /**
+     * stop all the anims currently running
+     * @static
+     * @method stop
+     * @member KISSY.Anim
+     * @param {HTMLElement} el element which anim belongs to
+     * @param {Boolean} end whether jump to last position
+     * @param {Boolean} clearQueue whether clean current queue
+     * @param {String|Boolean} queueName current queue's name to be cleared
+     */
     Anim.stop = Utils.stopEl;
 
     Anim.Easing = TimerAnim.Easing;
@@ -20830,7 +22625,7 @@ KISSY.add('anim/facade', function (S, DOM, AnimBase, TimerAnim, TransitionAnim) 
 /*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 12 20:35
+build time: Apr 17 00:13
 */
 /**
  * @ignore
@@ -20941,7 +22736,7 @@ KISSY.add('anim/timer/color', function (S, DOM, Fx,SHORT_HANDS) {
         }
 
         //transparent 或者颜色字符串返回
-        S.log('only allow rgb or hex color string : ' + val, 'warn');
+
         return [255, 255, 255];
     }
 
@@ -21421,7 +23216,7 @@ KISSY.add('anim/timer/fx', function (S, DOM, undefined) {
                 if (!self.finished) {
                     self.finished = 1;
                     DOM.css(el, prop, to);
-                    S.log(prop + ' update directly ! : ' + val + ' : ' + from + ' : ' + to);
+
                 }
             } else {
                 val += self.unit;
@@ -21527,8 +23322,9 @@ KISSY.add('anim/timer/manager', function (S, undefined) {
                 win[vendors[x] + 'CancelRequestAnimationFrame'];
         }
     }
-    if (requestAnimationFrameFn) {
-        S.log('anim use requestAnimationFrame');
+    // chrome is unstable....
+    if (requestAnimationFrameFn && !S.UA.chrome) {
+
     } else {
         requestAnimationFrameFn = function (fn) {
             return setTimeout(fn, INTERVAL);
@@ -21727,7 +23523,6 @@ KISSY.add('anim/timer', function (S, DOM, Event, AnimBase, Easing, AM, Fx, SHORT
             // 取得单位，并对单个属性构建 Fx 对象
             for (prop in _propsData) {
 
-
                 _propData = _propsData[prop];
 
                 // 自定义
@@ -21735,9 +23530,6 @@ KISSY.add('anim/timer', function (S, DOM, Event, AnimBase, Easing, AM, Fx, SHORT
                     _propData.fx.prop = prop;
                     continue;
                 }
-
-                // https://github.com/kissyteam/kissy/issues/310
-                var hasFrom = 'from' in _propData, fromValue = _propData.from, parsed;
 
                 val = _propData.value;
                 propCfg = {
@@ -21748,13 +23540,7 @@ KISSY.add('anim/timer', function (S, DOM, Event, AnimBase, Easing, AM, Fx, SHORT
                 fx = Fx.getFx(propCfg);
                 to = val;
 
-                if (hasFrom) {
-                    from = isNaN(parsed = parseFloat(fromValue)) ?
-                        !fromValue || fromValue === 'auto' ? 0 : fromValue
-                        : parsed;
-                } else {
-                    from = fx.cur();
-                }
+                from = fx.cur();
 
                 val += '';
                 unit = '';
@@ -21765,9 +23551,17 @@ KISSY.add('anim/timer', function (S, DOM, Event, AnimBase, Easing, AM, Fx, SHORT
                     unit = parts[3];
 
                     // 有单位但单位不是 px
-                    if (!hasFrom && unit && unit !== 'px') {
-                        DOM.css(el, prop, val);
-                        from = (to / fx.cur()) * from;
+                    if (unit && unit !== 'px' && from) {
+                        var tmpCur = 0,
+                            to2 = to;
+                        do {
+                            ++to2;
+                            DOM.css(el, prop, to2 + unit);
+                            // in case tmpCur==0
+                            tmpCur = fx.cur();
+                        } while (tmpCur == 0);
+                        // S.log(to2+' --- '+tmpCur);
+                        from = (to2 / tmpCur) * from;
                         DOM.css(el, prop, from + unit);
                     }
 
@@ -21918,7 +23712,7 @@ KISSY.add('anim/timer', function (S, DOM, Event, AnimBase, Easing, AM, Fx, SHORT
 /*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Feb 20 22:41
+build time: Apr 17 00:13
 */
 /**
  * animation using css transition
@@ -21933,7 +23727,7 @@ KISSY.add('anim/transition', function (S, DOM, Event, AnimBase) {
         })
     }
 
-    var vendorPrefix = S.Features.getCss3Prefix();
+    var vendorPrefix = S.Features.getTransitionPrefix();
     var TRANSITION_END_EVENT = vendorPrefix ?
         (vendorPrefix.toLowerCase() + 'TransitionEnd') :
         'transitionend';
@@ -22094,7 +23888,7 @@ KISSY.add('anim/transition', function (S, DOM, Event, AnimBase) {
 /*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Jan 31 23:02
+build time: May 13 23:00
 */
 /**
  * @ignore

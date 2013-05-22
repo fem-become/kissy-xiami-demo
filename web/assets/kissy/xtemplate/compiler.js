@@ -1,7 +1,7 @@
 ﻿/*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 5 12:05
+build time: May 20 10:45
 */
 /**
  * Ast node class for xtemplate
@@ -32,7 +32,7 @@ KISSY.add("xtemplate/compiler/ast", function (S) {
         var closeParts = close['parts'], self = this, e;
         // no close tag
         if (!S.equals(tpl.path['parts'], closeParts)) {
-            e = ("parse error at line " +
+            e = ("Syntax error at line " +
                 lineNumber +
                 ":\n" + "expect {{/" +
                 tpl.path['parts'] +
@@ -64,7 +64,7 @@ KISSY.add("xtemplate/compiler/ast", function (S) {
         self.escaped = true;
         // inside {{^}}
         // default: inside {{#}}
-        self.isInversed = false;
+        self.isInverted = false;
     };
 
     ast.TplNode.prototype.type = 'tpl';
@@ -317,6 +317,7 @@ KISSY.add("xtemplate/compiler", function (S, parser, ast, XTemplateRuntime) {
             var source = [],
                 depth = idNode.depth,
                 idString = idNode.string,
+                idParts = idNode.parts,
                 idName = guid('id'),
                 self = this,
                 foundNativeRuntimeCommand = 0,
@@ -354,10 +355,11 @@ KISSY.add("xtemplate/compiler", function (S, parser, ast, XTemplateRuntime) {
 
             // variable {{variable.subVariable}}
             if (!foundNativeRuntimeCommand) {
-
                 var tmp = guid('tmp');
+                idString = self.getIdStringFromIdParts(source, idParts);
 
-                source.push('var ' + tmp + '=getProperty("' + idString + '",scopes);');
+                source.push('var ' + tmp + ' = getProperty("' + idString +
+                    '",scopes,' + depth + ');');
 
                 source.push('if(' + tmp + '===false){');
                 source.push('S[option.silent?"log":"error"]("can not find property: \'' +
@@ -538,7 +540,7 @@ KISSY.add("xtemplate/compiler", function (S, parser, ast, XTemplateRuntime) {
                 optionNameCode = self.genOption(tplNode),
                 optionName = optionNameCode[0],
                 commands = XTemplateRuntime.commands,
-                string = tplNode.path.string,
+                pathString = tplNode.path.string,
                 inverseFn,
                 existsNativeCommand,
                 variableName;
@@ -555,7 +557,7 @@ KISSY.add("xtemplate/compiler", function (S, parser, ast, XTemplateRuntime) {
 
             // support {{^
             // exchange fn with inverse
-            if (tplNode.isInversed) {
+            if (tplNode.isInverted) {
                 var tmp = guid('inverse');
                 source.push('var ' + tmp + '=' + optionName + '.fn;');
                 source.push(optionName + '.fn = ' + optionName + '.inverse;');
@@ -563,22 +565,26 @@ KISSY.add("xtemplate/compiler", function (S, parser, ast, XTemplateRuntime) {
             }
 
             // reduce generated code size
-            if (existsNativeCommand = commands[string]) {
-                tmpNameCommand = string + 'Command';
+            if (existsNativeCommand = commands[pathString]) {
+                tmpNameCommand = pathString + 'Command';
             } else {
                 tmpNameCommand = guid('command');
                 source.push('var ' + tmpNameCommand +
-                    ' = commands["' + string + '"];');
+                    ' = commands["' + pathString + '"];');
                 // {{#xx}}1{#xx} => xx is not command =>
                 // if xx => array => {{#each xx}}1{/each}}
                 // if xx => object => {{#with xx}}1{/with}}
                 // else => {{#if xx}}1{/if}}
                 if (!tplNode.hash && !tplNode.params) {
                     source.push('if(!' + tmpNameCommand + '){');
+                    pathString = self.getIdStringFromIdParts(source, tplNode.path.parts);
                     var propertyValueHolder = guid('propertyValueHolder');
-                    source.push('var ' + propertyValueHolder + ' = getProperty("' + string + '",scopes);');
+                    source.push('var ' + propertyValueHolder +
+                        ' = getProperty("' + pathString + '",scopes);');
                     variableName = guid('variableName');
-                    source.push('var ' + variableName + '=' + propertyValueHolder + '&&' + propertyValueHolder + '[0];');
+                    source.push('var ' + variableName +
+                        '=' + propertyValueHolder + '&&' +
+                        propertyValueHolder + '[0];');
                     source.push(optionName + '.params=[' + variableName + '];');
                     source.push('if(isArray(' + variableName + ')){');
                     source.push(tmpNameCommand + '=commands["each"];');
@@ -597,15 +603,15 @@ KISSY.add("xtemplate/compiler", function (S, parser, ast, XTemplateRuntime) {
             source.push('try{');
             source.push('buffer += ' + tmpNameCommand + '(scopes,' + optionName + ');');
             source.push('}catch(e){');
-            source.push('error(e.message+": \'' + string +
+            source.push('error(e.message+": \'' + pathString +
                 '\' at line ' + tplNode.path.lineNumber + '");');
             source.push('}');
 
             if (!existsNativeCommand) {
                 source.push('}');
-                source.push('if('+propertyValueHolder+'===false) {');
+                source.push('if(' + propertyValueHolder + '===false) {');
                 source.push('S[option.silent?"log":"error"]("can not find command: \'' +
-                    string + '\' at line ' + tplNode.path.lineNumber + '","warn");');
+                    pathString + '\' at line ' + tplNode.path.lineNumber + '","warn");');
                 source.push('}');
             }
             return source;
@@ -624,11 +630,11 @@ KISSY.add("xtemplate/compiler", function (S, parser, ast, XTemplateRuntime) {
             return source;
         },
 
-        tplExpression: function (e) {
+        'tplExpression': function (e) {
             var source = [],
                 escaped = e.escaped,
-                expressionOrVariable,
-                code = this[e.expression.type](e.expression);
+                expressionOrVariable;
+            var code = this[e.expression.type](e.expression);
             if (code[0]) {
                 pushToArray(source, code[1]);
                 expressionOrVariable = code[0];
@@ -638,6 +644,35 @@ KISSY.add("xtemplate/compiler", function (S, parser, ast, XTemplateRuntime) {
             }
             outputVariable(expressionOrVariable, escaped, source);
             return source;
+        },
+
+        // consider x[d]
+        'getIdStringFromIdParts': function (source, idParts) {
+            var idString = '',
+                self = this,
+                i,
+                p,
+                nextIdNameCode,
+                first = true;
+            for (i = 0; i < idParts.length; i++) {
+                p = idParts[i];
+                if (!first) {
+                    idString += '.';
+                }
+                if (p.type) {
+                    nextIdNameCode = self[p.type](p);
+                    if (nextIdNameCode[0]) {
+                        pushToArray(source, nextIdNameCode[1]);
+                        idString += '"+' + nextIdNameCode[0] + '+"';
+                        first = true
+                    }
+                } else {
+                    // number or string
+                    idString += p;
+                    first = false;
+                }
+            }
+            return idString;
         }
 
     };
@@ -954,11 +989,10 @@ KISSY.add("xtemplate/compiler/parser", function () {
                 } else {
                     self.pushState('t');
                 }
-                // only return when has content
-                if (self.text = text) {
-                    return 'CONTENT';
-                }
-                return undefined;
+                // https://github.com/kissyteam/kissy/issues/330
+                // return even empty
+                self.text = text;
+                return 'CONTENT';
             }],
             [2, /^[\s\S]+/, 0],
             [2, /^[\s\S]{2,}?(?:(?={{)|$)/, function () {
@@ -970,6 +1004,11 @@ KISSY.add("xtemplate/compiler/parser", function () {
             [6, /^{{{/, 0, ['t']],
             [0, /^{{![\s\S]*?}}/, function () {
                 // return to content mode
+                this.popState();
+            }, ['t']],
+            [2, /^{{%([\s\S]*?)%}}/, function () {
+                // return to content mode
+                this.text = this.matches[1] || '';
                 this.popState();
             }, ['t']],
             [7, /^{{/, 0, ['t']],
@@ -1011,12 +1050,14 @@ KISSY.add("xtemplate/compiler/parser", function () {
                 // wait for '/'
                 this.pushState('ws');
             }, ['t']],
-            [30, /^\./, 0, ['t']],
             [30, /^\//, function () {
                 this.popState();
             }, ['ws']],
+            [30, /^\./, 0, ['t']],
+            [31, /^\[/, 0, ['t']],
+            [32, /^\]/, 0, ['t']],
             [29, /^[a-zA-Z0-9_$-]+/, 0, ['t']],
-            [31, /^./, 0, ['t']]
+            [33, /^./, 0, ['t']]
         ]
     });
     parser.lexer = lexer;
@@ -1051,451 +1092,472 @@ KISSY.add("xtemplate/compiler/parser", function () {
         'EQUALS': 28,
         'ID': 29,
         'SEP': 30,
-        'INVALID': 31,
-        '$START': 32,
-        'program': 33,
-        'statements': 34,
-        'inverse': 35,
-        'statement': 36,
-        'openBlock': 37,
-        'closeBlock': 38,
-        'tpl': 39,
-        'inTpl': 40,
-        'path': 41,
-        'Expression': 42,
-        'params': 43,
-        'hash': 44,
-        'param': 45,
-        'ConditionalOrExpression': 46,
-        'ConditionalAndExpression': 47,
-        'EqualityExpression': 48,
-        'RelationalExpression': 49,
-        'AdditiveExpression': 50,
-        'MultiplicativeExpression': 51,
-        'UnaryExpression': 52,
-        'PrimaryExpression': 53,
-        'hashSegments': 54,
-        'hashSegment': 55,
-        'pathSegments': 56
+        'REF_START': 31,
+        'REF_END': 32,
+        'INVALID': 33,
+        '$START': 34,
+        'program': 35,
+        'statements': 36,
+        'inverse': 37,
+        'statement': 38,
+        'openBlock': 39,
+        'closeBlock': 40,
+        'tpl': 41,
+        'inTpl': 42,
+        'path': 43,
+        'Expression': 44,
+        'params': 45,
+        'hash': 46,
+        'param': 47,
+        'ConditionalOrExpression': 48,
+        'ConditionalAndExpression': 49,
+        'EqualityExpression': 50,
+        'RelationalExpression': 51,
+        'AdditiveExpression': 52,
+        'MultiplicativeExpression': 53,
+        'UnaryExpression': 54,
+        'PrimaryExpression': 55,
+        'hashSegments': 56,
+        'hashSegment': 57,
+        'pathSegments': 58
     };
     parser.productions = [
-        [32, [33]],
-        [33, [34, 35, 34], function () {
+        [34, [35]],
+        [35, [36, 37, 36], function () {
             return new this.yy.ProgramNode(this.lexer.lineNumber, this.$1, this.$3);
         }],
-        [33, [34], function () {
+        [35, [36], function () {
             return new this.yy.ProgramNode(this.lexer.lineNumber, this.$1);
         }],
-        [34, [36], function () {
+        [36, [38], function () {
             return [this.$1];
         }],
-        [34, [34, 36], function () {
+        [36, [36, 38], function () {
             this.$1.push(this.$2);
         }],
-        [36, [37, 33, 38], function () {
+        [38, [39, 35, 40], function () {
             return new this.yy.BlockNode(this.lexer.lineNumber, this.$1, this.$2, this.$3);
         }],
-        [36, [39]],
-        [36, [2], function () {
+        [38, [41]],
+        [38, [2], function () {
             return new this.yy.ContentNode(this.lexer.lineNumber, this.$1);
         }],
-        [37, [3, 40, 8], function () {
+        [39, [3, 42, 8], function () {
             if (this.$1.charAt(this.$1.length - 1) == '^') {
-                this.$2.isInversed = 1;
+                this.$2['isInverted'] = 1;
             }
             return this.$2;
         }],
-        [38, [4, 41, 8], function () {
+        [40, [4, 43, 8], function () {
             return this.$2;
         }],
-        [39, [7, 40, 8], function () {
+        [41, [7, 42, 8], function () {
             return this.$2;
         }],
-        [39, [6, 40, 8], function () {
-            this.$2.escaped = false;
+        [41, [6, 42, 8], function () {
+            this.$2['escaped'] = false;
             return this.$2;
         }],
-        [39, [7, 42, 8], function () {
+        [41, [7, 44, 8], function () {
             return new this.yy.TplExpressionNode(this.lexer.lineNumber,
             this.$2);
         }],
-        [39, [6, 42, 8], function () {
+        [41, [6, 44, 8], function () {
             var tpl = new this.yy.TplExpressionNode(this.lexer.lineNumber,
             this.$2);
             tpl.escaped = false;
             return tpl;
         }],
-        [35, [5, 8]],
-        [40, [41, 43, 44], function () {
+        [37, [5, 8]],
+        [42, [43, 45, 46], function () {
             return new this.yy.TplNode(this.lexer.lineNumber, this.$1, this.$2, this.$3);
         }],
-        [40, [41, 43], function () {
+        [42, [43, 45], function () {
             return new this.yy.TplNode(this.lexer.lineNumber, this.$1, this.$2);
         }],
-        [40, [41, 44], function () {
+        [42, [43, 46], function () {
             return new this.yy.TplNode(this.lexer.lineNumber, this.$1, null, this.$2);
         }],
-        [40, [41], function () {
+        [42, [43], function () {
             return new this.yy.TplNode(this.lexer.lineNumber, this.$1);
         }],
-        [43, [43, 45], function () {
+        [45, [45, 47], function () {
             this.$1.push(this.$2);
         }],
-        [43, [45], function () {
+        [45, [47], function () {
             return [this.$1];
         }],
-        [45, [42]],
-        [42, [46]],
-        [46, [47]],
-        [46, [46, 11, 47], function () {
+        [47, [44]],
+        [44, [48]],
+        [48, [49]],
+        [48, [48, 11, 49], function () {
             return new this.yy.ConditionalOrExpression(this.$1, this.$3);
         }],
-        [47, [48]],
-        [47, [47, 12, 48], function () {
+        [49, [50]],
+        [49, [49, 12, 50], function () {
             return new this.yy.ConditionalAndExpression(this.$1, this.$3);
         }],
-        [48, [49]],
-        [48, [48, 13, 49], function () {
+        [50, [51]],
+        [50, [50, 13, 51], function () {
             return new this.yy.EqualityExpression(this.$1, '===', this.$3);
         }],
-        [48, [48, 14, 49], function () {
+        [50, [50, 14, 51], function () {
             return new this.yy.EqualityExpression(this.$1, '!==', this.$3);
         }],
-        [49, [50]],
-        [49, [49, 17, 50], function () {
+        [51, [52]],
+        [51, [51, 17, 52], function () {
             return new this.yy.RelationalExpression(this.$1, '<', this.$3);
         }],
-        [49, [49, 15, 50], function () {
+        [51, [51, 15, 52], function () {
             return new this.yy.RelationalExpression(this.$1, '>', this.$3);
         }],
-        [49, [49, 18, 50], function () {
+        [51, [51, 18, 52], function () {
             return new this.yy.RelationalExpression(this.$1, '<=', this.$3);
         }],
-        [49, [49, 16, 50], function () {
+        [51, [51, 16, 52], function () {
             return new this.yy.RelationalExpression(this.$1, '>=', this.$3);
         }],
-        [50, [51]],
-        [50, [50, 19, 51], function () {
+        [52, [53]],
+        [52, [52, 19, 53], function () {
             return new this.yy.AdditiveExpression(this.$1, '+', this.$3);
         }],
-        [50, [50, 20, 51], function () {
+        [52, [52, 20, 53], function () {
             return new this.yy.AdditiveExpression(this.$1, '-', this.$3);
         }],
-        [51, [52]],
-        [51, [51, 21, 52], function () {
+        [53, [54]],
+        [53, [53, 21, 54], function () {
             return new this.yy.MultiplicativeExpression(this.$1, '*', this.$3);
         }],
-        [51, [51, 22, 52], function () {
+        [53, [53, 22, 54], function () {
             return new this.yy.MultiplicativeExpression(this.$1, '/', this.$3);
         }],
-        [51, [51, 23, 52], function () {
+        [53, [53, 23, 54], function () {
             return new this.yy.MultiplicativeExpression(this.$1, '%', this.$3);
         }],
-        [52, [24, 52], function () {
+        [54, [24, 54], function () {
             return new this.yy.UnaryExpression(this.$1);
         }],
-        [52, [53]],
-        [53, [25], function () {
+        [54, [55]],
+        [55, [25], function () {
             return new this.yy.StringNode(this.lexer.lineNumber, this.$1);
         }],
-        [53, [27], function () {
+        [55, [27], function () {
             return new this.yy.NumberNode(this.lexer.lineNumber, this.$1);
         }],
-        [53, [26], function () {
+        [55, [20, 27], function () {
+            return new this.yy.NumberNode(this.lexer.lineNumber, 0 - this.$2);
+        }],
+        [55, [26], function () {
             return new this.yy.BooleanNode(this.lexer.lineNumber, this.$1);
         }],
-        [53, [41]],
-        [53, [9, 42, 10], function () {
+        [55, [43]],
+        [55, [9, 44, 10], function () {
             return this.$2;
         }],
-        [44, [54], function () {
+        [46, [56], function () {
             return new this.yy.HashNode(this.lexer.lineNumber, this.$1);
         }],
-        [54, [54, 55], function () {
+        [56, [56, 57], function () {
             this.$1.push(this.$2);
         }],
-        [54, [55], function () {
+        [56, [57], function () {
             return [this.$1];
         }],
-        [55, [29, 28, 42], function () {
+        [57, [29, 28, 44], function () {
             return [this.$1, this.$3];
         }],
-        [41, [56], function () {
+        [43, [58], function () {
             return new this.yy.IdNode(this.lexer.lineNumber, this.$1);
         }],
-        [56, [56, 30, 29], function () {
+        [58, [58, 30, 29], function () {
             this.$1.push(this.$3);
         }],
-        [56, [56, 30, 27], function () {
+        [58, [58, 31, 44, 32], function () {
             this.$1.push(this.$3);
         }],
-        [56, [29], function () {
+        [58, [58, 30, 27], function () {
+            this.$1.push(this.$3);
+        }],
+        [58, [29], function () {
             return [this.$1];
         }]
     ];
     parser.table = {
         'gotos': {
             '0': {
-                '33': 5,
-                '34': 6,
-                '36': 7,
-                '37': 8,
-                '39': 9
+                '35': 5,
+                '36': 6,
+                '38': 7,
+                '39': 8,
+                '41': 9
             },
             '2': {
-                '40': 11,
-                '41': 12,
-                '56': 13
+                '42': 11,
+                '43': 12,
+                '58': 13
             },
             '3': {
-                '40': 19,
-                '41': 20,
-                '42': 21,
-                '46': 22,
-                '47': 23,
-                '48': 24,
-                '49': 25,
-                '50': 26,
-                '51': 27,
-                '52': 28,
-                '53': 29,
-                '56': 13
+                '42': 20,
+                '43': 21,
+                '44': 22,
+                '48': 23,
+                '49': 24,
+                '50': 25,
+                '51': 26,
+                '52': 27,
+                '53': 28,
+                '54': 29,
+                '55': 30,
+                '58': 13
             },
             '4': {
-                '40': 30,
-                '41': 20,
                 '42': 31,
-                '46': 22,
-                '47': 23,
-                '48': 24,
-                '49': 25,
-                '50': 26,
-                '51': 27,
-                '52': 28,
-                '53': 29,
-                '56': 13
+                '43': 21,
+                '44': 32,
+                '48': 23,
+                '49': 24,
+                '50': 25,
+                '51': 26,
+                '52': 27,
+                '53': 28,
+                '54': 29,
+                '55': 30,
+                '58': 13
             },
             '6': {
-                '35': 33,
-                '36': 34,
-                '37': 8,
-                '39': 9
+                '37': 34,
+                '38': 35,
+                '39': 8,
+                '41': 9
             },
             '8': {
-                '33': 35,
-                '34': 6,
-                '36': 7,
-                '37': 8,
-                '39': 9
+                '35': 36,
+                '36': 6,
+                '38': 7,
+                '39': 8,
+                '41': 9
             },
             '12': {
-                '41': 38,
-                '42': 39,
-                '43': 40,
-                '44': 41,
-                '45': 42,
-                '46': 22,
-                '47': 23,
-                '48': 24,
-                '49': 25,
-                '50': 26,
-                '51': 27,
-                '52': 28,
-                '53': 29,
-                '54': 43,
-                '55': 44,
-                '56': 13
+                '43': 39,
+                '44': 40,
+                '45': 41,
+                '46': 42,
+                '47': 43,
+                '48': 23,
+                '49': 24,
+                '50': 25,
+                '51': 26,
+                '52': 27,
+                '53': 28,
+                '54': 29,
+                '55': 30,
+                '56': 44,
+                '57': 45,
+                '58': 13
             },
             '14': {
-                '41': 38,
-                '42': 46,
-                '46': 22,
-                '47': 23,
-                '48': 24,
-                '49': 25,
-                '50': 26,
-                '51': 27,
-                '52': 28,
-                '53': 29,
-                '56': 13
+                '43': 39,
+                '44': 48,
+                '48': 23,
+                '49': 24,
+                '50': 25,
+                '51': 26,
+                '52': 27,
+                '53': 28,
+                '54': 29,
+                '55': 30,
+                '58': 13
             },
-            '15': {
-                '41': 38,
-                '52': 47,
-                '53': 29,
-                '56': 13
+            '16': {
+                '43': 39,
+                '54': 50,
+                '55': 30,
+                '58': 13
             },
-            '20': {
-                '41': 38,
-                '42': 39,
-                '43': 40,
-                '44': 41,
-                '45': 42,
-                '46': 22,
-                '47': 23,
-                '48': 24,
-                '49': 25,
-                '50': 26,
-                '51': 27,
-                '52': 28,
-                '53': 29,
-                '54': 43,
-                '55': 44,
-                '56': 13
+            '21': {
+                '43': 39,
+                '44': 40,
+                '45': 41,
+                '46': 42,
+                '47': 43,
+                '48': 23,
+                '49': 24,
+                '50': 25,
+                '51': 26,
+                '52': 27,
+                '53': 28,
+                '54': 29,
+                '55': 30,
+                '56': 44,
+                '57': 45,
+                '58': 13
             },
-            '33': {
-                '34': 66,
-                '36': 7,
-                '37': 8,
-                '39': 9
+            '34': {
+                '36': 69,
+                '38': 7,
+                '39': 8,
+                '41': 9
             },
-            '35': {
-                '38': 68
+            '36': {
+                '40': 71
             },
-            '40': {
-                '41': 38,
-                '42': 39,
-                '44': 70,
-                '45': 71,
-                '46': 22,
-                '47': 23,
-                '48': 24,
-                '49': 25,
-                '50': 26,
-                '51': 27,
-                '52': 28,
-                '53': 29,
-                '54': 43,
-                '55': 44,
-                '56': 13
+            '41': {
+                '43': 39,
+                '44': 40,
+                '46': 73,
+                '47': 74,
+                '48': 23,
+                '49': 24,
+                '50': 25,
+                '51': 26,
+                '52': 27,
+                '53': 28,
+                '54': 29,
+                '55': 30,
+                '56': 44,
+                '57': 45,
+                '58': 13
             },
-            '43': {
-                '55': 73
+            '44': {
+                '57': 76
             },
-            '50': {
-                '41': 38,
-                '47': 77,
-                '48': 24,
-                '49': 25,
-                '50': 26,
-                '51': 27,
-                '52': 28,
-                '53': 29,
-                '56': 13
-            },
-            '51': {
-                '41': 38,
-                '48': 78,
-                '49': 25,
-                '50': 26,
-                '51': 27,
-                '52': 28,
-                '53': 29,
-                '56': 13
-            },
-            '52': {
-                '41': 38,
-                '49': 79,
-                '50': 26,
-                '51': 27,
-                '52': 28,
-                '53': 29,
-                '56': 13
+            '47': {
+                '43': 39,
+                '44': 79,
+                '48': 23,
+                '49': 24,
+                '50': 25,
+                '51': 26,
+                '52': 27,
+                '53': 28,
+                '54': 29,
+                '55': 30,
+                '58': 13
             },
             '53': {
-                '41': 38,
-                '49': 80,
-                '50': 26,
-                '51': 27,
-                '52': 28,
-                '53': 29,
-                '56': 13
+                '43': 39,
+                '49': 81,
+                '50': 25,
+                '51': 26,
+                '52': 27,
+                '53': 28,
+                '54': 29,
+                '55': 30,
+                '58': 13
             },
             '54': {
-                '41': 38,
-                '50': 81,
-                '51': 27,
-                '52': 28,
-                '53': 29,
-                '56': 13
+                '43': 39,
+                '50': 82,
+                '51': 26,
+                '52': 27,
+                '53': 28,
+                '54': 29,
+                '55': 30,
+                '58': 13
             },
             '55': {
-                '41': 38,
-                '50': 82,
-                '51': 27,
-                '52': 28,
-                '53': 29,
-                '56': 13
+                '43': 39,
+                '51': 83,
+                '52': 27,
+                '53': 28,
+                '54': 29,
+                '55': 30,
+                '58': 13
             },
             '56': {
-                '41': 38,
-                '50': 83,
-                '51': 27,
-                '52': 28,
-                '53': 29,
-                '56': 13
+                '43': 39,
+                '51': 84,
+                '52': 27,
+                '53': 28,
+                '54': 29,
+                '55': 30,
+                '58': 13
             },
             '57': {
-                '41': 38,
-                '50': 84,
-                '51': 27,
-                '52': 28,
-                '53': 29,
-                '56': 13
+                '43': 39,
+                '52': 85,
+                '53': 28,
+                '54': 29,
+                '55': 30,
+                '58': 13
             },
             '58': {
-                '41': 38,
-                '51': 85,
-                '52': 28,
-                '53': 29,
-                '56': 13
+                '43': 39,
+                '52': 86,
+                '53': 28,
+                '54': 29,
+                '55': 30,
+                '58': 13
             },
             '59': {
-                '41': 38,
-                '51': 86,
-                '52': 28,
-                '53': 29,
-                '56': 13
+                '43': 39,
+                '52': 87,
+                '53': 28,
+                '54': 29,
+                '55': 30,
+                '58': 13
             },
             '60': {
-                '41': 38,
-                '52': 87,
-                '53': 29,
-                '56': 13
+                '43': 39,
+                '52': 88,
+                '53': 28,
+                '54': 29,
+                '55': 30,
+                '58': 13
             },
             '61': {
-                '41': 38,
-                '52': 88,
-                '53': 29,
-                '56': 13
+                '43': 39,
+                '53': 89,
+                '54': 29,
+                '55': 30,
+                '58': 13
             },
             '62': {
-                '41': 38,
-                '52': 89,
-                '53': 29,
-                '56': 13
+                '43': 39,
+                '53': 90,
+                '54': 29,
+                '55': 30,
+                '58': 13
             },
-            '66': {
-                '36': 34,
-                '37': 8,
-                '39': 9
+            '63': {
+                '43': 39,
+                '54': 91,
+                '55': 30,
+                '58': 13
             },
-            '67': {
-                '41': 90,
-                '56': 13
+            '64': {
+                '43': 39,
+                '54': 92,
+                '55': 30,
+                '58': 13
+            },
+            '65': {
+                '43': 39,
+                '54': 93,
+                '55': 30,
+                '58': 13
             },
             '69': {
-                '41': 38,
-                '42': 91,
-                '46': 22,
-                '47': 23,
-                '48': 24,
-                '49': 25,
-                '50': 26,
-                '51': 27,
-                '52': 28,
-                '53': 29,
-                '56': 13
+                '38': 35,
+                '39': 8,
+                '41': 9
+            },
+            '70': {
+                '43': 94,
+                '58': 13
+            },
+            '72': {
+                '43': 39,
+                '44': 95,
+                '48': 23,
+                '49': 24,
+                '50': 25,
+                '51': 26,
+                '52': 27,
+                '53': 28,
+                '54': 29,
+                '55': 30,
+                '58': 13
             }
         },
         'action': {
@@ -1519,18 +1581,20 @@ KISSY.add("xtemplate/compiler/parser", function () {
             },
             '3': {
                 '9': [1, 0, 14],
-                '24': [1, 0, 15],
-                '25': [1, 0, 16],
-                '26': [1, 0, 17],
-                '27': [1, 0, 18],
+                '20': [1, 0, 15],
+                '24': [1, 0, 16],
+                '25': [1, 0, 17],
+                '26': [1, 0, 18],
+                '27': [1, 0, 19],
                 '29': [1, 0, 10]
             },
             '4': {
                 '9': [1, 0, 14],
-                '24': [1, 0, 15],
-                '25': [1, 0, 16],
-                '26': [1, 0, 17],
-                '27': [1, 0, 18],
+                '20': [1, 0, 15],
+                '24': [1, 0, 16],
+                '25': [1, 0, 17],
+                '26': [1, 0, 18],
+                '27': [1, 0, 19],
                 '29': [1, 0, 10]
             },
             '5': {
@@ -1541,7 +1605,7 @@ KISSY.add("xtemplate/compiler/parser", function () {
                 '2': [1, 0, 1],
                 '3': [1, 0, 2],
                 '4': [2, 2, 0],
-                '5': [1, 0, 32],
+                '5': [1, 0, 33],
                 '6': [1, 0, 3],
                 '7': [1, 0, 4]
             },
@@ -1570,688 +1634,45 @@ KISSY.add("xtemplate/compiler/parser", function () {
                 '7': [2, 6, 0]
             },
             '10': {
-                '8': [2, 56, 0],
-                '9': [2, 56, 0],
-                '10': [2, 56, 0],
-                '11': [2, 56, 0],
-                '12': [2, 56, 0],
-                '13': [2, 56, 0],
-                '14': [2, 56, 0],
-                '15': [2, 56, 0],
-                '16': [2, 56, 0],
-                '17': [2, 56, 0],
-                '18': [2, 56, 0],
-                '19': [2, 56, 0],
-                '20': [2, 56, 0],
-                '21': [2, 56, 0],
-                '22': [2, 56, 0],
-                '23': [2, 56, 0],
-                '24': [2, 56, 0],
-                '25': [2, 56, 0],
-                '26': [2, 56, 0],
-                '27': [2, 56, 0],
-                '29': [2, 56, 0],
-                '30': [2, 56, 0]
+                '8': [2, 58, 0],
+                '9': [2, 58, 0],
+                '10': [2, 58, 0],
+                '11': [2, 58, 0],
+                '12': [2, 58, 0],
+                '13': [2, 58, 0],
+                '14': [2, 58, 0],
+                '15': [2, 58, 0],
+                '16': [2, 58, 0],
+                '17': [2, 58, 0],
+                '18': [2, 58, 0],
+                '19': [2, 58, 0],
+                '20': [2, 58, 0],
+                '21': [2, 58, 0],
+                '22': [2, 58, 0],
+                '23': [2, 58, 0],
+                '24': [2, 58, 0],
+                '25': [2, 58, 0],
+                '26': [2, 58, 0],
+                '27': [2, 58, 0],
+                '29': [2, 58, 0],
+                '30': [2, 58, 0],
+                '31': [2, 58, 0],
+                '32': [2, 58, 0]
             },
             '11': {
-                '8': [1, 0, 36]
+                '8': [1, 0, 37]
             },
             '12': {
                 '8': [2, 18, 0],
                 '9': [1, 0, 14],
-                '24': [1, 0, 15],
-                '25': [1, 0, 16],
-                '26': [1, 0, 17],
-                '27': [1, 0, 18],
-                '29': [1, 0, 37]
+                '20': [1, 0, 15],
+                '24': [1, 0, 16],
+                '25': [1, 0, 17],
+                '26': [1, 0, 18],
+                '27': [1, 0, 19],
+                '29': [1, 0, 38]
             },
             '13': {
-                '8': [2, 53, 0],
-                '9': [2, 53, 0],
-                '10': [2, 53, 0],
-                '11': [2, 53, 0],
-                '12': [2, 53, 0],
-                '13': [2, 53, 0],
-                '14': [2, 53, 0],
-                '15': [2, 53, 0],
-                '16': [2, 53, 0],
-                '17': [2, 53, 0],
-                '18': [2, 53, 0],
-                '19': [2, 53, 0],
-                '20': [2, 53, 0],
-                '21': [2, 53, 0],
-                '22': [2, 53, 0],
-                '23': [2, 53, 0],
-                '24': [2, 53, 0],
-                '25': [2, 53, 0],
-                '26': [2, 53, 0],
-                '27': [2, 53, 0],
-                '29': [2, 53, 0],
-                '30': [1, 0, 45]
-            },
-            '14': {
-                '9': [1, 0, 14],
-                '24': [1, 0, 15],
-                '25': [1, 0, 16],
-                '26': [1, 0, 17],
-                '27': [1, 0, 18],
-                '29': [1, 0, 10]
-            },
-            '15': {
-                '9': [1, 0, 14],
-                '24': [1, 0, 15],
-                '25': [1, 0, 16],
-                '26': [1, 0, 17],
-                '27': [1, 0, 18],
-                '29': [1, 0, 10]
-            },
-            '16': {
-                '8': [2, 44, 0],
-                '9': [2, 44, 0],
-                '10': [2, 44, 0],
-                '11': [2, 44, 0],
-                '12': [2, 44, 0],
-                '13': [2, 44, 0],
-                '14': [2, 44, 0],
-                '15': [2, 44, 0],
-                '16': [2, 44, 0],
-                '17': [2, 44, 0],
-                '18': [2, 44, 0],
-                '19': [2, 44, 0],
-                '20': [2, 44, 0],
-                '21': [2, 44, 0],
-                '22': [2, 44, 0],
-                '23': [2, 44, 0],
-                '24': [2, 44, 0],
-                '25': [2, 44, 0],
-                '26': [2, 44, 0],
-                '27': [2, 44, 0],
-                '29': [2, 44, 0]
-            },
-            '17': {
-                '8': [2, 46, 0],
-                '9': [2, 46, 0],
-                '10': [2, 46, 0],
-                '11': [2, 46, 0],
-                '12': [2, 46, 0],
-                '13': [2, 46, 0],
-                '14': [2, 46, 0],
-                '15': [2, 46, 0],
-                '16': [2, 46, 0],
-                '17': [2, 46, 0],
-                '18': [2, 46, 0],
-                '19': [2, 46, 0],
-                '20': [2, 46, 0],
-                '21': [2, 46, 0],
-                '22': [2, 46, 0],
-                '23': [2, 46, 0],
-                '24': [2, 46, 0],
-                '25': [2, 46, 0],
-                '26': [2, 46, 0],
-                '27': [2, 46, 0],
-                '29': [2, 46, 0]
-            },
-            '18': {
-                '8': [2, 45, 0],
-                '9': [2, 45, 0],
-                '10': [2, 45, 0],
-                '11': [2, 45, 0],
-                '12': [2, 45, 0],
-                '13': [2, 45, 0],
-                '14': [2, 45, 0],
-                '15': [2, 45, 0],
-                '16': [2, 45, 0],
-                '17': [2, 45, 0],
-                '18': [2, 45, 0],
-                '19': [2, 45, 0],
-                '20': [2, 45, 0],
-                '21': [2, 45, 0],
-                '22': [2, 45, 0],
-                '23': [2, 45, 0],
-                '24': [2, 45, 0],
-                '25': [2, 45, 0],
-                '26': [2, 45, 0],
-                '27': [2, 45, 0],
-                '29': [2, 45, 0]
-            },
-            '19': {
-                '8': [1, 0, 48]
-            },
-            '20': {
-                '8': [2, 47, 0],
-                '9': [1, 0, 14],
-                '11': [2, 47, 0],
-                '12': [2, 47, 0],
-                '13': [2, 47, 0],
-                '14': [2, 47, 0],
-                '15': [2, 47, 0],
-                '16': [2, 47, 0],
-                '17': [2, 47, 0],
-                '18': [2, 47, 0],
-                '19': [2, 47, 0],
-                '20': [2, 47, 0],
-                '21': [2, 47, 0],
-                '22': [2, 47, 0],
-                '23': [2, 47, 0],
-                '24': [1, 0, 15],
-                '25': [1, 0, 16],
-                '26': [1, 0, 17],
-                '27': [1, 0, 18],
-                '29': [1, 0, 37]
-            },
-            '21': {
-                '8': [1, 0, 49]
-            },
-            '22': {
-                '8': [2, 22, 0],
-                '9': [2, 22, 0],
-                '10': [2, 22, 0],
-                '11': [1, 0, 50],
-                '24': [2, 22, 0],
-                '25': [2, 22, 0],
-                '26': [2, 22, 0],
-                '27': [2, 22, 0],
-                '29': [2, 22, 0]
-            },
-            '23': {
-                '8': [2, 23, 0],
-                '9': [2, 23, 0],
-                '10': [2, 23, 0],
-                '11': [2, 23, 0],
-                '12': [1, 0, 51],
-                '24': [2, 23, 0],
-                '25': [2, 23, 0],
-                '26': [2, 23, 0],
-                '27': [2, 23, 0],
-                '29': [2, 23, 0]
-            },
-            '24': {
-                '8': [2, 25, 0],
-                '9': [2, 25, 0],
-                '10': [2, 25, 0],
-                '11': [2, 25, 0],
-                '12': [2, 25, 0],
-                '13': [1, 0, 52],
-                '14': [1, 0, 53],
-                '24': [2, 25, 0],
-                '25': [2, 25, 0],
-                '26': [2, 25, 0],
-                '27': [2, 25, 0],
-                '29': [2, 25, 0]
-            },
-            '25': {
-                '8': [2, 27, 0],
-                '9': [2, 27, 0],
-                '10': [2, 27, 0],
-                '11': [2, 27, 0],
-                '12': [2, 27, 0],
-                '13': [2, 27, 0],
-                '14': [2, 27, 0],
-                '15': [1, 0, 54],
-                '16': [1, 0, 55],
-                '17': [1, 0, 56],
-                '18': [1, 0, 57],
-                '24': [2, 27, 0],
-                '25': [2, 27, 0],
-                '26': [2, 27, 0],
-                '27': [2, 27, 0],
-                '29': [2, 27, 0]
-            },
-            '26': {
-                '8': [2, 30, 0],
-                '9': [2, 30, 0],
-                '10': [2, 30, 0],
-                '11': [2, 30, 0],
-                '12': [2, 30, 0],
-                '13': [2, 30, 0],
-                '14': [2, 30, 0],
-                '15': [2, 30, 0],
-                '16': [2, 30, 0],
-                '17': [2, 30, 0],
-                '18': [2, 30, 0],
-                '19': [1, 0, 58],
-                '20': [1, 0, 59],
-                '24': [2, 30, 0],
-                '25': [2, 30, 0],
-                '26': [2, 30, 0],
-                '27': [2, 30, 0],
-                '29': [2, 30, 0]
-            },
-            '27': {
-                '8': [2, 35, 0],
-                '9': [2, 35, 0],
-                '10': [2, 35, 0],
-                '11': [2, 35, 0],
-                '12': [2, 35, 0],
-                '13': [2, 35, 0],
-                '14': [2, 35, 0],
-                '15': [2, 35, 0],
-                '16': [2, 35, 0],
-                '17': [2, 35, 0],
-                '18': [2, 35, 0],
-                '19': [2, 35, 0],
-                '20': [2, 35, 0],
-                '21': [1, 0, 60],
-                '22': [1, 0, 61],
-                '23': [1, 0, 62],
-                '24': [2, 35, 0],
-                '25': [2, 35, 0],
-                '26': [2, 35, 0],
-                '27': [2, 35, 0],
-                '29': [2, 35, 0]
-            },
-            '28': {
-                '8': [2, 38, 0],
-                '9': [2, 38, 0],
-                '10': [2, 38, 0],
-                '11': [2, 38, 0],
-                '12': [2, 38, 0],
-                '13': [2, 38, 0],
-                '14': [2, 38, 0],
-                '15': [2, 38, 0],
-                '16': [2, 38, 0],
-                '17': [2, 38, 0],
-                '18': [2, 38, 0],
-                '19': [2, 38, 0],
-                '20': [2, 38, 0],
-                '21': [2, 38, 0],
-                '22': [2, 38, 0],
-                '23': [2, 38, 0],
-                '24': [2, 38, 0],
-                '25': [2, 38, 0],
-                '26': [2, 38, 0],
-                '27': [2, 38, 0],
-                '29': [2, 38, 0]
-            },
-            '29': {
-                '8': [2, 43, 0],
-                '9': [2, 43, 0],
-                '10': [2, 43, 0],
-                '11': [2, 43, 0],
-                '12': [2, 43, 0],
-                '13': [2, 43, 0],
-                '14': [2, 43, 0],
-                '15': [2, 43, 0],
-                '16': [2, 43, 0],
-                '17': [2, 43, 0],
-                '18': [2, 43, 0],
-                '19': [2, 43, 0],
-                '20': [2, 43, 0],
-                '21': [2, 43, 0],
-                '22': [2, 43, 0],
-                '23': [2, 43, 0],
-                '24': [2, 43, 0],
-                '25': [2, 43, 0],
-                '26': [2, 43, 0],
-                '27': [2, 43, 0],
-                '29': [2, 43, 0]
-            },
-            '30': {
-                '8': [1, 0, 63]
-            },
-            '31': {
-                '8': [1, 0, 64]
-            },
-            '32': {
-                '8': [1, 0, 65]
-            },
-            '33': {
-                '2': [1, 0, 1],
-                '3': [1, 0, 2],
-                '6': [1, 0, 3],
-                '7': [1, 0, 4]
-            },
-            '34': {
-                '1': [2, 4, 0],
-                '2': [2, 4, 0],
-                '3': [2, 4, 0],
-                '4': [2, 4, 0],
-                '5': [2, 4, 0],
-                '6': [2, 4, 0],
-                '7': [2, 4, 0]
-            },
-            '35': {
-                '4': [1, 0, 67]
-            },
-            '36': {
-                '2': [2, 8, 0],
-                '3': [2, 8, 0],
-                '6': [2, 8, 0],
-                '7': [2, 8, 0]
-            },
-            '37': {
-                '8': [2, 56, 0],
-                '9': [2, 56, 0],
-                '11': [2, 56, 0],
-                '12': [2, 56, 0],
-                '13': [2, 56, 0],
-                '14': [2, 56, 0],
-                '15': [2, 56, 0],
-                '16': [2, 56, 0],
-                '17': [2, 56, 0],
-                '18': [2, 56, 0],
-                '19': [2, 56, 0],
-                '20': [2, 56, 0],
-                '21': [2, 56, 0],
-                '22': [2, 56, 0],
-                '23': [2, 56, 0],
-                '24': [2, 56, 0],
-                '25': [2, 56, 0],
-                '26': [2, 56, 0],
-                '27': [2, 56, 0],
-                '28': [1, 0, 69],
-                '29': [2, 56, 0],
-                '30': [2, 56, 0]
-            },
-            '38': {
-                '8': [2, 47, 0],
-                '9': [2, 47, 0],
-                '10': [2, 47, 0],
-                '11': [2, 47, 0],
-                '12': [2, 47, 0],
-                '13': [2, 47, 0],
-                '14': [2, 47, 0],
-                '15': [2, 47, 0],
-                '16': [2, 47, 0],
-                '17': [2, 47, 0],
-                '18': [2, 47, 0],
-                '19': [2, 47, 0],
-                '20': [2, 47, 0],
-                '21': [2, 47, 0],
-                '22': [2, 47, 0],
-                '23': [2, 47, 0],
-                '24': [2, 47, 0],
-                '25': [2, 47, 0],
-                '26': [2, 47, 0],
-                '27': [2, 47, 0],
-                '29': [2, 47, 0]
-            },
-            '39': {
-                '8': [2, 21, 0],
-                '9': [2, 21, 0],
-                '24': [2, 21, 0],
-                '25': [2, 21, 0],
-                '26': [2, 21, 0],
-                '27': [2, 21, 0],
-                '29': [2, 21, 0]
-            },
-            '40': {
-                '8': [2, 16, 0],
-                '9': [1, 0, 14],
-                '24': [1, 0, 15],
-                '25': [1, 0, 16],
-                '26': [1, 0, 17],
-                '27': [1, 0, 18],
-                '29': [1, 0, 37]
-            },
-            '41': {
-                '8': [2, 17, 0]
-            },
-            '42': {
-                '8': [2, 20, 0],
-                '9': [2, 20, 0],
-                '24': [2, 20, 0],
-                '25': [2, 20, 0],
-                '26': [2, 20, 0],
-                '27': [2, 20, 0],
-                '29': [2, 20, 0]
-            },
-            '43': {
-                '8': [2, 49, 0],
-                '29': [1, 0, 72]
-            },
-            '44': {
-                '8': [2, 51, 0],
-                '29': [2, 51, 0]
-            },
-            '45': {
-                '27': [1, 0, 74],
-                '29': [1, 0, 75]
-            },
-            '46': {
-                '10': [1, 0, 76]
-            },
-            '47': {
-                '8': [2, 42, 0],
-                '9': [2, 42, 0],
-                '10': [2, 42, 0],
-                '11': [2, 42, 0],
-                '12': [2, 42, 0],
-                '13': [2, 42, 0],
-                '14': [2, 42, 0],
-                '15': [2, 42, 0],
-                '16': [2, 42, 0],
-                '17': [2, 42, 0],
-                '18': [2, 42, 0],
-                '19': [2, 42, 0],
-                '20': [2, 42, 0],
-                '21': [2, 42, 0],
-                '22': [2, 42, 0],
-                '23': [2, 42, 0],
-                '24': [2, 42, 0],
-                '25': [2, 42, 0],
-                '26': [2, 42, 0],
-                '27': [2, 42, 0],
-                '29': [2, 42, 0]
-            },
-            '48': {
-                '1': [2, 11, 0],
-                '2': [2, 11, 0],
-                '3': [2, 11, 0],
-                '4': [2, 11, 0],
-                '5': [2, 11, 0],
-                '6': [2, 11, 0],
-                '7': [2, 11, 0]
-            },
-            '49': {
-                '1': [2, 13, 0],
-                '2': [2, 13, 0],
-                '3': [2, 13, 0],
-                '4': [2, 13, 0],
-                '5': [2, 13, 0],
-                '6': [2, 13, 0],
-                '7': [2, 13, 0]
-            },
-            '50': {
-                '9': [1, 0, 14],
-                '24': [1, 0, 15],
-                '25': [1, 0, 16],
-                '26': [1, 0, 17],
-                '27': [1, 0, 18],
-                '29': [1, 0, 10]
-            },
-            '51': {
-                '9': [1, 0, 14],
-                '24': [1, 0, 15],
-                '25': [1, 0, 16],
-                '26': [1, 0, 17],
-                '27': [1, 0, 18],
-                '29': [1, 0, 10]
-            },
-            '52': {
-                '9': [1, 0, 14],
-                '24': [1, 0, 15],
-                '25': [1, 0, 16],
-                '26': [1, 0, 17],
-                '27': [1, 0, 18],
-                '29': [1, 0, 10]
-            },
-            '53': {
-                '9': [1, 0, 14],
-                '24': [1, 0, 15],
-                '25': [1, 0, 16],
-                '26': [1, 0, 17],
-                '27': [1, 0, 18],
-                '29': [1, 0, 10]
-            },
-            '54': {
-                '9': [1, 0, 14],
-                '24': [1, 0, 15],
-                '25': [1, 0, 16],
-                '26': [1, 0, 17],
-                '27': [1, 0, 18],
-                '29': [1, 0, 10]
-            },
-            '55': {
-                '9': [1, 0, 14],
-                '24': [1, 0, 15],
-                '25': [1, 0, 16],
-                '26': [1, 0, 17],
-                '27': [1, 0, 18],
-                '29': [1, 0, 10]
-            },
-            '56': {
-                '9': [1, 0, 14],
-                '24': [1, 0, 15],
-                '25': [1, 0, 16],
-                '26': [1, 0, 17],
-                '27': [1, 0, 18],
-                '29': [1, 0, 10]
-            },
-            '57': {
-                '9': [1, 0, 14],
-                '24': [1, 0, 15],
-                '25': [1, 0, 16],
-                '26': [1, 0, 17],
-                '27': [1, 0, 18],
-                '29': [1, 0, 10]
-            },
-            '58': {
-                '9': [1, 0, 14],
-                '24': [1, 0, 15],
-                '25': [1, 0, 16],
-                '26': [1, 0, 17],
-                '27': [1, 0, 18],
-                '29': [1, 0, 10]
-            },
-            '59': {
-                '9': [1, 0, 14],
-                '24': [1, 0, 15],
-                '25': [1, 0, 16],
-                '26': [1, 0, 17],
-                '27': [1, 0, 18],
-                '29': [1, 0, 10]
-            },
-            '60': {
-                '9': [1, 0, 14],
-                '24': [1, 0, 15],
-                '25': [1, 0, 16],
-                '26': [1, 0, 17],
-                '27': [1, 0, 18],
-                '29': [1, 0, 10]
-            },
-            '61': {
-                '9': [1, 0, 14],
-                '24': [1, 0, 15],
-                '25': [1, 0, 16],
-                '26': [1, 0, 17],
-                '27': [1, 0, 18],
-                '29': [1, 0, 10]
-            },
-            '62': {
-                '9': [1, 0, 14],
-                '24': [1, 0, 15],
-                '25': [1, 0, 16],
-                '26': [1, 0, 17],
-                '27': [1, 0, 18],
-                '29': [1, 0, 10]
-            },
-            '63': {
-                '1': [2, 10, 0],
-                '2': [2, 10, 0],
-                '3': [2, 10, 0],
-                '4': [2, 10, 0],
-                '5': [2, 10, 0],
-                '6': [2, 10, 0],
-                '7': [2, 10, 0]
-            },
-            '64': {
-                '1': [2, 12, 0],
-                '2': [2, 12, 0],
-                '3': [2, 12, 0],
-                '4': [2, 12, 0],
-                '5': [2, 12, 0],
-                '6': [2, 12, 0],
-                '7': [2, 12, 0]
-            },
-            '65': {
-                '2': [2, 14, 0],
-                '3': [2, 14, 0],
-                '6': [2, 14, 0],
-                '7': [2, 14, 0]
-            },
-            '66': {
-                '1': [2, 1, 0],
-                '2': [1, 0, 1],
-                '3': [1, 0, 2],
-                '4': [2, 1, 0],
-                '6': [1, 0, 3],
-                '7': [1, 0, 4]
-            },
-            '67': {
-                '29': [1, 0, 10]
-            },
-            '68': {
-                '1': [2, 5, 0],
-                '2': [2, 5, 0],
-                '3': [2, 5, 0],
-                '4': [2, 5, 0],
-                '5': [2, 5, 0],
-                '6': [2, 5, 0],
-                '7': [2, 5, 0]
-            },
-            '69': {
-                '9': [1, 0, 14],
-                '24': [1, 0, 15],
-                '25': [1, 0, 16],
-                '26': [1, 0, 17],
-                '27': [1, 0, 18],
-                '29': [1, 0, 10]
-            },
-            '70': {
-                '8': [2, 15, 0]
-            },
-            '71': {
-                '8': [2, 19, 0],
-                '9': [2, 19, 0],
-                '24': [2, 19, 0],
-                '25': [2, 19, 0],
-                '26': [2, 19, 0],
-                '27': [2, 19, 0],
-                '29': [2, 19, 0]
-            },
-            '72': {
-                '28': [1, 0, 69]
-            },
-            '73': {
-                '8': [2, 50, 0],
-                '29': [2, 50, 0]
-            },
-            '74': {
-                '8': [2, 55, 0],
-                '9': [2, 55, 0],
-                '10': [2, 55, 0],
-                '11': [2, 55, 0],
-                '12': [2, 55, 0],
-                '13': [2, 55, 0],
-                '14': [2, 55, 0],
-                '15': [2, 55, 0],
-                '16': [2, 55, 0],
-                '17': [2, 55, 0],
-                '18': [2, 55, 0],
-                '19': [2, 55, 0],
-                '20': [2, 55, 0],
-                '21': [2, 55, 0],
-                '22': [2, 55, 0],
-                '23': [2, 55, 0],
-                '24': [2, 55, 0],
-                '25': [2, 55, 0],
-                '26': [2, 55, 0],
-                '27': [2, 55, 0],
-                '29': [2, 55, 0],
-                '30': [2, 55, 0]
-            },
-            '75': {
                 '8': [2, 54, 0],
                 '9': [2, 54, 0],
                 '10': [2, 54, 0],
@@ -2273,9 +1694,346 @@ KISSY.add("xtemplate/compiler/parser", function () {
                 '26': [2, 54, 0],
                 '27': [2, 54, 0],
                 '29': [2, 54, 0],
-                '30': [2, 54, 0]
+                '30': [1, 0, 46],
+                '31': [1, 0, 47],
+                '32': [2, 54, 0]
             },
-            '76': {
+            '14': {
+                '9': [1, 0, 14],
+                '20': [1, 0, 15],
+                '24': [1, 0, 16],
+                '25': [1, 0, 17],
+                '26': [1, 0, 18],
+                '27': [1, 0, 19],
+                '29': [1, 0, 10]
+            },
+            '15': {
+                '27': [1, 0, 49]
+            },
+            '16': {
+                '9': [1, 0, 14],
+                '20': [1, 0, 15],
+                '24': [1, 0, 16],
+                '25': [1, 0, 17],
+                '26': [1, 0, 18],
+                '27': [1, 0, 19],
+                '29': [1, 0, 10]
+            },
+            '17': {
+                '8': [2, 44, 0],
+                '9': [2, 44, 0],
+                '10': [2, 44, 0],
+                '11': [2, 44, 0],
+                '12': [2, 44, 0],
+                '13': [2, 44, 0],
+                '14': [2, 44, 0],
+                '15': [2, 44, 0],
+                '16': [2, 44, 0],
+                '17': [2, 44, 0],
+                '18': [2, 44, 0],
+                '19': [2, 44, 0],
+                '20': [2, 44, 0],
+                '21': [2, 44, 0],
+                '22': [2, 44, 0],
+                '23': [2, 44, 0],
+                '24': [2, 44, 0],
+                '25': [2, 44, 0],
+                '26': [2, 44, 0],
+                '27': [2, 44, 0],
+                '29': [2, 44, 0],
+                '32': [2, 44, 0]
+            },
+            '18': {
+                '8': [2, 47, 0],
+                '9': [2, 47, 0],
+                '10': [2, 47, 0],
+                '11': [2, 47, 0],
+                '12': [2, 47, 0],
+                '13': [2, 47, 0],
+                '14': [2, 47, 0],
+                '15': [2, 47, 0],
+                '16': [2, 47, 0],
+                '17': [2, 47, 0],
+                '18': [2, 47, 0],
+                '19': [2, 47, 0],
+                '20': [2, 47, 0],
+                '21': [2, 47, 0],
+                '22': [2, 47, 0],
+                '23': [2, 47, 0],
+                '24': [2, 47, 0],
+                '25': [2, 47, 0],
+                '26': [2, 47, 0],
+                '27': [2, 47, 0],
+                '29': [2, 47, 0],
+                '32': [2, 47, 0]
+            },
+            '19': {
+                '8': [2, 45, 0],
+                '9': [2, 45, 0],
+                '10': [2, 45, 0],
+                '11': [2, 45, 0],
+                '12': [2, 45, 0],
+                '13': [2, 45, 0],
+                '14': [2, 45, 0],
+                '15': [2, 45, 0],
+                '16': [2, 45, 0],
+                '17': [2, 45, 0],
+                '18': [2, 45, 0],
+                '19': [2, 45, 0],
+                '20': [2, 45, 0],
+                '21': [2, 45, 0],
+                '22': [2, 45, 0],
+                '23': [2, 45, 0],
+                '24': [2, 45, 0],
+                '25': [2, 45, 0],
+                '26': [2, 45, 0],
+                '27': [2, 45, 0],
+                '29': [2, 45, 0],
+                '32': [2, 45, 0]
+            },
+            '20': {
+                '8': [1, 0, 51]
+            },
+            '21': {
+                '8': [2, 48, 0],
+                '9': [1, 0, 14],
+                '11': [2, 48, 0],
+                '12': [2, 48, 0],
+                '13': [2, 48, 0],
+                '14': [2, 48, 0],
+                '15': [2, 48, 0],
+                '16': [2, 48, 0],
+                '17': [2, 48, 0],
+                '18': [2, 48, 0],
+                '19': [2, 48, 0],
+                '20': [2, 48, 0],
+                '21': [2, 48, 0],
+                '22': [2, 48, 0],
+                '23': [2, 48, 0],
+                '24': [1, 0, 16],
+                '25': [1, 0, 17],
+                '26': [1, 0, 18],
+                '27': [1, 0, 19],
+                '29': [1, 0, 38]
+            },
+            '22': {
+                '8': [1, 0, 52]
+            },
+            '23': {
+                '8': [2, 22, 0],
+                '9': [2, 22, 0],
+                '10': [2, 22, 0],
+                '11': [1, 0, 53],
+                '20': [2, 22, 0],
+                '24': [2, 22, 0],
+                '25': [2, 22, 0],
+                '26': [2, 22, 0],
+                '27': [2, 22, 0],
+                '29': [2, 22, 0],
+                '32': [2, 22, 0]
+            },
+            '24': {
+                '8': [2, 23, 0],
+                '9': [2, 23, 0],
+                '10': [2, 23, 0],
+                '11': [2, 23, 0],
+                '12': [1, 0, 54],
+                '20': [2, 23, 0],
+                '24': [2, 23, 0],
+                '25': [2, 23, 0],
+                '26': [2, 23, 0],
+                '27': [2, 23, 0],
+                '29': [2, 23, 0],
+                '32': [2, 23, 0]
+            },
+            '25': {
+                '8': [2, 25, 0],
+                '9': [2, 25, 0],
+                '10': [2, 25, 0],
+                '11': [2, 25, 0],
+                '12': [2, 25, 0],
+                '13': [1, 0, 55],
+                '14': [1, 0, 56],
+                '20': [2, 25, 0],
+                '24': [2, 25, 0],
+                '25': [2, 25, 0],
+                '26': [2, 25, 0],
+                '27': [2, 25, 0],
+                '29': [2, 25, 0],
+                '32': [2, 25, 0]
+            },
+            '26': {
+                '8': [2, 27, 0],
+                '9': [2, 27, 0],
+                '10': [2, 27, 0],
+                '11': [2, 27, 0],
+                '12': [2, 27, 0],
+                '13': [2, 27, 0],
+                '14': [2, 27, 0],
+                '15': [1, 0, 57],
+                '16': [1, 0, 58],
+                '17': [1, 0, 59],
+                '18': [1, 0, 60],
+                '20': [2, 27, 0],
+                '24': [2, 27, 0],
+                '25': [2, 27, 0],
+                '26': [2, 27, 0],
+                '27': [2, 27, 0],
+                '29': [2, 27, 0],
+                '32': [2, 27, 0]
+            },
+            '27': {
+                '8': [2, 30, 0],
+                '9': [2, 30, 0],
+                '10': [2, 30, 0],
+                '11': [2, 30, 0],
+                '12': [2, 30, 0],
+                '13': [2, 30, 0],
+                '14': [2, 30, 0],
+                '15': [2, 30, 0],
+                '16': [2, 30, 0],
+                '17': [2, 30, 0],
+                '18': [2, 30, 0],
+                '19': [1, 0, 61],
+                '20': [2, 30, 0],
+                '24': [2, 30, 0],
+                '25': [2, 30, 0],
+                '26': [2, 30, 0],
+                '27': [2, 30, 0],
+                '29': [2, 30, 0],
+                '32': [2, 30, 0]
+            },
+            '28': {
+                '8': [2, 35, 0],
+                '9': [2, 35, 0],
+                '10': [2, 35, 0],
+                '11': [2, 35, 0],
+                '12': [2, 35, 0],
+                '13': [2, 35, 0],
+                '14': [2, 35, 0],
+                '15': [2, 35, 0],
+                '16': [2, 35, 0],
+                '17': [2, 35, 0],
+                '18': [2, 35, 0],
+                '19': [2, 35, 0],
+                '20': [2, 35, 0],
+                '21': [1, 0, 63],
+                '22': [1, 0, 64],
+                '23': [1, 0, 65],
+                '24': [2, 35, 0],
+                '25': [2, 35, 0],
+                '26': [2, 35, 0],
+                '27': [2, 35, 0],
+                '29': [2, 35, 0],
+                '32': [2, 35, 0]
+            },
+            '29': {
+                '8': [2, 38, 0],
+                '9': [2, 38, 0],
+                '10': [2, 38, 0],
+                '11': [2, 38, 0],
+                '12': [2, 38, 0],
+                '13': [2, 38, 0],
+                '14': [2, 38, 0],
+                '15': [2, 38, 0],
+                '16': [2, 38, 0],
+                '17': [2, 38, 0],
+                '18': [2, 38, 0],
+                '19': [2, 38, 0],
+                '20': [2, 38, 0],
+                '21': [2, 38, 0],
+                '22': [2, 38, 0],
+                '23': [2, 38, 0],
+                '24': [2, 38, 0],
+                '25': [2, 38, 0],
+                '26': [2, 38, 0],
+                '27': [2, 38, 0],
+                '29': [2, 38, 0],
+                '32': [2, 38, 0]
+            },
+            '30': {
+                '8': [2, 43, 0],
+                '9': [2, 43, 0],
+                '10': [2, 43, 0],
+                '11': [2, 43, 0],
+                '12': [2, 43, 0],
+                '13': [2, 43, 0],
+                '14': [2, 43, 0],
+                '15': [2, 43, 0],
+                '16': [2, 43, 0],
+                '17': [2, 43, 0],
+                '18': [2, 43, 0],
+                '19': [2, 43, 0],
+                '20': [2, 43, 0],
+                '21': [2, 43, 0],
+                '22': [2, 43, 0],
+                '23': [2, 43, 0],
+                '24': [2, 43, 0],
+                '25': [2, 43, 0],
+                '26': [2, 43, 0],
+                '27': [2, 43, 0],
+                '29': [2, 43, 0],
+                '32': [2, 43, 0]
+            },
+            '31': {
+                '8': [1, 0, 66]
+            },
+            '32': {
+                '8': [1, 0, 67]
+            },
+            '33': {
+                '8': [1, 0, 68]
+            },
+            '34': {
+                '2': [1, 0, 1],
+                '3': [1, 0, 2],
+                '6': [1, 0, 3],
+                '7': [1, 0, 4]
+            },
+            '35': {
+                '1': [2, 4, 0],
+                '2': [2, 4, 0],
+                '3': [2, 4, 0],
+                '4': [2, 4, 0],
+                '5': [2, 4, 0],
+                '6': [2, 4, 0],
+                '7': [2, 4, 0]
+            },
+            '36': {
+                '4': [1, 0, 70]
+            },
+            '37': {
+                '2': [2, 8, 0],
+                '3': [2, 8, 0],
+                '6': [2, 8, 0],
+                '7': [2, 8, 0]
+            },
+            '38': {
+                '8': [2, 58, 0],
+                '9': [2, 58, 0],
+                '11': [2, 58, 0],
+                '12': [2, 58, 0],
+                '13': [2, 58, 0],
+                '14': [2, 58, 0],
+                '15': [2, 58, 0],
+                '16': [2, 58, 0],
+                '17': [2, 58, 0],
+                '18': [2, 58, 0],
+                '19': [2, 58, 0],
+                '20': [2, 58, 0],
+                '21': [2, 58, 0],
+                '22': [2, 58, 0],
+                '23': [2, 58, 0],
+                '24': [2, 58, 0],
+                '25': [2, 58, 0],
+                '26': [2, 58, 0],
+                '27': [2, 58, 0],
+                '28': [1, 0, 72],
+                '29': [2, 58, 0],
+                '30': [2, 58, 0],
+                '31': [2, 58, 0]
+            },
+            '39': {
                 '8': [2, 48, 0],
                 '9': [2, 48, 0],
                 '10': [2, 48, 0],
@@ -2296,35 +2054,432 @@ KISSY.add("xtemplate/compiler/parser", function () {
                 '25': [2, 48, 0],
                 '26': [2, 48, 0],
                 '27': [2, 48, 0],
-                '29': [2, 48, 0]
+                '29': [2, 48, 0],
+                '32': [2, 48, 0]
+            },
+            '40': {
+                '8': [2, 21, 0],
+                '9': [2, 21, 0],
+                '20': [2, 21, 0],
+                '24': [2, 21, 0],
+                '25': [2, 21, 0],
+                '26': [2, 21, 0],
+                '27': [2, 21, 0],
+                '29': [2, 21, 0]
+            },
+            '41': {
+                '8': [2, 16, 0],
+                '9': [1, 0, 14],
+                '20': [1, 0, 15],
+                '24': [1, 0, 16],
+                '25': [1, 0, 17],
+                '26': [1, 0, 18],
+                '27': [1, 0, 19],
+                '29': [1, 0, 38]
+            },
+            '42': {
+                '8': [2, 17, 0]
+            },
+            '43': {
+                '8': [2, 20, 0],
+                '9': [2, 20, 0],
+                '20': [2, 20, 0],
+                '24': [2, 20, 0],
+                '25': [2, 20, 0],
+                '26': [2, 20, 0],
+                '27': [2, 20, 0],
+                '29': [2, 20, 0]
+            },
+            '44': {
+                '8': [2, 50, 0],
+                '29': [1, 0, 75]
+            },
+            '45': {
+                '8': [2, 52, 0],
+                '29': [2, 52, 0]
+            },
+            '46': {
+                '27': [1, 0, 77],
+                '29': [1, 0, 78]
+            },
+            '47': {
+                '9': [1, 0, 14],
+                '20': [1, 0, 15],
+                '24': [1, 0, 16],
+                '25': [1, 0, 17],
+                '26': [1, 0, 18],
+                '27': [1, 0, 19],
+                '29': [1, 0, 10]
+            },
+            '48': {
+                '10': [1, 0, 80]
+            },
+            '49': {
+                '8': [2, 46, 0],
+                '9': [2, 46, 0],
+                '10': [2, 46, 0],
+                '11': [2, 46, 0],
+                '12': [2, 46, 0],
+                '13': [2, 46, 0],
+                '14': [2, 46, 0],
+                '15': [2, 46, 0],
+                '16': [2, 46, 0],
+                '17': [2, 46, 0],
+                '18': [2, 46, 0],
+                '19': [2, 46, 0],
+                '20': [2, 46, 0],
+                '21': [2, 46, 0],
+                '22': [2, 46, 0],
+                '23': [2, 46, 0],
+                '24': [2, 46, 0],
+                '25': [2, 46, 0],
+                '26': [2, 46, 0],
+                '27': [2, 46, 0],
+                '29': [2, 46, 0],
+                '32': [2, 46, 0]
+            },
+            '50': {
+                '8': [2, 42, 0],
+                '9': [2, 42, 0],
+                '10': [2, 42, 0],
+                '11': [2, 42, 0],
+                '12': [2, 42, 0],
+                '13': [2, 42, 0],
+                '14': [2, 42, 0],
+                '15': [2, 42, 0],
+                '16': [2, 42, 0],
+                '17': [2, 42, 0],
+                '18': [2, 42, 0],
+                '19': [2, 42, 0],
+                '20': [2, 42, 0],
+                '21': [2, 42, 0],
+                '22': [2, 42, 0],
+                '23': [2, 42, 0],
+                '24': [2, 42, 0],
+                '25': [2, 42, 0],
+                '26': [2, 42, 0],
+                '27': [2, 42, 0],
+                '29': [2, 42, 0],
+                '32': [2, 42, 0]
+            },
+            '51': {
+                '1': [2, 11, 0],
+                '2': [2, 11, 0],
+                '3': [2, 11, 0],
+                '4': [2, 11, 0],
+                '5': [2, 11, 0],
+                '6': [2, 11, 0],
+                '7': [2, 11, 0]
+            },
+            '52': {
+                '1': [2, 13, 0],
+                '2': [2, 13, 0],
+                '3': [2, 13, 0],
+                '4': [2, 13, 0],
+                '5': [2, 13, 0],
+                '6': [2, 13, 0],
+                '7': [2, 13, 0]
+            },
+            '53': {
+                '9': [1, 0, 14],
+                '20': [1, 0, 15],
+                '24': [1, 0, 16],
+                '25': [1, 0, 17],
+                '26': [1, 0, 18],
+                '27': [1, 0, 19],
+                '29': [1, 0, 10]
+            },
+            '54': {
+                '9': [1, 0, 14],
+                '20': [1, 0, 15],
+                '24': [1, 0, 16],
+                '25': [1, 0, 17],
+                '26': [1, 0, 18],
+                '27': [1, 0, 19],
+                '29': [1, 0, 10]
+            },
+            '55': {
+                '9': [1, 0, 14],
+                '20': [1, 0, 15],
+                '24': [1, 0, 16],
+                '25': [1, 0, 17],
+                '26': [1, 0, 18],
+                '27': [1, 0, 19],
+                '29': [1, 0, 10]
+            },
+            '56': {
+                '9': [1, 0, 14],
+                '20': [1, 0, 15],
+                '24': [1, 0, 16],
+                '25': [1, 0, 17],
+                '26': [1, 0, 18],
+                '27': [1, 0, 19],
+                '29': [1, 0, 10]
+            },
+            '57': {
+                '9': [1, 0, 14],
+                '20': [1, 0, 15],
+                '24': [1, 0, 16],
+                '25': [1, 0, 17],
+                '26': [1, 0, 18],
+                '27': [1, 0, 19],
+                '29': [1, 0, 10]
+            },
+            '58': {
+                '9': [1, 0, 14],
+                '20': [1, 0, 15],
+                '24': [1, 0, 16],
+                '25': [1, 0, 17],
+                '26': [1, 0, 18],
+                '27': [1, 0, 19],
+                '29': [1, 0, 10]
+            },
+            '59': {
+                '9': [1, 0, 14],
+                '20': [1, 0, 15],
+                '24': [1, 0, 16],
+                '25': [1, 0, 17],
+                '26': [1, 0, 18],
+                '27': [1, 0, 19],
+                '29': [1, 0, 10]
+            },
+            '60': {
+                '9': [1, 0, 14],
+                '20': [1, 0, 15],
+                '24': [1, 0, 16],
+                '25': [1, 0, 17],
+                '26': [1, 0, 18],
+                '27': [1, 0, 19],
+                '29': [1, 0, 10]
+            },
+            '61': {
+                '9': [1, 0, 14],
+                '20': [1, 0, 15],
+                '24': [1, 0, 16],
+                '25': [1, 0, 17],
+                '26': [1, 0, 18],
+                '27': [1, 0, 19],
+                '29': [1, 0, 10]
+            },
+            '62': {
+                '9': [1, 0, 14],
+                '20': [1, 0, 15],
+                '24': [1, 0, 16],
+                '25': [1, 0, 17],
+                '26': [1, 0, 18],
+                '27': [1, 0, 19],
+                '29': [1, 0, 10]
+            },
+            '63': {
+                '9': [1, 0, 14],
+                '20': [1, 0, 15],
+                '24': [1, 0, 16],
+                '25': [1, 0, 17],
+                '26': [1, 0, 18],
+                '27': [1, 0, 19],
+                '29': [1, 0, 10]
+            },
+            '64': {
+                '9': [1, 0, 14],
+                '20': [1, 0, 15],
+                '24': [1, 0, 16],
+                '25': [1, 0, 17],
+                '26': [1, 0, 18],
+                '27': [1, 0, 19],
+                '29': [1, 0, 10]
+            },
+            '65': {
+                '9': [1, 0, 14],
+                '20': [1, 0, 15],
+                '24': [1, 0, 16],
+                '25': [1, 0, 17],
+                '26': [1, 0, 18],
+                '27': [1, 0, 19],
+                '29': [1, 0, 10]
+            },
+            '66': {
+                '1': [2, 10, 0],
+                '2': [2, 10, 0],
+                '3': [2, 10, 0],
+                '4': [2, 10, 0],
+                '5': [2, 10, 0],
+                '6': [2, 10, 0],
+                '7': [2, 10, 0]
+            },
+            '67': {
+                '1': [2, 12, 0],
+                '2': [2, 12, 0],
+                '3': [2, 12, 0],
+                '4': [2, 12, 0],
+                '5': [2, 12, 0],
+                '6': [2, 12, 0],
+                '7': [2, 12, 0]
+            },
+            '68': {
+                '2': [2, 14, 0],
+                '3': [2, 14, 0],
+                '6': [2, 14, 0],
+                '7': [2, 14, 0]
+            },
+            '69': {
+                '1': [2, 1, 0],
+                '2': [1, 0, 1],
+                '3': [1, 0, 2],
+                '4': [2, 1, 0],
+                '6': [1, 0, 3],
+                '7': [1, 0, 4]
+            },
+            '70': {
+                '29': [1, 0, 10]
+            },
+            '71': {
+                '1': [2, 5, 0],
+                '2': [2, 5, 0],
+                '3': [2, 5, 0],
+                '4': [2, 5, 0],
+                '5': [2, 5, 0],
+                '6': [2, 5, 0],
+                '7': [2, 5, 0]
+            },
+            '72': {
+                '9': [1, 0, 14],
+                '20': [1, 0, 15],
+                '24': [1, 0, 16],
+                '25': [1, 0, 17],
+                '26': [1, 0, 18],
+                '27': [1, 0, 19],
+                '29': [1, 0, 10]
+            },
+            '73': {
+                '8': [2, 15, 0]
+            },
+            '74': {
+                '8': [2, 19, 0],
+                '9': [2, 19, 0],
+                '20': [2, 19, 0],
+                '24': [2, 19, 0],
+                '25': [2, 19, 0],
+                '26': [2, 19, 0],
+                '27': [2, 19, 0],
+                '29': [2, 19, 0]
+            },
+            '75': {
+                '28': [1, 0, 72]
+            },
+            '76': {
+                '8': [2, 51, 0],
+                '29': [2, 51, 0]
             },
             '77': {
+                '8': [2, 57, 0],
+                '9': [2, 57, 0],
+                '10': [2, 57, 0],
+                '11': [2, 57, 0],
+                '12': [2, 57, 0],
+                '13': [2, 57, 0],
+                '14': [2, 57, 0],
+                '15': [2, 57, 0],
+                '16': [2, 57, 0],
+                '17': [2, 57, 0],
+                '18': [2, 57, 0],
+                '19': [2, 57, 0],
+                '20': [2, 57, 0],
+                '21': [2, 57, 0],
+                '22': [2, 57, 0],
+                '23': [2, 57, 0],
+                '24': [2, 57, 0],
+                '25': [2, 57, 0],
+                '26': [2, 57, 0],
+                '27': [2, 57, 0],
+                '29': [2, 57, 0],
+                '30': [2, 57, 0],
+                '31': [2, 57, 0],
+                '32': [2, 57, 0]
+            },
+            '78': {
+                '8': [2, 55, 0],
+                '9': [2, 55, 0],
+                '10': [2, 55, 0],
+                '11': [2, 55, 0],
+                '12': [2, 55, 0],
+                '13': [2, 55, 0],
+                '14': [2, 55, 0],
+                '15': [2, 55, 0],
+                '16': [2, 55, 0],
+                '17': [2, 55, 0],
+                '18': [2, 55, 0],
+                '19': [2, 55, 0],
+                '20': [2, 55, 0],
+                '21': [2, 55, 0],
+                '22': [2, 55, 0],
+                '23': [2, 55, 0],
+                '24': [2, 55, 0],
+                '25': [2, 55, 0],
+                '26': [2, 55, 0],
+                '27': [2, 55, 0],
+                '29': [2, 55, 0],
+                '30': [2, 55, 0],
+                '31': [2, 55, 0],
+                '32': [2, 55, 0]
+            },
+            '79': {
+                '32': [1, 0, 96]
+            },
+            '80': {
+                '8': [2, 49, 0],
+                '9': [2, 49, 0],
+                '10': [2, 49, 0],
+                '11': [2, 49, 0],
+                '12': [2, 49, 0],
+                '13': [2, 49, 0],
+                '14': [2, 49, 0],
+                '15': [2, 49, 0],
+                '16': [2, 49, 0],
+                '17': [2, 49, 0],
+                '18': [2, 49, 0],
+                '19': [2, 49, 0],
+                '20': [2, 49, 0],
+                '21': [2, 49, 0],
+                '22': [2, 49, 0],
+                '23': [2, 49, 0],
+                '24': [2, 49, 0],
+                '25': [2, 49, 0],
+                '26': [2, 49, 0],
+                '27': [2, 49, 0],
+                '29': [2, 49, 0],
+                '32': [2, 49, 0]
+            },
+            '81': {
                 '8': [2, 24, 0],
                 '9': [2, 24, 0],
                 '10': [2, 24, 0],
                 '11': [2, 24, 0],
-                '12': [1, 0, 51],
+                '12': [1, 0, 54],
+                '20': [2, 24, 0],
                 '24': [2, 24, 0],
                 '25': [2, 24, 0],
                 '26': [2, 24, 0],
                 '27': [2, 24, 0],
-                '29': [2, 24, 0]
+                '29': [2, 24, 0],
+                '32': [2, 24, 0]
             },
-            '78': {
+            '82': {
                 '8': [2, 26, 0],
                 '9': [2, 26, 0],
                 '10': [2, 26, 0],
                 '11': [2, 26, 0],
                 '12': [2, 26, 0],
-                '13': [1, 0, 52],
-                '14': [1, 0, 53],
+                '13': [1, 0, 55],
+                '14': [1, 0, 56],
+                '20': [2, 26, 0],
                 '24': [2, 26, 0],
                 '25': [2, 26, 0],
                 '26': [2, 26, 0],
                 '27': [2, 26, 0],
-                '29': [2, 26, 0]
+                '29': [2, 26, 0],
+                '32': [2, 26, 0]
             },
-            '79': {
+            '83': {
                 '8': [2, 28, 0],
                 '9': [2, 28, 0],
                 '10': [2, 28, 0],
@@ -2332,17 +2487,19 @@ KISSY.add("xtemplate/compiler/parser", function () {
                 '12': [2, 28, 0],
                 '13': [2, 28, 0],
                 '14': [2, 28, 0],
-                '15': [1, 0, 54],
-                '16': [1, 0, 55],
-                '17': [1, 0, 56],
-                '18': [1, 0, 57],
+                '15': [1, 0, 57],
+                '16': [1, 0, 58],
+                '17': [1, 0, 59],
+                '18': [1, 0, 60],
+                '20': [2, 28, 0],
                 '24': [2, 28, 0],
                 '25': [2, 28, 0],
                 '26': [2, 28, 0],
                 '27': [2, 28, 0],
-                '29': [2, 28, 0]
+                '29': [2, 28, 0],
+                '32': [2, 28, 0]
             },
-            '80': {
+            '84': {
                 '8': [2, 29, 0],
                 '9': [2, 29, 0],
                 '10': [2, 29, 0],
@@ -2350,17 +2507,19 @@ KISSY.add("xtemplate/compiler/parser", function () {
                 '12': [2, 29, 0],
                 '13': [2, 29, 0],
                 '14': [2, 29, 0],
-                '15': [1, 0, 54],
-                '16': [1, 0, 55],
-                '17': [1, 0, 56],
-                '18': [1, 0, 57],
+                '15': [1, 0, 57],
+                '16': [1, 0, 58],
+                '17': [1, 0, 59],
+                '18': [1, 0, 60],
+                '20': [2, 29, 0],
                 '24': [2, 29, 0],
                 '25': [2, 29, 0],
                 '26': [2, 29, 0],
                 '27': [2, 29, 0],
-                '29': [2, 29, 0]
+                '29': [2, 29, 0],
+                '32': [2, 29, 0]
             },
-            '81': {
+            '85': {
                 '8': [2, 32, 0],
                 '9': [2, 32, 0],
                 '10': [2, 32, 0],
@@ -2372,15 +2531,16 @@ KISSY.add("xtemplate/compiler/parser", function () {
                 '16': [2, 32, 0],
                 '17': [2, 32, 0],
                 '18': [2, 32, 0],
-                '19': [1, 0, 58],
-                '20': [1, 0, 59],
+                '19': [1, 0, 61],
+                '20': [2, 32, 0],
                 '24': [2, 32, 0],
                 '25': [2, 32, 0],
                 '26': [2, 32, 0],
                 '27': [2, 32, 0],
-                '29': [2, 32, 0]
+                '29': [2, 32, 0],
+                '32': [2, 32, 0]
             },
-            '82': {
+            '86': {
                 '8': [2, 34, 0],
                 '9': [2, 34, 0],
                 '10': [2, 34, 0],
@@ -2392,15 +2552,16 @@ KISSY.add("xtemplate/compiler/parser", function () {
                 '16': [2, 34, 0],
                 '17': [2, 34, 0],
                 '18': [2, 34, 0],
-                '19': [1, 0, 58],
-                '20': [1, 0, 59],
+                '19': [1, 0, 61],
+                '20': [2, 34, 0],
                 '24': [2, 34, 0],
                 '25': [2, 34, 0],
                 '26': [2, 34, 0],
                 '27': [2, 34, 0],
-                '29': [2, 34, 0]
+                '29': [2, 34, 0],
+                '32': [2, 34, 0]
             },
-            '83': {
+            '87': {
                 '8': [2, 31, 0],
                 '9': [2, 31, 0],
                 '10': [2, 31, 0],
@@ -2412,15 +2573,16 @@ KISSY.add("xtemplate/compiler/parser", function () {
                 '16': [2, 31, 0],
                 '17': [2, 31, 0],
                 '18': [2, 31, 0],
-                '19': [1, 0, 58],
-                '20': [1, 0, 59],
+                '19': [1, 0, 61],
+                '20': [2, 31, 0],
                 '24': [2, 31, 0],
                 '25': [2, 31, 0],
                 '26': [2, 31, 0],
                 '27': [2, 31, 0],
-                '29': [2, 31, 0]
+                '29': [2, 31, 0],
+                '32': [2, 31, 0]
             },
-            '84': {
+            '88': {
                 '8': [2, 33, 0],
                 '9': [2, 33, 0],
                 '10': [2, 33, 0],
@@ -2432,15 +2594,16 @@ KISSY.add("xtemplate/compiler/parser", function () {
                 '16': [2, 33, 0],
                 '17': [2, 33, 0],
                 '18': [2, 33, 0],
-                '19': [1, 0, 58],
-                '20': [1, 0, 59],
+                '19': [1, 0, 61],
+                '20': [2, 33, 0],
                 '24': [2, 33, 0],
                 '25': [2, 33, 0],
                 '26': [2, 33, 0],
                 '27': [2, 33, 0],
-                '29': [2, 33, 0]
+                '29': [2, 33, 0],
+                '32': [2, 33, 0]
             },
-            '85': {
+            '89': {
                 '8': [2, 36, 0],
                 '9': [2, 36, 0],
                 '10': [2, 36, 0],
@@ -2454,16 +2617,17 @@ KISSY.add("xtemplate/compiler/parser", function () {
                 '18': [2, 36, 0],
                 '19': [2, 36, 0],
                 '20': [2, 36, 0],
-                '21': [1, 0, 60],
-                '22': [1, 0, 61],
-                '23': [1, 0, 62],
+                '21': [1, 0, 63],
+                '22': [1, 0, 64],
+                '23': [1, 0, 65],
                 '24': [2, 36, 0],
                 '25': [2, 36, 0],
                 '26': [2, 36, 0],
                 '27': [2, 36, 0],
-                '29': [2, 36, 0]
+                '29': [2, 36, 0],
+                '32': [2, 36, 0]
             },
-            '86': {
+            '90': {
                 '8': [2, 37, 0],
                 '9': [2, 37, 0],
                 '10': [2, 37, 0],
@@ -2477,16 +2641,17 @@ KISSY.add("xtemplate/compiler/parser", function () {
                 '18': [2, 37, 0],
                 '19': [2, 37, 0],
                 '20': [2, 37, 0],
-                '21': [1, 0, 60],
-                '22': [1, 0, 61],
-                '23': [1, 0, 62],
+                '21': [1, 0, 63],
+                '22': [1, 0, 64],
+                '23': [1, 0, 65],
                 '24': [2, 37, 0],
                 '25': [2, 37, 0],
                 '26': [2, 37, 0],
                 '27': [2, 37, 0],
-                '29': [2, 37, 0]
+                '29': [2, 37, 0],
+                '32': [2, 37, 0]
             },
-            '87': {
+            '91': {
                 '8': [2, 39, 0],
                 '9': [2, 39, 0],
                 '10': [2, 39, 0],
@@ -2507,9 +2672,10 @@ KISSY.add("xtemplate/compiler/parser", function () {
                 '25': [2, 39, 0],
                 '26': [2, 39, 0],
                 '27': [2, 39, 0],
-                '29': [2, 39, 0]
+                '29': [2, 39, 0],
+                '32': [2, 39, 0]
             },
-            '88': {
+            '92': {
                 '8': [2, 40, 0],
                 '9': [2, 40, 0],
                 '10': [2, 40, 0],
@@ -2530,9 +2696,10 @@ KISSY.add("xtemplate/compiler/parser", function () {
                 '25': [2, 40, 0],
                 '26': [2, 40, 0],
                 '27': [2, 40, 0],
-                '29': [2, 40, 0]
+                '29': [2, 40, 0],
+                '32': [2, 40, 0]
             },
-            '89': {
+            '93': {
                 '8': [2, 41, 0],
                 '9': [2, 41, 0],
                 '10': [2, 41, 0],
@@ -2553,16 +2720,43 @@ KISSY.add("xtemplate/compiler/parser", function () {
                 '25': [2, 41, 0],
                 '26': [2, 41, 0],
                 '27': [2, 41, 0],
-                '29': [2, 41, 0]
+                '29': [2, 41, 0],
+                '32': [2, 41, 0]
             },
-            '90': {
-                '8': [1, 0, 92]
+            '94': {
+                '8': [1, 0, 97]
             },
-            '91': {
-                '8': [2, 52, 0],
-                '29': [2, 52, 0]
+            '95': {
+                '8': [2, 53, 0],
+                '29': [2, 53, 0]
             },
-            '92': {
+            '96': {
+                '8': [2, 56, 0],
+                '9': [2, 56, 0],
+                '10': [2, 56, 0],
+                '11': [2, 56, 0],
+                '12': [2, 56, 0],
+                '13': [2, 56, 0],
+                '14': [2, 56, 0],
+                '15': [2, 56, 0],
+                '16': [2, 56, 0],
+                '17': [2, 56, 0],
+                '18': [2, 56, 0],
+                '19': [2, 56, 0],
+                '20': [2, 56, 0],
+                '21': [2, 56, 0],
+                '22': [2, 56, 0],
+                '23': [2, 56, 0],
+                '24': [2, 56, 0],
+                '25': [2, 56, 0],
+                '26': [2, 56, 0],
+                '27': [2, 56, 0],
+                '29': [2, 56, 0],
+                '30': [2, 56, 0],
+                '31': [2, 56, 0],
+                '32': [2, 56, 0]
+            },
+            '97': {
                 '1': [2, 9, 0],
                 '2': [2, 9, 0],
                 '3': [2, 9, 0],
@@ -2613,7 +2807,7 @@ KISSY.add("xtemplate/compiler/parser", function () {
                         expected.push(self.lexer.mapReverseSymbol(symbol));
                     });
                 }
-                error = "parse error at line " + lexer.lineNumber + ":\n" + lexer.showDebugInfo() + "\n" + "expect " + expected.join(", ");
+                error = "Syntax error at line " + lexer.lineNumber + ":\n" + lexer.showDebugInfo() + "\n" + "expect " + expected.join(", ");
                 S.error(error);
                 return false;
             }
@@ -2641,13 +2835,13 @@ KISSY.add("xtemplate/compiler/parser", function () {
                     reducedAction = production.action || production[2],
                     reducedRhs = production.rhs || production[1],
                     len = reducedRhs.length,
-                    i,
-                    ret,
+                    i = 0,
+                    ret = undefined,
                     $$ = valueStack[valueStack.length - len]; // default to $$ = $1
 
                 self.$$ = $$;
 
-                for (i = 0; i < len; i++) {
+                for (; i < len; i++) {
                     self["$" + (len - i)] = valueStack[valueStack.length - 1 - i];
                 }
 
@@ -2686,5 +2880,5 @@ KISSY.add("xtemplate/compiler/parser", function () {
         return undefined;
 
     };
-    return parser;;
+    return parser;
 });

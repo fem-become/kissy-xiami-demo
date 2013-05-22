@@ -37,11 +37,6 @@
 </style>
 <link rel="stylesheet" type="text/css" href="../src/xiami/reset.css" />
 <link rel="stylesheet" type="text/css" href="../src/xiami/dpl.css" />
-<link rel="stylesheet" type="text/css" href="../src/xiami/transition/discover.css" />
-<link rel="stylesheet" type="text/css" href="../src/xiami/transition/home.css" />
-<link rel="stylesheet" type="text/css" href="../src/xiami/transition/player.css" />
-<link rel="stylesheet" type="text/css" href="../src/xiami/transition/album.css" />
-<link rel="stylesheet" type="text/css" href="../src/xiami/transition/albums.css" />
 <link rel="stylesheet" type="text/css" href="../src/xiami/transition/header.css" />
 </head>
 <body>
@@ -78,7 +73,7 @@
 <script>
 	KISSY.config('packages',{
 		xiami: {
-			tag:Math.random(),
+			tag: KISSY.now(),
 			base:'../src/'
 		},
 		gallery: {

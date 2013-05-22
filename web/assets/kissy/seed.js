@@ -1,7 +1,7 @@
 ﻿/*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 25 15:09
+build time: May 15 22:20
 */
 /**
  * @ignore
@@ -39,11 +39,11 @@ var KISSY = (function (undefined) {
 
         /**
          * The build time of the library.
-         * NOTICE: '20130325150924' will replace with current timestamp when compressing.
+         * NOTICE: '20130515221951' will replace with current timestamp when compressing.
          * @private
          * @type {String}
          */
-        __BUILD_TIME: '20130325150924',
+        __BUILD_TIME: '20130515221951',
         /**
          * KISSY Environment.
          * @private
@@ -200,7 +200,7 @@ var KISSY = (function (undefined) {
         EMPTY = '',
         ObjectCreate = Object.create,
     // error in native ie678, not in simulated ie9
-        hasEnumBug = !({toString: 1}.propertyIsEnumerable('toString')),
+        hasEnumBug = !({toString: 1}['propertyIsEnumerable']('toString')),
         enumProperties = [
             'constructor',
             'hasOwnProperty',
@@ -221,9 +221,6 @@ var KISSY = (function (undefined) {
          * @member KISSY
          */
         stamp: function (o, readOnly, marker) {
-            if (!o) {
-                return o
-            }
             marker = marker || STAMP_MARKER;
             var guid = o[marker];
             if (guid) {
@@ -273,9 +270,9 @@ var KISSY = (function (undefined) {
          * @param {Object} s the object need to augment
          * @param {Boolean|Object} [ov=TRUE] whether overwrite existing property or config.
          * @param {Boolean} [ov.overwrite=TRUE] whether overwrite existing property.
-         * @param {String[]} [ov.whitelist] array of white-list properties
+         * @param {String[]|Function} [ov.whitelist] array of white-list properties
          * @param {Boolean}[ov.deep=false] whether recursive mix if encounter object.
-         * @param {String[]} [wl] array of white-list properties
+         * @param {String[]|Function} [wl] array of white-list properties
          * @param [deep=false] {Boolean} whether recursive mix if encounter object.
          * @return {Object} the augmented object
          * @member KISSY
@@ -289,10 +286,21 @@ var KISSY = (function (undefined) {
          */
         mix: function (r, s, ov, wl, deep) {
             if (typeof ov === 'object') {
-                wl = ov['whitelist'];
+                wl = /**
+                 @ignore
+                 @type {String[]|Function}
+                 */ov['whitelist'];
                 deep = ov['deep'];
                 ov = ov['overwrite'];
             }
+
+            if (wl && !S.isFunction(wl)) {
+                var originalWl = wl;
+                wl = function (name, val) {
+                    return S.inArray(name, originalWl) ? val : undefined;
+                };
+            }
+
             var cache = [],
                 c,
                 i = 0;
@@ -455,7 +463,7 @@ var KISSY = (function (undefined) {
             ov = TRUE;
         }
 
-        var i = 0, p, keys, len;
+        var i, p, keys, len;
 
         // 记录循环标志
         s[MIX_CIRCULAR_DETECTION] = r;
@@ -463,24 +471,14 @@ var KISSY = (function (undefined) {
         // 记录被记录了循环标志的对像
         cache.push(s);
 
-        if (wl) {
-            len = wl.length;
-            for (i = 0; i < len; i++) {
-                p = wl[i];
-                if (p in s) {
-                    _mix(p, r, s, ov, wl, deep, cache);
-                }
-            }
-        } else {
-            // mix all properties
-            keys = S.keys(s);
-            len = keys.length;
-            for (i = 0; i < len; i++) {
-                p = keys[i];
-                if (p != MIX_CIRCULAR_DETECTION) {
-                    // no hasOwnProperty judge!
-                    _mix(p, r, s, ov, wl, deep, cache);
-                }
+        // mix all properties
+        keys = S.keys(s);
+        len = keys.length;
+        for (i = 0; i < len; i++) {
+            p = keys[i];
+            if (p != MIX_CIRCULAR_DETECTION) {
+                // no hasOwnProperty judge!
+                _mix(p, r, s, ov, wl, deep, cache);
             }
         }
 
@@ -501,6 +499,9 @@ var KISSY = (function (undefined) {
                     r[p] = target;
                 }
                 return;
+            }
+            if (wl) {
+                src = wl.call(s, p, src);
             }
             // 来源是数组和对象，并且要求深度 mix
             if (deep && src && (S.isArray(src) || S.isPlainObject(src))) {
@@ -3104,12 +3105,21 @@ var KISSY = (function (undefined) {
         UA.core = core;
     }
 
+    function getIEVersion(ua) {
+        var m;
+        if ((m = ua.match(/MSIE\s([^;]*)/)) && m[1]) {
+            return numberify(m[1]);
+        }
+        return 0;
+    }
+
     function getDescriptorFromUserAgent(ua) {
         var EMPTY = '',
             os,
             core = EMPTY,
             shell = EMPTY, m,
             IE_DETECT_RANGE = [6, 9],
+            ieVersion,
             v,
             end,
             VERSION_PLACEHOLDER = '{{version}}',
@@ -3275,6 +3285,12 @@ var KISSY = (function (undefined) {
                 }
             }
 
+            // https://github.com/kissyteam/kissy/issues/321
+            // win8 embed app
+            if (!UA.ie && (ieVersion = getIEVersion(ua))) {
+                UA[shell = 'ie'] = ieVersion;
+            }
+
         } else {
             // WebKit
             if ((m = ua.match(/AppleWebKit\/([\d.]*)/)) && m[1]) {
@@ -3352,8 +3368,8 @@ var KISSY = (function (undefined) {
                     // MSIE
                     // 由于最开始已经使用了 IE 条件注释判断，因此落到这里的唯一可能性只有 IE10+
                     // and analysis tools in nodejs
-                    if ((m = ua.match(/MSIE\s([^;]*)/)) && m[1]) {
-                        UA[shell = 'ie'] = numberify(m[1]);
+                    if (ieVersion = getIEVersion(ua)) {
+                        UA[shell = 'ie'] = ieVersion;
                         setTridentVersion(ua, UA);
                         // NOT WebKit, Presto or IE
                     } else {
@@ -3468,6 +3484,7 @@ var KISSY = (function (undefined) {
         win = Env.host,
         UA = S.UA,
         VENDORS = [
+            '',
             'Webkit',
             'Moz',
             'O',
@@ -3476,28 +3493,40 @@ var KISSY = (function (undefined) {
     // nodejs
         doc = win.document || {},
         documentMode = doc.documentMode,
-        isTransitionSupported = false,
+        isTransitionSupportedState = false,
         transitionPrefix = '',
+        isTransformSupportedState = false,
+        transformPrefix = '',
         documentElement = doc.documentElement,
         documentElementStyle,
-        isClassListSupported = true,
+        isClassListSupportedState = true,
+        isQuerySelectorSupportedState = false,
     // phantomjs issue: http://code.google.com/p/phantomjs/issues/detail?id=375
-        isTouchSupported = ('ontouchstart' in doc) && !(UA.phantomjs),
+        isTouchSupportedState = ('ontouchstart' in doc) && !(UA.phantomjs),
         ie = documentMode || UA.ie;
 
     if (documentElement) {
-        documentElementStyle = documentElement.style;
-        if ('transition' in documentElementStyle) {
-            isTransitionSupported = true;
-        } else {
-            S.each(VENDORS, function (val) {
-                if ((val + 'Transition') in documentElementStyle) {
-                    transitionPrefix = val;
-                    isTransitionSupported = true;
-                }
-            });
+        if (documentElement.querySelector &&
+            // broken ie8
+            ie != 8) {
+            isQuerySelectorSupportedState = true;
         }
-        isClassListSupported = 'classList' in documentElement;
+        documentElementStyle = documentElement.style;
+
+        S.each(VENDORS, function (val) {
+            var transition = val ? val + 'Transition' : 'transition',
+                transform = val ? val + 'Transform' : 'transform';
+            if (transition in documentElementStyle) {
+                transitionPrefix = val;
+                isTransitionSupportedState = true;
+            }
+            if (transform in documentElementStyle) {
+                transformPrefix = val;
+                isTransformSupportedState = true;
+            }
+        });
+
+        isClassListSupportedState = 'classList' in documentElement;
     }
 
     /**
@@ -3520,7 +3549,7 @@ var KISSY = (function (undefined) {
          * @return {Boolean}
          */
         isTouchSupported: function () {
-            return isTouchSupported;
+            return isTouchSupportedState;
         },
 
         isDeviceMotionSupported: function () {
@@ -3535,15 +3564,32 @@ var KISSY = (function (undefined) {
         },
 
         'isTransitionSupported': function () {
-            return isTransitionSupported;
+            return isTransitionSupportedState;
+        },
+
+        'isTransformSupported': function () {
+            return isTransformSupportedState;
         },
 
         'isClassListSupported': function () {
-            return isClassListSupported
+            return isClassListSupportedState
         },
 
-        'getCss3Prefix': function () {
+        'isQuerySelectorSupported': function () {
+            // force to use js selector engine
+            return !S.config('dom/selector') &&
+                isQuerySelectorSupportedState;
+        },
+
+        'isIELessThan': function (v) {
+            return ie && ie < v;
+        },
+
+        'getTransitionPrefix': function () {
             return transitionPrefix;
+        },
+        'getTransformPrefix': function () {
+            return transformPrefix;
         }
     };
 })(KISSY);/**
@@ -4551,7 +4597,7 @@ var KISSY = (function (undefined) {
          * @param {Number} [success.timeout] timeout (s)
          * @param {String} [success.charset] charset of current resource
          * @param {String} [charset] charset of current resource
-         * @return {HTMLElement} script/style node
+         * @return {HTML} script/style node
          * @member KISSY
          */
         getScript: function (url, success, charset) {
@@ -4603,6 +4649,10 @@ var KISSY = (function (undefined) {
                 });
             }
 
+            if (charset) {
+                node.charset = charset;
+            }
+
             if (css) {
                 node.href = url;
                 node.rel = 'stylesheet';
@@ -4612,10 +4662,6 @@ var KISSY = (function (undefined) {
             }
 
             callbacks.node = node;
-
-            if (charset) {
-                node.charset = charset;
-            }
 
             var end = function (error) {
                     var index = error,
@@ -4628,37 +4674,37 @@ var KISSY = (function (undefined) {
                     });
                     delete jsCssCallbacks[url];
                 },
-                useNative = !css;
+                useNative = 'onload' in node;
 
-            if (css) {
-                if (isOldWebKit) {
-                    useNative = false;
-                } else {
-                    useNative = 'onload' in node;
+            if (css && isOldWebKit) {
+                useNative = false;
+            }
+
+            function onload() {
+                var readyState = node.readyState;
+                if (!readyState ||
+                    readyState == "loaded" ||
+                    readyState == "complete") {
+                    node.onreadystatechange = node.onload = null;
+                    end(0)
                 }
             }
 
             //标准浏览器 css and all script
             if (useNative) {
-                node.onload = node.onreadystatechange = function () {
-                    var readyState = node.readyState;
-                    if (!readyState ||
-                        readyState == "loaded" ||
-                        readyState == "complete") {
-                        node.onreadystatechange = node.onload = null;
-                        end(0)
-                    }
-                };
+                node.onload = onload;
                 node.onerror = function () {
                     node.onerror = null;
                     end(1);
                 };
             }
             // old chrome/firefox for css
-            else {
+            else if (css) {
                 utils.pollCss(node, function () {
                     end(0);
                 });
+            } else {
+                node.onreadystatechange = onload;
             }
 
             if (timeout) {
@@ -5015,6 +5061,7 @@ var KISSY = (function (undefined) {
 
     var Loader, data, utils, UA,
         remoteLoads = {},
+        win = S.Env.host,
         LOADING, LOADED, ERROR, ATTACHED;
 
     Loader = S.Loader;
@@ -5251,7 +5298,10 @@ var KISSY = (function (undefined) {
         }
 
         function _modError() {
-            S.log(modName + ' is not loaded! can not find module in path : ' + url, 'error');
+            if (win.console) {
+                win.console.error(modName +
+                    ' is not loaded! can not find module in path : ' + url);
+            }
             mod.status = ERROR;
         }
 
@@ -5287,6 +5337,7 @@ var KISSY = (function (undefined) {
     }
 
     var Loader = S.Loader,
+        win = S.Env.host,
         data = Loader.Status,
         utils = Loader.Utils;
 
@@ -5439,7 +5490,10 @@ var KISSY = (function (undefined) {
                         // fix #111
                         // https://github.com/kissyteam/kissy/issues/111
                         if (!mod.fn) {
-                            S.log(mod.name + ' is not loaded! can not find module in path : ' + jss[p], 'error');
+                            if (win.console) {
+                                win.console.error(mod.name +
+                                    ' is not loaded! can not find module in path : ' + jss[p]);
+                            }
                             mod.status = data.ERROR;
                             success = 0;
                             return false;
@@ -5889,7 +5943,7 @@ var KISSY = (function (undefined) {
             // file limit number for a single combo url
             comboMaxFileNum: 40,
             charset: 'utf-8',
-            tag: '20130325150924'
+            tag: '20130515221951'
         }, getBaseInfo()));
     }
 
@@ -6050,7 +6104,7 @@ var KISSY = (function (undefined) {
 
     function fireReady() {
         // nodejs
-        if (doc) {
+        if (doc && !UA.nodejs) {
             removeEventListener(win, LOAD_EVENT, fireReady);
         }
         readyDefer.resolve(S);
@@ -6149,15 +6203,19 @@ var KISSY = (function (undefined) {
  * @author yiminghe@gmail.com
  */
 (function (S) {
+    var parentUri = S.Config.baseUri.resolve('../').toString();
     S.config({
         packages: {
             gallery: {
-                base: S.Config.baseUri.resolve('../').toString()
+                base: parentUri
+            },
+            mobile: {
+                base: parentUri
             }
         },
         modules: {
             core: {
-                alias: ['dom', 'event', 'io', 'anim', 'base', 'node', 'json','ua']
+                alias: ['dom', 'event', 'io', 'anim', 'base', 'node', 'json', 'ua','cookie']
             }
         }
     });
@@ -6206,11 +6264,11 @@ config({
 });
 /*Generated by KISSY Module Compiler*/
 config({
-'component/base': {requires: ['rich-base','node','event']}
+'component/base': {requires: ['rich-base','node','xtemplate','event']}
 });
 /*Generated by KISSY Module Compiler*/
 config({
-'component/extension': {requires: ['dom','node']}
+'component/extension': {requires: ['event','component/base','dom','node']}
 });
 /*Generated by KISSY Module Compiler*/
 config({
@@ -6219,10 +6277,6 @@ config({
 /*Generated by KISSY Module Compiler*/
 config({
 'component/plugin/resize': {requires: ['resizable']}
-});
-/*Generated by KISSY Module Compiler*/
-config({
-'datalazyload': {requires: ['dom','event','base']}
 });
 config({
     'dd': {alias: ['dd/base', 'dd/droppable']}
@@ -6248,8 +6302,18 @@ config({
 'dd/plugin/scroll': {requires: ['dd/base','base','node','dom']}
 });
 config({
+    "dom/basic": {
+        "alias": [
+            'dom/base',
+            Features.isIELessThan(9) ? 'dom/ie' : '',
+            Features.isClassListSupported() ? '' : 'dom/class-list'
+        ]
+    },
     "dom": {
-        "alias": ['dom/base', UA.ie < 9 ? 'dom/ie' : '', Features.isClassListSupported() ? '' : 'dom/class-list']
+        "alias": [
+            'dom/basic',
+            !Features.isQuerySelectorSupported() ? 'dom/selector' : ''
+        ]
     }
 });/*Generated by KISSY Module Compiler*/
 config({
@@ -6259,12 +6323,16 @@ config({
 config({
 'dom/ie': {requires: ['dom/base']}
 });
+/*Generated by KISSY Module Compiler*/
 config({
-'editor/full': {requires: ['editor','menubutton','overlay','dd/base','swf']}
+'dom/selector': {requires: ['dom/basic']}
+});
+config({
+    'editor': {alias: ['editor/core']}
 });
 /*Generated by KISSY Module Compiler*/
 config({
-'editor': {requires: ['htmlparser','component/base','core']}
+'editor/core': {requires: ['htmlparser','component/base','core']}
 });
 config({
     "event": {
@@ -6281,7 +6349,7 @@ config({
             Features.isTouchSupported() ? 'event/dom/touch' : '',
             Features.isDeviceMotionSupported() ? 'event/dom/shake' : '',
             Features.isHashChangeSupported() ? '' : 'event/dom/hashchange',
-            UA.ie < 9 ? 'event/dom/ie' : '',
+            Features.isIELessThan(9) ? 'event/dom/ie' : '',
             UA.ie ? '' : 'event/dom/focusin'
         ]
     }
@@ -6330,7 +6398,7 @@ config({
 });
 /*Generated by KISSY Module Compiler*/
 config({
-'menubutton': {requires: ['node','menu','button','component/base']}
+'menubutton': {requires: ['node','menu','button','component/extension']}
 });
 /*Generated by KISSY Module Compiler*/
 config({
@@ -6342,7 +6410,7 @@ config({
 });
 /*Generated by KISSY Module Compiler*/
 config({
-'overlay': {requires: ['node','component/base','component/extension','event']}
+'overlay': {requires: ['component/base','component/extension','node','xtemplate','event']}
 });
 /*Generated by KISSY Module Compiler*/
 config({
@@ -6386,19 +6454,15 @@ config({
 });
 /*Generated by KISSY Module Compiler*/
 config({
-'switchable': {requires: ['dom','event','anim',KISSY.Features.isTouchSupported() ? "dd/base" : ""]}
+'tabs': {requires: ['button','toolbar','component/base','component/extension']}
 });
 /*Generated by KISSY Module Compiler*/
 config({
-'tabs': {requires: ['button','toolbar','component/base']}
+'toolbar': {requires: ['component/base','component/extension','node']}
 });
 /*Generated by KISSY Module Compiler*/
 config({
-'toolbar': {requires: ['component/base','node']}
-});
-/*Generated by KISSY Module Compiler*/
-config({
-'tree': {requires: ['node','component/base','event']}
+'tree': {requires: ['node','component/base','component/extension','event']}
 });
 /*Generated by KISSY Module Compiler*/
 config({

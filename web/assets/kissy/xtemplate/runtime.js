@@ -1,7 +1,7 @@
 ﻿/*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Feb 28 18:29
+build time: May 20 10:45
 */
 /**
  * xtemplate base
@@ -56,7 +56,7 @@ KISSY.add('xtemplate/runtime/base', function (S) {
          */
         name: '',
         utils: {
-            'getProperty': function (parts, scopes) {
+            'getProperty': function (parts, scopes, depth) {
                 // this refer to current scope object
                 if (parts == 'this' || parts == '.') {
                     if (scopes.length) {
@@ -68,12 +68,12 @@ KISSY.add('xtemplate/runtime/base', function (S) {
                 parts = parts.split('.');
                 var len = parts.length,
                     i,
-                    j,
+                    j = depth || 0,
                     v,
                     p,
                     valid,
                     sl = scopes.length;
-                for (j = 0; j < sl; j++) {
+                for (; j < sl; j++) {
                     v = scopes[j];
                     valid = 1;
                     for (i = 0; i < len; i++) {
@@ -179,16 +179,27 @@ KISSY.add("xtemplate/runtime/commands", function (S, includeCommand) {
             if (param0) {
                 // skip array check for performance
                 var opScopes = [0, 0].concat(scopes);
-                xcount = param0.length;
-                for (var xindex = 0; xindex < xcount; xindex++) {
-                    // two more variable scope for array looping
-                    opScopes[0] = param0[xindex];
-                    opScopes[1] = {
-                        xcount: xcount,
-                        xindex: xindex
-                    };
-                    buffer += option.fn(opScopes);
+                if(S.isArray(param0)){
+                    xcount = param0.length;
+                    for (var xindex = 0; xindex < xcount; xindex++) {
+                        // two more variable scope for array looping
+                        opScopes[0] = param0[xindex];
+                        opScopes[1] = {
+                            xcount: xcount,
+                            xindex: xindex
+                        };
+                        buffer += option.fn(opScopes);
+                    }
+                }else{
+                    for(var name in param0){
+                        opScopes[0] = param0[name];
+                        opScopes[1] = {
+                            xkey: name
+                        };
+                        buffer += option.fn(opScopes);
+                    }
                 }
+
             } else if (option.inverse) {
                 buffer = option.inverse(scopes);
             }

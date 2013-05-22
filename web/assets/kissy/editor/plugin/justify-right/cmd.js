@@ -1,7 +1,7 @@
 ﻿/*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: Mar 11 10:34
+build time: Apr 17 00:18
 */
 /**
  * Add justifyCenter command identifier for Editor.
@@ -16,5 +16,5 @@ KISSY.add("editor/plugin/justify-right/cmd", function (S, justifyUtils) {
     };
 
 }, {
-    requires:['../justify-utils/cmd']
+    requires:['../justify-cmd']
 });
