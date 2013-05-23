@@ -38,7 +38,7 @@ KISSY.add(function (S, Node) {
                     var css3Prefix = S.Features.getTransformPrefix();
 
                     var transformProperty = css3Prefix ?
-                        ('-'+css3Prefix.toLowerCase() + '-transform') : 'transform';
+                        ('-' + css3Prefix.toLowerCase() + '-transform') : 'transform';
 
                     el.css(transformProperty, 'translate3d(' + width + 'px,0,0)');
 
@@ -61,7 +61,13 @@ KISSY.add(function (S, Node) {
 
                 el.animate(before, {
                     duration: duration,
-                    useTransition: true
+                    useTransition: true,
+                    complete: function () {
+                        // bug browser
+                        if (transitionSupport) {
+                            el.css(transformProperty, 'none');
+                        }
+                    }
                 });
 
                 if (nextMod.indexOf("player") > -1) {
@@ -114,7 +120,7 @@ KISSY.add(function (S, Node) {
                     var css3Prefix = S.Features.getTransformPrefix();
 
                     var transformProperty = css3Prefix ?
-                        ('-'+css3Prefix.toLowerCase() + '-transform') : 'transform';
+                        ('-' + css3Prefix.toLowerCase() + '-transform') : 'transform';
 
                     el.css(transformProperty, 'translate3d(-' + width + 'px,0,0)');
 
@@ -138,7 +144,13 @@ KISSY.add(function (S, Node) {
 
                 el.animate(before, {
                     duration: duration,
-                    useTransition: true
+                    useTransition: true,
+                    complete: function () {
+                        // bug browser
+                        if (transitionSupport) {
+                            el.css(transformProperty, 'none');
+                        }
+                    }
                 });
 
                 if (nextMod.indexOf("home") > -1) {

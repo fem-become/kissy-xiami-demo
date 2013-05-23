@@ -1,4 +1,4 @@
-KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, ScrollbarPlugin, IO, XTemplate, suspender, Shake) {
+KISSY.add(function (S, Node, Event, Transition, header, DD, ScrollView, ScrollbarPlugin, IO, XTemplate, suspender, Shake) {
 
     var $ = Node.all,
         timer = null,
@@ -573,6 +573,6 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
     };
 
 }, {
-    requires: ['node','event','./index','event','../header','dd','scrollview',
+    requires: ['node','event','./index','../header','dd','scrollview',
     'scrollview/plugin/scrollbar','ajax', 'xtemplate','../suspender','./shake','./discover.css']
 });

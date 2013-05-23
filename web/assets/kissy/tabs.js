@@ -1,7 +1,7 @@
 ﻿/*
 Copyright 2013, KISSY UI Library v1.40dev
 MIT Licensed
-build time: May 15 21:38
+build time: May 23 00:55
 */
 /**
  * @ignore
@@ -84,8 +84,7 @@ KISSY.add("tabs/bar", function (S, Toolbar, undefined) {
             }
         }
     }, {
-        xclass: 'tabs-bar',
-        priority: 30
+        xclass: 'tabs-bar'
     });
 
     /**
@@ -208,7 +207,7 @@ KISSY.add("tabs/panel-render", function (S, Component) {
                 attrs = self.get('elAttrs');
             attrs['role'] = 'tabpanel';
             if (self.get('selected')) {
-                self.get('elCls').push(self.getCssClassWithState('selected'));
+                self.get('elCls').push(self.getBaseCssClasses('selected'));
             } else {
                 attrs['aria-hidden'] = false;
             }
@@ -216,7 +215,7 @@ KISSY.add("tabs/panel-render", function (S, Component) {
 
         _onSetSelected: function (v) {
             var el = this.get("el");
-            var selectedCls = this.getCssClassWithState('selected');
+            var selectedCls = this.getBaseCssClasses('selected');
             el[v ? "addClass" : "removeClass"](selectedCls);
             el.attr("aria-hidden", !v);
         }
@@ -231,7 +230,7 @@ KISSY.add("tabs/panel-render", function (S, Component) {
 
         HTML_PARSER: {
             selected: function (el) {
-                return el.hasClass(this.get('prefixCls') + 'tabs-panel-selected');
+                return el.hasClass(this.getBaseCssClass('selected'));
             }
         }
     });
@@ -286,19 +285,18 @@ KISSY.add("tabs/panel", function (S, Component, PanelRender) {
  * @author yiminghe@gmail.com
  */
 KISSY.add("tabs/render", function (S, Component) {
-    var CLS = "tabs-top tabs-bottom tabs-left tabs-right";
+    var CLS = "top bottom left right";
     return Component.Render.extend({
 
         initializer: function () {
-            this.get('elCls').push(this.getCssClassWithPrefix("tabs-" +
-                this.get('barOrientation')))
+            this.get('elCls').push(this.getBaseCssClass(this.get('barOrientation')))
         },
 
         '_onSetBarOrientation': function (v) {
             var self = this,
                 el = self.get("el");
-            el.removeClass(self.getCssClassWithPrefix(CLS))
-                .addClass(self.getCssClassWithPrefix("tabs-" + v));
+            el.removeClass(self.getBaseCssClass(CLS))
+                .addClass(self.getBaseCssClass(v));
         }
 
     }, {
@@ -310,7 +308,7 @@ KISSY.add("tabs/render", function (S, Component) {
         },
         HTML_PARSER: {
             barOrientation: function (el) {
-                var orientation = el[0].className.match(/tabs-(top|bottom|left|right)\b/);
+                var orientation = el[0].className.match(/(top|bottom|left|right)\b/);
                 return orientation && orientation[1] || "top";
             }
         }
@@ -330,12 +328,12 @@ KISSY.add("tabs/tab-render", function (S, Button) {
             attrs.role = 'tab';
             if (this.get('selected')) {
                 attrs['aria-selected'] = true;
-                this.get('elCls').push(this.getCssClassWithState('selected'));
+                this.get('elCls').push(this.getBaseCssClasses('selected'));
             }
         },
         _onSetSelected: function (v) {
             var el = this.get("el");
-            var selectedCls = this.getCssClassWithState('selected');
+            var selectedCls = this.getBaseCssClasses('selected');
             el[v ? 'addClass' : 'removeClass'](selectedCls);
             el.attr('aria-selected', !!v);
         }
@@ -348,8 +346,7 @@ KISSY.add("tabs/tab-render", function (S, Button) {
         },
         HTML_PARSER: {
             selected: function (el) {
-                var selectedCls = this.get('prefixCls') + 'tabs-tab-selected';
-                return el.hasClass(selectedCls);
+                return el.hasClass(this.getBaseCssClass('selected'));
             }
         }
     });
@@ -398,8 +395,7 @@ KISSY.add("tabs/tab", function (S, Button, TabRender) {
             }
         }
     }, {
-        xclass: 'tabs-tab',
-        priority: 30
+        xclass: 'tabs-tab'
     });
 
 }, {
@@ -423,7 +419,7 @@ KISSY.add("tabs", function (S, Component, Bar, Body, Tab, Panel, Render) {
             var self = this,
                 selected,
                 items,
-                prefixCls = self.get('prefixCls'),
+                prefixCls = self.prefixCls,
                 tabItem,
                 panelItem,
                 bar = {
@@ -685,7 +681,7 @@ KISSY.add("tabs", function (S, Component, Bar, Body, Tab, Panel, Render) {
          */
         decorateInternal: function (el) {
             var self = this,
-                prefixCls = self.get('prefixCls'),
+                prefixCls = self.prefixCls,
                 changeType = self.get('changeType'),
                 bar = el.children("." + prefixCls + "tabs-bar"),
                 body = el.children("." + prefixCls + "tabs-body");
@@ -781,7 +777,7 @@ KISSY.add("tabs", function (S, Component, Bar, Body, Tab, Panel, Render) {
                 valueFn: function () {
                     return Component.create({
                         xclass: 'tabs-bar',
-                        prefixCls: this.get('prefixCls')
+                        prefixCls: this.prefixCls
                     });
                 }
             },
@@ -795,7 +791,7 @@ KISSY.add("tabs", function (S, Component, Bar, Body, Tab, Panel, Render) {
                 valueFn: function () {
                     return Component.create({
                         xclass: 'tabs-body',
-                        prefixCls: this.get('prefixCls')
+                        prefixCls: this.prefixCls
                     });
                 }
             },
