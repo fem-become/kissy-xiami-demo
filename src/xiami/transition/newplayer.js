@@ -102,6 +102,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 	S.mix(re, {
 
 		init: function(config) {
+			var self = this;
 
 			header.setTitle("播放器");
 
@@ -127,7 +128,15 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 			$('#J_PlImg').css({'margin-top':(tabHeight - MAXHEIGHT - 2 * PADDING)/2 + 'px'});
 
 			if(!player){//第一次进入页面
-				player = new Audio();
+				if(musicList.length !== 0){//播放列表的第一首
+					musicInfo = musicList[0];
+					self.playSong();
+					currentIdx = 0;
+				}else{
+					alert('当前播放列表为空，您可以返回试听歌曲噢！');
+					return;
+				}
+
 			}
 
 			this.updateMusicControl();//可能没有player?
@@ -135,7 +144,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 			this.updateMusicListTab();
 
 			if(!eventBinded){
-				this._bindEvent();//难道每次都绑定？
+				this._bindEvent();
 				eventBinded = true;
 			}
 
@@ -161,6 +170,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 			self._bindProgressAnyPosition();
 			self._bindPlayNext();
 			self._bindPlayPrev();
+			self._bindDoubleTap();
 
 			// S.Player.on('go-back', function() {
 			// 	self.bringRest();
@@ -334,6 +344,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 			var nowTime = this.progress(),
 				// 歌曲的总时间
 				totalTime = this.getTotalTime();
+			//alert(totalTime);
 			var len = (nowTime / totalTime) * this.getWindowWidth();
 			elBar.css({
 				width: len
@@ -641,7 +652,9 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 		      	}
 		      	if(i === listLength){//未找到
 		      		if(songs[m]['location']){
+		      			console.log(S.JSON.stringify(songs[m]));
 		      			musicList.push(songs[m]);
+		      			localStorage.setItem('MUSIC_LIST', S.JSON.stringify(musicList));//同步到localStorage
 		      		}else{//请求完整信息
 		      			var songId = songs[m]['id'];
 						S.io({
@@ -660,8 +673,6 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 		      	}
 
 		    }
-
-	        localStorage.setItem('MUSIC_LIST', S.JSON.stringify(musicList));//同步到localStorage
 		},
 		/**
 		 * 添加并播放歌曲
@@ -717,6 +728,8 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 			player.src = musicInfo['location'];
 			player.load();
 			player.play();//已经播放了
+
+			S.Player.fire('playSong',{'musicInfo':musicInfo});
 			
 		},
 		/**
@@ -752,6 +765,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 			for(var i = 0; i < musicList.length; i++){
 				htmlArray.push(S.substitute(LIST_TEMP_HTML, musicList[i]));
 			}
+			console.log('array:'+htmlArray.join(''));
 			$('#J_PlMusicList').html(htmlArray.join(''));
 				// 滚动条
 				if(!scrollview){
@@ -832,6 +846,25 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 		 */
 		updateCurrentInMusicList: function(){
 			$('#J_MusicItem' + musicInfo.id).addClass('.is-playing').siblings().removeClass('.is-playing');
+		},
+		/**
+		 * 绑定双击播放事件
+		 */
+		_bindDoubleTap: function(){
+			var self = this;
+			Event.delegate('#J_PlMusicList',Event.Gesture.doubleTap,'.J_MusicItem',function(e){
+				var li = $(e.target),
+					songId = li.attr('data-id');
+				for(var i = 0; i < musicList.length; i++){
+					if(musicList[i]['id'] === songId){
+						self.playSongNow(musicList[i]);
+						self.updateMusicControl();
+						self.updateMusicInfoTab();
+						self.updateCurrentInMusicList();
+					}
+				}
+
+			});
 		}
 
 

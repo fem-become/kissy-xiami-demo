@@ -535,8 +535,9 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
 
             //加入列表
             Event.delegate('.J_SongsList','click','.addtolist-btn',function(e){
-                var target = S.one(e.target);
-                suspender.addToList(target.parent('li').attr('data-id'));
+                var target = S.one(e.target),
+                    songId = target.parent('li').attr('data-id');
+                suspender.addToList({'id':songId});
             });
 
             //trigger点击也能切换两种发现音乐的方式

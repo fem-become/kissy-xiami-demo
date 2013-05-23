@@ -19,6 +19,16 @@ KISSY.add(function(S, Node, Event, Transition, Player) {
   suspender.on(Event.Gesture.tap, function(e){
     toPlayer();
   });
+
+  if(S.Player){
+    S.Player.on('playSong',function(e){
+      if(e.musicInfo && e.musicInfo.albumCover){
+        suspender.one('.s-inner').css({
+          'background-image':'url("' + e.musicInfo.albumCover + '")'
+        });
+      }
+    });
+  }
   
   return {
 
@@ -39,10 +49,14 @@ KISSY.add(function(S, Node, Event, Transition, Player) {
     },
 
     playOne: function(musicInfo){
-      var self = this;
-      // suspender.one('.s-inner').css({
-      //   'background-image':'url("' + musicInfo.albumImg + '")'
-      // });
+      var self = this,
+          albumCover = 'http://img.xiami.com/images/album/img78/64778/4059921286936374_1.jpg';
+      if(musicInfo.albumCover){
+        albumCover = musicInfo.albumCover;
+      }
+      suspender.one('.s-inner').css({
+        'background-image':'url("' + albumCover + '")'
+      });
       suspender.addClass('playing');
       setTimeout(self._updateLoading,100,false,self);
       //Player.render(musicInfo.id);

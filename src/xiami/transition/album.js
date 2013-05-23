@@ -95,6 +95,17 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
                         }
                         suspender.addToList(songs);
                     });
+
+                    // 点击顶部的播放播放第一首
+                    el.all('.J_album_play_first').on(Event.Gesture.tap, function(e){
+                        var target = el.one('.J_album_play'),
+                            song_id = target.attr('data-id'),
+                            location = target.attr('data-location'),
+                            title = target.parent('li').one('.album-song-title').text(),
+                            cover = albumCover;
+                        suspender.playOne({'id':song_id,'location':location,'albumCover': cover,'title':title});
+                    });
+
                     Album.pageName = data['title'];
                     header.setTitle(Album.pageName);   
              
@@ -110,7 +121,7 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
                         '<h3>{{author}}</h3>',
                         '<div class="album-desc J_album_desc">{{desc}}</div>',
                         '<div class="album-control">',
-                            '<button class="play inline">&nbsp;</button>',
+                            '<button class="play inline J_album_play_first">&nbsp;</button>',
                             '<button class="list inline J_album_add_list_all">&nbsp;</button>',
                         '</div>',
                     '</div>',

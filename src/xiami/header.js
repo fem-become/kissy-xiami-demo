@@ -38,10 +38,11 @@ KISSY.add(function(S,Node, Transition, Event, DD) {
             el.css("-webkit-transition", "300ms");
             el.css("transition", "300ms");
             el.css("-webkit-transform", "translate3d(0px, 0, 0)");
-            $("body").css("overflow", "hidden");
+            $("body").css("overflow-x", "hidden");
             // el.removeClass("cat-show");
             setTimeout(function() {
               $("#cat").hide();
+              $("#page").css('-webkit-transform','none');
             }, 400);
           } else {
             $("#cat").show();
@@ -82,10 +83,10 @@ KISSY.add(function(S,Node, Transition, Event, DD) {
           pEl.css("transition", "300ms");
           if (e.pageX - initX > 100) {
             pEl.css("-webkit-transform", "translate3d(260px, 0, 0)");
-            $("body").css("overflow", "hidden");
+            $("body").css("overflow-x", "hidden");
           } else {
             pEl.css("-webkit-transform", "translate3d(0, 0, 0)");
-            $("body").css("overflow", "hidden");
+            $("body").css("overflow-x", "hidden");
             setTimeout(function() {
               $("#cat").hide();
             }, 400);

@@ -178,7 +178,7 @@
   position: absolute;
   left: 0;
   top: 0;
-  background: url("../../web/assets/img/icon-suspender-play.png") center center no-repeat;
+  /*background: url("../../web/assets/img/icon-suspender-play.png") center center no-repeat;*/
 }
 #suspender.loading-25 {
   border-color: #7ad5f7 #fff #fff #fff;
@@ -197,6 +197,13 @@
 }
 #suspender.playing .s-play-icon {
   display: inline-block;
+}
+
+@-webkit-keyframes loading { 
+  0% { border-color: #7ad5f7 #fff #fff #fff; } 
+  50% { border-color: #7ad5f7 #7ad5f7 #fff #fff; }
+  100% { border-color: #7ad5f7 #7ad5f7 #7ad5f7 #fff; } 
+  100% { border-color: #7ad5f7 #7ad5f7 #7ad5f7 #7ad5f7; } 
 }
 
 .s-popup {
