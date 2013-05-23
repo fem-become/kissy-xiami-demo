@@ -296,13 +296,13 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 			//callback();					
 			S.io({
 				type: "get",
-				url: BASE_URL + musicInfo.id,
+				url: BASE_URL + id,
 				dataType: "jsonp",
 				success: function(data) {
 					//alert('success')
 					S.mix(musicInfo, data);
+					musicInfo['id'] = id;
 					//musicInfo = data;
-					//console.log('Music Info :');
 					//console.log(musicInfo);
 					callback();
 				},
@@ -685,18 +685,21 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 				if(musicList[i]['id'] === info.id){
 					break;
 				}
-			}
+			}console.log('iiiiii:'+i);
 			if(i === musicList.length){
 				if(info['location']){
 					musicInfo = info;
-					musicList.push(musicInfo);
+					musicList.push(S.clone(musicInfo));
 					localStorage.setItem(storageKey, S.JSON.stringify(musicList));//同步到localStorage
 					currentIdx = musicList.length - 1;
 					self.playSong();
 				}else{
-					musicInfo['id'] = info.id;
+					//musicInfo['id'] = info.id;
 					self.getMusicInfo(info.id,function(){
+						//musicInfo['id'] = musicId;
+						//console.log('musicInfo:'+musicInfo['id'] + '  ' + musicInfo['title']);
 						musicList.push({'id':musicInfo['id'],'title':musicInfo['title'],'albumCover':musicInfo['albumCover'],'location':musicInfo['location']});// 加入播放列表
+						//console.log(musicList);
 						localStorage.setItem(storageKey, S.JSON.stringify(musicList));//同步到localStorage
 						currentIdx = musicList.length - 1;
 						self.playSong();
@@ -704,7 +707,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 				}
 				
 			}else{
-				musicInfo = musicList[i];
+				musicInfo = S.clone(musicList[i]);
 				currentIdx = i;
 				self.playSong();
 			}
@@ -756,6 +759,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 		 */
 		updateMusicInfoTab: function(){
 			$('#J_PlImg').attr('src', musicInfo.albumCover);
+			header.setTitle(musicInfo.title);
 		},
 		/**
 		 * 更新播放列表tab
@@ -766,7 +770,6 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 			for(var i = 0; i < musicList.length; i++){
 				htmlArray.push(S.substitute(LIST_TEMP_HTML, musicList[i]));
 			}
-			console.log('array:'+htmlArray.join(''));
 			$('#J_PlMusicList').html(htmlArray.join(''));
 				// 滚动条
 				if(!scrollview){
