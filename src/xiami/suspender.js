@@ -13,7 +13,7 @@ KISSY.add(function(S, Node, Event, Transition, Player) {
       loaded = 0;
 
   function toPlayer(){
-    Transition.forward(currentMod, 'xiami/transition/player');
+    Transition.forward(currentMod, 'xiami/transition/newplayer');
   }
 
   suspender.on(Event.Gesture.tap, function(e){
@@ -47,6 +47,7 @@ KISSY.add(function(S, Node, Event, Transition, Player) {
       setTimeout(self._updateLoading,100,false,self);
       //Player.render(musicInfo.id);
       //Player.init({id: '1769374012'});
+      Player.playSongNow(musicInfo);
     },
 
     _updateLoading: function(){
@@ -65,14 +66,16 @@ KISSY.add(function(S, Node, Event, Transition, Player) {
     },
 
     addToList: function(songs){
-      var list = localStorage.getItem('MUSIC_LIST')? localStorage.getItem('MUSIC_LIST').split(','):[];
+      // var list = localStorage.getItem('MUSIC_LIST')? localStorage.getItem('MUSIC_LIST').split(','):[];
       if(!S.isArray(songs)){
         songs = [songs];
       } 
-      for(var i = 0; i < songs.length; i++){
-        list.push(songs[i]);
-      }    
-      localStorage.setItem('MUSIC_LIST', S.unique(list).join(','));
+      // for(var i = 0; i < songs.length; i++){
+      //   list.push(songs[i]);
+      // }    
+      // localStorage.setItem('MUSIC_LIST', S.unique(list).join(','));
+      
+      Player.addToList(songs);
       popup.one('.J_PopupMsg').text(songs.length + '首歌曲已添加到播放列表').end().show(.3);
       S.later(function(){
         popup.hide(.3);
@@ -83,5 +86,5 @@ KISSY.add(function(S, Node, Event, Transition, Player) {
   };
   
 },{
-  requires:['node','event','./transition/index','./transition/min-player']
+  requires:['node','event','./transition/index','./transition/newplayer']
 });

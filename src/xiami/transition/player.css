@@ -82,10 +82,11 @@
 /**new */
 
 		.pl-play-info{
-			/*position:fixed;*/
+			position:fixed;
 			bottom:0;
 			left: 0;
-			height: 27%;
+			/*height: 27%;*/
+			height: 145px;
 			max-height: 220px;
 			min-height: 145px;
 			background: #D7ddd1;
@@ -320,4 +321,5 @@
 			position: absolute;
 			top:0;
 			height: 100%;
+			overflow: hidden;
 		}

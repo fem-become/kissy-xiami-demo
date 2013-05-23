@@ -425,14 +425,20 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
             });
             $('.play', '.J_collect').on(Event.Gesture.tap, function () {
                 var song_id = $(this).attr('song-id');
-                Transition.forward(myName, 'xiami/transition/player',{
-                    id:song_id
-                });
+                // Transition.forward(myName, 'xiami/transition/player',{
+                //     id:song_id
+                // });
+                suspender.playOne({'id':song_id});
             });
             $('.add-list', '.J_collect').on(Event.Gesture.tap, function () {
                 var songs_id = $(this).attr('songs-id');
                 var songs = songs_id.split(',');
-                suspender.addToList(songs);
+                //suspender.addToList(songs);
+                var i, l = songs.length, arr = [];
+                for(i = 0; i < l; i++){
+                    arr.push({'id':songs[i]});
+                }
+                suspender.addToList(arr);
             });
         },
 
@@ -445,20 +451,15 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
 
             $('.play', '.J_songList').on(Event.Gesture.tap, function () {
                 var song_id = $(this).attr('song-id');
-                Transition.forward(myName, 'xiami/transition/player',{
-                    id:song_id
-                });
+                // Transition.forward(myName, 'xiami/transition/player',{
+                //     id:song_id
+                // });
+                suspender.playOne({'id':song_id});
             });
             $('.add-list', '.J_songList').on(Event.Gesture.tap, function () {
                 var song_id = $(this).attr('song-id');
-                suspender.addToList(song_id);
+                suspender.addToList({'id':song_id});
             });
-        },
-
-        addToList:function(song){
-            var list = localStorage.getItem('MUSIC_LIST')? localStorage.getItem('MUSIC_LIST').split(','):[];
-            list.push(song);
-            localStorage.setItem('MUSIC_LIST', S.unique(list).join(','));
         }
 
     };
