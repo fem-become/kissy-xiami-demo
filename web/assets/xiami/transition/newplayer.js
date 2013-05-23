@@ -300,15 +300,36 @@ KISSY.add("xiami/transition/newplayer", function(S, Node, Transition, Event, hea
     $("#J_PlListTab").on("swipe", function(e) {
       if(e.direction === "right") {
         self.switchTab(0)
+      }else {
+        if(e.direction === "left") {
+          e.halt();
+          var target = $(e.target);
+          if(!target.hasClass("J_MusicItem")) {
+            target = target.parent(".J_MusicItem")
+          }
+          if(target && target.length !== 0) {
+            var id = target.attr("data-id"), idx = target.index(".J_MusicItem");
+            if(id === musicInfo["id"]) {
+              alert("\u4e0d\u80fd\u5220\u9664\u5f53\u524d\u64ad\u653e\u6b4c\u66f2\u5662")
+            }else {
+              if(idx < currentIdx) {
+                currentIdx--
+              }
+              target.remove();
+              musicList.splice(idx, 1);
+              S.later(function() {
+                scrollview.sync()
+              }, 0);
+              localStorage.setItem(storageKey, S.JSON.stringify(musicList))
+            }
+          }
+        }
       }
     })
   }, _changeColor:function() {
     $(".J_MusicItem").each(function(v, index) {
       if(index === currentIdx) {
         return v.addClass("is-playing")
-      }
-      if(index % 2 === 1) {
-        v.addClass("odd")
       }
     })
   }, switchTab:function(index) {
@@ -416,11 +437,15 @@ KISSY.add("xiami/transition/newplayer", function(S, Node, Transition, Event, hea
     }
     $("#J_PlMusicList").html(htmlArray.join(""));
     if(!scrollview) {
-      scrollview = scrollview = (new ScrollView({srcNode:"#J_PlListTab", plugins:[new ScrollbarPlugin({})]})).render()
+      scrollview = scrollview = (new ScrollView({srcNode:"#J_PlListTab", plugins:[new ScrollbarPlugin({})]})).render();
+      S.later(function() {
+        scrollview.sync()
+      }, 2500)
+    }else {
+      S.later(function() {
+        scrollview.sync()
+      }, 0)
     }
-    S.later(function() {
-      scrollview.sync()
-    }, 3E3);
     self._changeColor()
   }, _bindControl:function() {
     $("#J_PlaySwitch").detach("click").on("click", function(e) {
@@ -478,10 +503,13 @@ KISSY.add("xiami/transition/newplayer", function(S, Node, Transition, Event, hea
       var li = $(e.target), songId = li.attr("data-id");
       for(var i = 0;i < musicList.length;i++) {
         if(musicList[i]["id"] === songId) {
-          self.playSongNow(musicList[i]);
+          musicInfo = S.clone(musicList[i]);
+          currentIdx = i;
+          self.playSong();
           self.updateMusicControl();
           self.updateMusicInfoTab();
-          self.updateCurrentInMusicList()
+          self.updateCurrentInMusicList();
+          break
         }
       }
     })
