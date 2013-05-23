@@ -1,0 +1,20 @@
+CACHE MANIFEST
+# WuHou 1.0.0.1
+
+NETWORK:
+*
+
+CACHE:
+# style
+
+# scripts
+
+# images
+assets/img/icon-addtolist.png
+assets/img/icon-play.png
+assets/img/icon-suspender-music.png
+assets/img/icon-suspender-play.png
+assets/img/logo.jpg
+assets/img/radarbg.png
+assets/img/round.png
+assets/img/shakebg.png
