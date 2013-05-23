@@ -74,9 +74,11 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
                     // 点击播放
                     list.all('.J_album_play').on(Event.Gesture.tap, function() {
                         var pid = $(this).attr('data-id');
-                        Transition.forward(myName, 'xiami/transition/player', {
-                            id: pid
-                        });
+                        // Transition.forward(myName, 'xiami/transition/player', {
+                        //     id: pid
+                        // });
+                        pid = pid.replace("http://www.xiami.com/song", "");
+                        suspender.playOne({'id':pid});
                     });
 
                     // 点击加入播放列表
