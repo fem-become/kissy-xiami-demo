@@ -178,6 +178,14 @@
 					margin-left: 5px;
 				}
 
+				.pl-music-list li:nth-child(odd){
+					background: transparent;
+				}
+
+				.pl-music-list li:nth-child(odd) i {
+					background-color:#ebebeb;
+				}
+
 				.pl-music-list .odd{
 					background: transparent;
 				}
@@ -210,18 +218,18 @@
 					background-color:#ebebeb;
 				}
 
-				.pl-music-list .is-playing{
+				.pl-music-list li.is-playing{
 					background: #728899;
 				}
 				
-				.pl-music-list .is-playing em{
+				.pl-music-list li.is-playing em{
 					display: inline-block;
 				}
-				.pl-music-list .is-playing i{
+				.pl-music-list li.is-playing i{
 					background-color: #697f90;
 					background-position:-64px -532px ;
 				}
-				.pl-music-list .is-playing .bar{
+				.pl-music-list li.is-playing .bar{
 					position: absolute;
 					left: 0;
 					top:0;

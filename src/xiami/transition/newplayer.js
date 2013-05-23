@@ -609,7 +609,9 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 					 		}
 					 		target.remove();
 					 		musicList.splice(idx, 1);
-					 		scrollview.sync();
+					 		S.later(function(){
+					 			scrollview.sync();
+					 		},0);
 					 		localStorage.setItem(storageKey, S.JSON.stringify(musicList));//同步到localStorage
 					 	}
 
@@ -624,9 +626,9 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 				if (index === currentIdx) {
 					return v.addClass('is-playing');
 				}
-				if (index % 2 === 1) {
-					v.addClass('odd');
-				}
+				// if (index % 2 === 1) {
+				// 	v.addClass('odd');
+				// }
 			})
 		},
 		/**
@@ -883,10 +885,14 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 					songId = li.attr('data-id');
 				for(var i = 0; i < musicList.length; i++){
 					if(musicList[i]['id'] === songId){
-						self.playSongNow(musicList[i]);
+						//self.playSongNow(musicList[i]);
+						musicInfo = S.clone(musicList[i]);
+						currentIdx = i;
+						self.playSong();
 						self.updateMusicControl();
 						self.updateMusicInfoTab();
 						self.updateCurrentInMusicList();
+						break;
 					}
 				}
 
