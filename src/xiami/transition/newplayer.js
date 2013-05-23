@@ -592,6 +592,15 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 			$('#J_PlListTab').on('swipe', function(e) {
 				if (e.direction === 'right') {
 					self.switchTab(0);
+				} else if(e.direction === 'left'){
+					var target = $(e.target);
+					if(target.hasClass('J_MusicItem')){
+						if(confirm('确定要删除吗？')){
+							self._deleteMusicFormList(target);
+						}else{
+
+						}
+					}
 				}
 			});
 		},
@@ -869,8 +878,24 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 				}
 
 			});
-		}
-
+		},
+		/**
+		 * 删除歌单曲目
+		 */
+		 _deleteMusicFormList: function(target){
+		 	var id = target.attr('data-id'),
+		 		idx = target.index('.J_MusicItem');
+		 	if(id === musicInfo['id']){//当前播放的歌曲
+		 		alert('不能删除当前播放歌曲噢');
+		 	}else{//非当前播放的歌曲
+		 		if(idx < currentIdx){
+		 			currentIdx--;
+		 		}
+		 		target.remove();
+		 		musicList.splice(idx, 1);
+		 		localStorage.setItem(storageKey, S.JSON.stringify(musicList));//同步到localStorage
+		 	}
+		 }
 
 
 	});
