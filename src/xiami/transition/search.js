@@ -22,8 +22,10 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
             header.setTitle('');
 
             if(config.id != pid){
-                el = $('<div class="mod-page"></div>').appendTo(body);
-                $(searchTPL).appendTo(el);
+                if (!el) {
+                    el = $('<div class="mod-page"></div>').appendTo(body);
+                    $(searchTPL).appendTo(el);
+                }
 
                 list = $('.J_searchResult');
                 header.setTitle("歌曲搜索");

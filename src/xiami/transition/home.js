@@ -96,7 +96,7 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
             '</div>'+
             '<ul class="albums-items">'+
             '{{#each data}}'+'<li class="log url albums-item" data-url="{{id}}">'+
-            '<img alt="{{title}}" src="{{img}}">'+
+            '<img alt="{{title}}" src="{{img}}" width="100" height="100">'+
             '<div class="info">'+
             '<span class="title">{{title}}</span>'+
             '</div>'+
@@ -404,6 +404,9 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
                 albums.length = 4;
             }else{
                 albums.length = 6;
+            }
+            for (var i=0; i<albums.length; i++) {
+                albums[i].img = albums[i].img.replace("_1.jpg", "_2.jpg");
             }
             var render = new XTemplate(TPL_hotAlbums).render({data:albums});
             $(render).appendTo(el);
