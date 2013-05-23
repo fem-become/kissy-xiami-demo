@@ -801,10 +801,14 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 						srcNode: '#J_PlListTab',
 						plugins: [new ScrollbarPlugin({})]
 					}).render();
+					S.later(function(){
+						scrollview.sync();
+					}, 2500);
+				}else{
+					S.later(function(){
+						scrollview.sync();
+					}, 0);
 				}
-			S.later(function(){
-				scrollview.sync();
-			}, 2500);
 			self._changeColor();			
 		},
 		/**
