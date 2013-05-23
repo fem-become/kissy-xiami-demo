@@ -593,9 +593,12 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 				if (e.direction === 'right') {
 					self.switchTab(0);
 				} else if(e.direction === 'left'){
+					e.halt();
 					var target = $(e.target);
-					if(target.hasClass('J_MusicItem')){
-
+					if(!target.hasClass('J_MusicItem')){
+						target = target.parent('.J_MusicItem');
+					}
+					if(target && target.length !== 0){
 					 	var id = target.attr('data-id'),
 					 		idx = target.index('.J_MusicItem');
 					 	if(id === musicInfo['id']){//当前播放的歌曲
@@ -606,6 +609,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 					 		}
 					 		target.remove();
 					 		musicList.splice(idx, 1);
+					 		scrollview.sync();
 					 		localStorage.setItem(storageKey, S.JSON.stringify(musicList));//同步到localStorage
 					 	}
 
