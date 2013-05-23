@@ -1,0 +1,20 @@
+.search-txt{
+    height:30px;
+    width:60%;
+    margin:10px 5px 0 10px;
+    font-size:16px;
+}
+.search-btn{
+    width: 50px;
+    height: 36px;
+    background: url(http://img01.taobaocdn.com/tps/i1/T1fHONXptXXXXRoSTe-37-38.png) no-repeat 50% 50% #ededed;
+    background-size: 30% 50% !important;
+    border:none;
+    margin-top:10px;
+}
+.song-count{
+    height:30px;
+    line-height:30px;
+    font-size:14px;
+    margin-left:10px;
+}

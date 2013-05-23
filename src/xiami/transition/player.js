@@ -653,7 +653,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 	return re;
 
 }, {
-	requires: ["node", "./index", "event", "../header", 'dd', 'dd/plugin/constrain', 'scrollview/drag', 'scrollview/plugin/scrollbar','./player.css']
+	requires: ["node", "./index", "event", "../header", 'dd', 'dd/plugin/constrain', 'scrollview', 'scrollview/plugin/scrollbar','./player.css']
 });
 
 /**

@@ -1,0 +1,94 @@
+﻿<!--
+build example for kissy loader
+@author yiminghe@gmail.com
+-->
+<project name="compressor.build" default="build" basedir="." xmlns:ac="antlib:net.sf.antcontrib">
+
+    <!--入口文件模块所在目录-->
+    <dirname property="current.dir" file="${ant.file.compressor.build}"/>
+    <property name="assets.dir" location="${current.dir}/src/"/>
+    <property name="build.dir" location="${current.dir}/web/assets/"/>
+    <property name="xiami.build.dir" location="${current.dir}/web/assets/xiami/"/>
+    <!--项目文件编码-->
+    <property name="charset" value="utf-8"/>
+
+    <!-- kissy tools 项目源码目录 -->
+    <!-- 注意：请用 kissy tools 中的 ant 运行此 xml -->
+    <property name="tools.dir" value="./tools"/>
+   
+    <property name="module.compiler" value="${tools.dir}\module-compiler/module-compiler.jar"/>
+    <property name="closure-compiler"
+              location="${tools.dir}/closure-compiler/closure-compiler.jar"/>
+    <property name="yui-compressor"
+              location="${tools.dir}/yui-compressor/yui-compressor.jar"/>
+
+    <target name='build' depends="combo,compress-css,compress-js">
+    </target>
+    
+    <target name='prepare'>
+        <delete dir="${xiami.build.dir}"></delete>
+        <copy encoding="${charset}" todir="${build.dir}">
+            <fileset dir="${assets.dir}" includes="**/*"/>
+        </copy>
+    </target>
+    
+    <!--js  combo 地址获取-->
+    <target name='combo' depends="prepare">
+        <java classname="com.taobao.f2e.ExtractDependency">
+            <arg value="-packageUrls"/>
+            <arg value="${xiami.build.dir}/"/>
+
+            <arg value="-encodings"/>
+            <arg value="${charset}"/>
+
+            <arg value="-outputEncoding"/>
+            <arg value="utf-8"/>
+
+            <arg value="-output"/>
+            <arg value="${build.dir}/deps.js"/>
+
+            <arg value="-fixModuleName"/>
+            <!--自动 combo 需要补全文件名-->
+            <arg value="true"/>
+
+            <classpath>
+                <pathelement path="${module.compiler}"/>
+                <pathelement path="${java.class.path}"/>
+            </classpath>
+        </java>
+    </target>
+
+    <target name="compress-css">
+        <apply executable="java" verbose="true"
+               dest="${xiami.build.dir}">
+            <fileset dir="${xiami.build.dir}"
+                     excludes="**/*-min.css" includes="**/*.css"/>
+            <arg line="-jar"/>
+            <arg path="${yui-compressor}"/>
+            <arg line="--charset ${charset}"/>
+            <srcfile/>
+            <arg line="-o"/>
+            <targetfile/>
+            <mapper type="regexp" from="^(.*)\.(css|js)$" to="\1-min.\2"/>
+        </apply>
+    </target>
+
+    <!-- 压缩代码 -->
+    <target name="compress-js">
+        <apply executable="java" verbose="true" dest="${xiami.build.dir}">
+            <fileset dir="${xiami.build.dir}"
+                     excludes="**/*-min.js" includes="**/*.js"/>
+            <arg line="-jar"/>
+            <arg path="${closure-compiler}"/>
+            <arg line="--charset ${charset}"/>
+            <arg value="--warning_level"/>
+            <arg value="QUIET"/>
+            <arg value="--js"/>
+            <srcfile/>
+            <arg value="--js_output_file"/>
+            <targetfile/>
+            <mapper type="regexp" from="^(.*)\.(css|js)$" to="\1-min.\2"/>
+        </apply>
+    </target>
+
+</project>
