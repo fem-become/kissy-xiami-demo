@@ -131,6 +131,7 @@ html {
 
 .home .albums-items li img{
     width:100%;
+    height: 100px;
 }
 
 .home .albums-items li .info{
