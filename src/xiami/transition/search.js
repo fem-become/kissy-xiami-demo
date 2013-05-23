@@ -22,8 +22,10 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
             header.setTitle('');
 
             if(config.id != pid){
-                el = $('<div class="mod-page"></div>').appendTo(body);
-                $(searchTPL).appendTo(el);
+                if (!el) {
+                    el = $('<div class="mod-page"></div>').appendTo(body);
+                    $(searchTPL).appendTo(el);
+                }
 
                 list = $('.J_searchResult');
                 header.setTitle("歌曲搜索");
@@ -77,14 +79,15 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
                         // Transition.forward(myName, 'xiami/transition/player', {
                         //     id: pid
                         // });
-                        pid = pid.replace("http://www.xiami.com/song", "");
+                        pid = pid.replace("http://www.xiami.com/song/", "");
                         suspender.playOne({'id':pid});
                     });
 
                     // 点击加入播放列表
                     list.all('.J_album_add_list').on(Event.Gesture.tap, function(e){
                         var song_id = $(e.target).attr('data-id');
-                        suspender.addToList(song_id);
+                        song_id.replace("http://www.xiami.com/song/", "");
+                        suspender.addToList({'id':song_id});
                     });
 
                     Album.pageName = data['title'];
