@@ -86,7 +86,7 @@ KISSY.add(function(S, Node, Transition, Event, header, suspender, Overlay, Scrol
                     // 点击加入播放列表
                     list.all('.J_album_add_list').on(Event.Gesture.tap, function(e){
                         var song_id = $(e.target).attr('data-id');
-                        suspender.addToList(song_id);
+                        suspender.addToList({'id':song_id});
                     });
 
                     Album.pageName = data['title'];
