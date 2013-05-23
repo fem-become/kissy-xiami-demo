@@ -88,13 +88,20 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
                 [{'tag':'粤语','key':''},{'tag':'民谣','key':''},{'tag':'五月天','key':''}]
             ],
             'excite':[
-                [{'tag':'抒情','key':''},{'tag':'Electronic','key':''},{'tag':'轻音乐','key':''}],
-                [{'tag':'抒情','key':''},{'tag':'Electronic','key':''},{'tag':'轻音乐','key':''}],
-                [{'tag':'抒情','key':''},{'tag':'Electronic','key':''},{'tag':'轻音乐','key':''}],
-                [{'tag':'抒情','key':''},{'tag':'Electronic','key':''},{'tag':'轻音乐','key':''}],
-                [{'tag':'抒情','key':''},{'tag':'Electronic','key':''},{'tag':'轻音乐','key':''}]
+                [{'tag':'爵士','key':''},{'tag':'小提琴','key':''},{'tag':'舒缓','key':''}],
+                [{'tag':'林志炫','key':''},{'tag':'小清新','key':''},{'tag':'Adele','key':''}],
+                [{'tag':'流行','key':''},{'tag':'吉他','key':''},{'tag':'节奏','key':''}],
+                [{'tag':'金属','key':''},{'tag':'摇滚','key':''},{'tag':'劲爆','key':''}],
+                [{'tag':'中国摇滚','key':''},{'tag':'电音','key':''},{'tag':'Rock','key':''}]
             ]
         };
+
+    var rhythm = [{'tag':'舒缓'},{'tag':'爵士'},{'tag':'抒情'},
+                    {'tag':'治愈'},{'tag':'怀旧'},{'tag':'陈绮贞'},
+                    {'tag':'流行'},{'tag':'陈奕迅'},{'tag':'吉他'},
+                    {'tag':'慵懒'},{'tag':'轻快'},{'tag':'五月天'},
+                    {'tag':'Adele'},{'tag':'电子'},{'tag':'中国摇滚'},
+                    {'tag':'Rock'},{'tag':'节奏'},{'tag':'金属'}];
 
     var TAG_URL = 'http://test.fem.taobao.net:3000/song/tag/';
 
@@ -257,6 +264,7 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
             shaking = 1;
             energy.css('width', ratio * 100 + '%');
             ratio === 1 ? anode.css('background', '#90d5fe') : anode.css('background', '#cad0d3');
+            return ratio;
         },
 
         /**
@@ -268,12 +276,16 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
                 energy = S.one('.battery-energy'),
                 anode = S.one('.battery-anode');
             
-            self._updateEnergy(e);
+            var ratio = self._updateEnergy(e),
+                idx = Math.floor(ratio * rhythm.length);
+            if(idx === rhythm.length){
+                idx = rhythm.length - 1;
+            }
 
             //推荐歌曲
             new IO({
                 type: 'GET',
-                url: TAG_URL + '摇滚',
+                url: TAG_URL + rhythm[idx]['tag'],
                 dataType: 'jsonp',
                 crossDomain: true,
                 complete: function(response, textStatus, xhrObj){
@@ -535,8 +547,9 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
 
             //加入列表
             Event.delegate('.J_SongsList','click','.addtolist-btn',function(e){
-                var target = S.one(e.target);
-                suspender.addToList(target.parent('li').attr('data-id'));
+                var target = S.one(e.target),
+                    songId = target.parent('li').attr('data-id');
+                suspender.addToList({'id':songId});
             });
 
             //trigger点击也能切换两种发现音乐的方式

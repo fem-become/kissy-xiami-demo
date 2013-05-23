@@ -169,6 +169,7 @@
 					background-color:#d7dde1;
 					background-size:50% 50%;
 					position: relative;
+					overflow: hidden;
 				}
 				.pl-music-list li em{
 					font-style: normal;

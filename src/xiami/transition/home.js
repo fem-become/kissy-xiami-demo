@@ -6,10 +6,10 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
     var body=$('#body');
 
 
-    if (!localStorage.getItem("MUSIC_LIST")) {
-        var test = [12345, 11024, 11020, 11026, 12024];
-        localStorage.setItem('MUSIC_LIST', test.toString());
-    }
+    // if (!localStorage.getItem("MUSIC_LIST")) {
+    //     var test = [12345, 11024, 11020, 11026, 12024];
+    //     localStorage.setItem('MUSIC_LIST', test.toString());
+    // }
 
     (function() {
         // Init Cat Event.
