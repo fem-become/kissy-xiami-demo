@@ -56,10 +56,6 @@ KISSY.add(function(S,Node, Transition, Event, DD) {
         });
       }
 
-      if(mod === "xiami/transition/home"){
-          isRunOnce = true;
-      }
-
       if (mod === "xiami/transition/home" && isRunOnce == false) {
         isRunOnce = true;
 

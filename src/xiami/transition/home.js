@@ -132,8 +132,13 @@ KISSY.add(function (S, Node, IO, XTemplate, Transition, Event, Slide, header, su
             '</strong>'+
             '<p class="num">25首精选</p>'+
             '<p class="brief">{{des}}</p>'+
+            '{{#if xindex%2 !== 0}}' +
+            '<a class="add-list icon" songs-id="{{songs}}"></a>'+
+            '<a class="play big-icon" song-id="{{firstSong}}"></a>'+
+            '{{else}}'+
             '<a class="play big-icon" song-id="{{firstSong}}"></a>'+
             '<a class="add-list icon" songs-id="{{songs}}"></a>'+
+            '{{/if}}'+
             '</div>'+
             '</div>'+'{{/each}}'+
             '</div>';

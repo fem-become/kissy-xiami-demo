@@ -26,7 +26,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 		eventBinded = false,
 		scrollview = null,
 		currentIdx = 0;// 当前播放歌曲的位置
-	var	musicList = localStorage.getItem('MUSIC_LIST') ? S.JSON.parse(localStorage.getItem('MUSIC_LIST')): [];// 播放列表，以此为准，并同步到本地存储中
+//	var	musicList = localStorage.getItem('MUSIC_LIST') ? S.JSON.parse(localStorage.getItem('MUSIC_LIST')): [];// 播放列表，以此为准，并同步到本地存储中
 
 
 
