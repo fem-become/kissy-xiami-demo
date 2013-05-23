@@ -130,7 +130,7 @@
   height: 80px;
 }
 .radar.active {
-  background: url("../../../web/assets/img/radarbg.png") no-repeat;
+  background: url("http://img01.taobaocdn.com/tps/i1/T1oW9OXDleXXcKi4fo-80-80.png") no-repeat;
 }
 .radar.detecting .radar-bg {
   display: block;
@@ -203,7 +203,7 @@
   height: 80px;
   left: 35px;
   top: 0;
-  background: url("../../../web/assets/img/round.png") 0 -5px no-repeat;
+  background: url("http://img01.taobaocdn.com/tps/i1/T1e5aMXxpgXXb9RTPq-90-90.png") 0 -5px no-repeat;
 }
 #message.left .result-msg {
   margin-right: 35px;
@@ -225,7 +225,7 @@
   height: 80px;
   left: 0;
   top: 0;
-  background: url("../../../web/assets/img/round.png") -55px -5px no-repeat;
+  background: url("http://img01.taobaocdn.com/tps/i1/T1e5aMXxpgXXb9RTPq-90-90.png") -55px -5px no-repeat;
 }
 #message.right .result-msg {
   margin-left: 35px;
@@ -245,7 +245,7 @@
   height: 35px;
   left: 0;
   top: 35px;
-  background: url("../../../web/assets/img/round.png") -5px 0 no-repeat;
+  background: url("http://img01.taobaocdn.com/tps/i1/T1e5aMXxpgXXb9RTPq-90-90.png") -5px 0 no-repeat;
 }
 #message.top .result-msg {
   margin-bottom: 35px;
@@ -266,7 +266,7 @@
   height: 35px;
   left: 0;
   top: 0;
-  background: url("../../../web/assets/img/round.png") -5px -55px no-repeat;
+  background: url("http://img01.taobaocdn.com/tps/i1/T1e5aMXxpgXXb9RTPq-90-90.png") -5px -55px no-repeat;
 }
 #message.bottom .result-msg {
   margin-top: 35px;
@@ -369,11 +369,11 @@
 }
 .songs-list li .play-btn {
   right: 60px;
-  background-image: url("../../../web/assets/img/icon-play.png");
+  background-image: url("http://img04.taobaocdn.com/tps/i4/T1Or5QXt8XXXXPYPE.-13-16.png");
 }
 .songs-list li .addtolist-btn {
   right: 20px;
-  background-image: url("../../../web/assets/img/icon-addtolist.png");
+  background-image: url("http://img03.taobaocdn.com/tps/i3/T1LK9PXsVXXXXitADa-19-15.png");
 }
 
 /*** 音乐雷达说明 ***/

@@ -130,7 +130,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 
 			if(!player){//第一次进入页面
 				if(musicList.length !== 0){//播放列表的第一首
-					musicInfo = musicList[0];
+					musicInfo = S.clone(musicList[0]);
 					self.playSong();
 					currentIdx = 0;
 				}else{
@@ -877,7 +877,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 	return re;
 
 }, {
-    requires: ["node", "./index", "event", "../header", 'dd', 'dd/plugin/constrain', 'scrollview/drag', 'scrollview/plugin/scrollbar','./player.css']
+    requires: ["node", "./index", "event", "../header", 'dd', 'dd/plugin/constrain', 'scrollview','scrollview/plugin/scrollbar','./player.css']
 });
 
 /**

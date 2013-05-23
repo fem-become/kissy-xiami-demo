@@ -414,9 +414,9 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
             var deg = 5,
                 startRotate = function(){
                     light.css({
-                        '-webkit-transform':'rotate('+deg+'deg)',
-                        '-moz-transform':'rotate('+deg+'deg)',
-                        'transform':'rotate('+deg+'deg)'
+                        '-webkit-transform':'rotate('+deg%360+'deg)',
+                        '-moz-transform':'rotate('+deg%360+'deg)',
+                        'transform':'rotate('+deg%360+'deg)'
                     });
                     deg += 30;
                     timer = setTimeout(startRotate,100);
@@ -573,6 +573,6 @@ KISSY.add(function (S, Node, Event, Transition, Event, header, DD, ScrollView, S
     };
 
 }, {
-    requires: ['node','event','./index','event','../header','dd',
-    'scrollview/drag','scrollview/plugin/scrollbar','ajax', 'xtemplate','../suspender','./shake','./discover.css']
+    requires: ['node','event','./index','event','../header','dd','scrollview',
+    'scrollview/plugin/scrollbar','ajax', 'xtemplate','../suspender','./shake','./discover.css']
 });
