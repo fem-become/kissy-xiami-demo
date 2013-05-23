@@ -51,6 +51,10 @@ KISSY.add(function(S,Node, Transition, Event, DD) {
             el.css("-webkit-transform", "translate3d(260px, 0, 0)");
           }
         });
+        //search
+        currentHeader.all(".do-search").on(Event.Gesture.tap, function() {
+            Transition.forward(mod, "xiami/transition/search");
+        });
       }
 
       if (mod === "xiami/transition/home" && isRunOnce == false) {

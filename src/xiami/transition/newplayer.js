@@ -685,7 +685,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 				if(musicList[i]['id'] === info.id){
 					break;
 				}
-			}console.log('iiiiii:'+i);
+			}
 			if(i === musicList.length){
 				if(info['location']){
 					musicInfo = info;
@@ -877,16 +877,16 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 	return re;
 
 }, {
-	requires: ["node", "./index", "event", "../header", 'dd', 'dd/plugin/constrain', 'scrollview/drag', 'scrollview/plugin/scrollbar','./player.css']
+    requires: ["node", "./index", "event", "../header", 'dd', 'dd/plugin/constrain', 'scrollview/drag', 'scrollview/plugin/scrollbar','./player.css']
 });
 
 /**
  * jj && jj({
-  "title": "大日子",
-  "albumCover": "http://img.xiami.com/./images/album/img25/125/485_2.jpg",
-  "location": "http://psp-music.appspot.com/xiami/5799",
-  "albumsInfo": "所属专辑：\r\n                      拉阔演奏厅\r\n                    \r\n                    \r\n                      演唱者：\r\n                      陈慧琳                      \r\n                    \r\n                                        \r\n                      作词：\r\n                      林夕",
-  "lrc": "",
-  "comments": []
-});
+ "title": "大日子",
+ "albumCover": "http://img.xiami.com/./images/album/img25/125/485_2.jpg",
+ "location": "http://psp-music.appspot.com/xiami/5799",
+ "albumsInfo": "所属专辑：\r\n                      拉阔演奏厅\r\n                    \r\n                    \r\n                      演唱者：\r\n                      陈慧琳                      \r\n                    \r\n                                        \r\n                      作词：\r\n                      林夕",
+ "lrc": "",
+ "comments": []
+ });
  */
