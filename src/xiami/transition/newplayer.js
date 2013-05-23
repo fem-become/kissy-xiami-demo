@@ -25,8 +25,9 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 	var numInit = 0,
 		eventBinded = false,
 		scrollview = null,
-		currentIdx = 0;// 当前播放歌曲的位置
-	var	musicList = localStorage.getItem('MUSIC_LIST') ? S.JSON.parse(localStorage.getItem('MUSIC_LIST')): [];// 播放列表，以此为准，并同步到本地存储中
+		currentIdx = 0,// 当前播放歌曲的位置
+		storageKey = 'MY_MUSIC_LIST';
+	var	musicList = localStorage.getItem(storageKey) ? S.JSON.parse(localStorage.getItem(storageKey)): [];// 播放列表，以此为准，并同步到本地存储中
 
 
 
@@ -539,13 +540,13 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 		 * @return {Object} this
 		 */
 		fillList: function() {
-			var localArr = localStorage.getItem('MUSIC_LIST') ? localStorage.getItem('MUSIC_LIST').split(',') : [];
+			var localArr = localStorage.getItem(storageKey) ? localStorage.getItem(storageKey).split(',') : [];
 			localArr.unshift(musicInfo.id);
 			var listArr = S.unique(localArr);
 			// var test = [12345, 11024, 11020, 11026, 12024];
-			// localStorage.setItem('MUSIC_LIST', test.toString());
+			// localStorage.setItem(storageKey, test.toString());
 			var listA = [];
-			//var listArr = localStorage.getItem('MUSIC_LIST').split(',');
+			//var listArr = localStorage.getItem(storageKey).split(',');
 			//alert(listArr)
 			S.each(listArr, function(value, key) {
 				var self = this;
@@ -654,7 +655,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 		      		if(songs[m]['location']){
 		      			console.log(S.JSON.stringify(songs[m]));
 		      			musicList.push(songs[m]);
-		      			localStorage.setItem('MUSIC_LIST', S.JSON.stringify(musicList));//同步到localStorage
+		      			localStorage.setItem(storageKey, S.JSON.stringify(musicList));//同步到localStorage
 		      		}else{//请求完整信息
 		      			var songId = songs[m]['id'];
 						S.io({
@@ -663,7 +664,7 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 							dataType: "jsonp",
 							success: function(data) {
 								musicList.push({'id':songId,'title':data['title'],'albumCover':data['albumCover'],'location':data['location']});
-								localStorage.setItem('MUSIC_LIST', S.JSON.stringify(musicList));
+								localStorage.setItem(storageKey, S.JSON.stringify(musicList));
 							},
 							error: function() {
 								alert('error')
@@ -689,14 +690,14 @@ KISSY.add(function(S, Node, Transition, Event, header, DD, Constrain, ScrollView
 				if(info['location']){
 					musicInfo = info;
 					musicList.push(musicInfo);
-					localStorage.setItem('MUSIC_LIST', S.JSON.stringify(musicList));//同步到localStorage
+					localStorage.setItem(storageKey, S.JSON.stringify(musicList));//同步到localStorage
 					currentIdx = musicList.length - 1;
 					self.playSong();
 				}else{
 					musicInfo['id'] = info.id;
 					self.getMusicInfo(info.id,function(){
 						musicList.push({'id':musicInfo['id'],'title':musicInfo['title'],'albumCover':musicInfo['albumCover'],'location':musicInfo['location']});// 加入播放列表
-						localStorage.setItem('MUSIC_LIST', S.JSON.stringify(musicList));//同步到localStorage
+						localStorage.setItem(storageKey, S.JSON.stringify(musicList));//同步到localStorage
 						currentIdx = musicList.length - 1;
 						self.playSong();
 					});
